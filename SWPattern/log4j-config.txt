@@ -1,0 +1,26 @@
+# Fichier de config du logger du programme
+
+# Toutes les sorties du logger sont redirigée sur deux sorties, la sortie standard d'erreur et un fichier de log
+log4j.rootLogger = DEBUG, stderr, F1
+
+# Config de la sortie standard d'erreur
+log4j.appender.stderr = org.apache.log4j.ConsoleAppender
+log4j.appender.stderr.layout = org.apache.log4j.EnhancedPatternLayout
+log4j.appender.stderr.layout.ConversionPattern=%d{dd MMM yyyy HH:mm:ss,SSS} %p (%t) [%c{1}] - %m%n
+log4j.appender.stderr.Target = System.err
+
+# Config de la sortie au format html vers le fichier log.html
+log4j.appender.F1 = org.apache.log4j.RollingFileAppender
+log4j.appender.F1.layout = org.apache.log4j.HTMLLayout
+log4j.appender.F1.File = log.html
+log4j.appender.F1.MaxFileSize=50MB
+log4j.appender.F1.MaxBackupIndex=100
+
+# Config pour n'avoir que les logs de l'application en temps normal
+log4j.logger.org.apache.http = FATAL
+log4j.logger.org.apache.jena.riot.web = FATAL
+log4j.logger.org.apache.jena.shared = FATAL
+log4j.logger.org.apache.jena.util = FATAL
+log4j.logger.org.apache.jena.riot.system.stream = FATAL
+log4j.logger.com.irisa.jenautils = DEBUG
+log4j.logger.com.irisa.rdftotransaction = DEBUG
