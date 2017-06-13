@@ -3,7 +3,11 @@ package com.irisa.swpatterns.data;
 import java.util.HashSet;
 import com.irisa.jenautils.Couple;
 
-
+/**
+ * Version of SMPF Itemset where numbers are replaced by the RDFPatternComponent
+ * @author pmaillot
+ *
+ */
 public class LabeledItemSet extends Couple<HashSet<RDFPatternComponent>, Integer> {
 
 	public LabeledItemSet() {

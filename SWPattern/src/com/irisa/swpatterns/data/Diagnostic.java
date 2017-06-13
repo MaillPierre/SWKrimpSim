@@ -9,6 +9,11 @@ import java.util.function.Consumer;
 
 import org.apache.log4j.Logger;
 
+/**
+ * Class supposed to be used for the comparison of the itemsets of two bases
+ * @author pmaillot
+ *
+ */
 public class Diagnostic {
 	
 	private static Logger logger = Logger.getLogger(Diagnostic.class);

@@ -14,3 +14,10 @@ Project to use the Krimp algorithm to extract a codetable form a RDF base and us
 
 Uses SMPF for the some of the frequent itemsets algorithms.
 Includes JenaUtils classes.
+
+TODO:
+- Hide the passage through files of SMPF to passe only transactions, transactions indexes and Itemsets between classes
+- Implement KRIMP
+
+Idea:
+- Apply pattern sampling to the maximal frequent patterns ?

@@ -16,9 +16,6 @@ import java.util.function.Consumer;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.jena.atlas.web.HttpException;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
@@ -38,6 +35,12 @@ import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
+/**
+ * Deal with the transaction extraction. Give access to the patternComponent index for later compressions (Good idea ?).
+ * 
+ * @author pmaillot
+ *
+ */
 public class TransactionsExtractor {
 
 	private static int queryLimit = 0;
@@ -79,7 +82,7 @@ public class TransactionsExtractor {
 	 * @return
 	 * @throws Exception 
 	 */
-	public void printTransactionsItems(LinkedList<RankNAttributeSet> transactions, String output) throws Exception {
+	public static void printTransactionsItems(LinkedList<RankNAttributeSet> transactions, String output) throws Exception {
 
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));

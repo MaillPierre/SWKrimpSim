@@ -3,7 +3,7 @@ package com.irisa.swpatterns.data;
 import java.util.Comparator;
 
 /**
- * Elements of a pattern, based on desing pattern Composite
+ * Elements of a pattern, based on design pattern Composite
  * @author pmaillot
  *
  */
