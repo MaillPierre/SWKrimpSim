@@ -12,5 +12,5 @@ Project to use the Krimp algorithm to extract a codetable form a RDF base and us
 4) Compression of the second base with the codetable (TBD)
 5) Conclusion regarding the two obtained compression rates (TBD)
 
-Uses SMPF for the some of the frequent itemsets algorithms
-Includes JenatUtils classes
+Uses SMPF for the some of the frequent itemsets algorithms.
+Includes JenaUtils classes.
