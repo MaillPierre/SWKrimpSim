@@ -24,12 +24,14 @@ import com.irisa.jenautils.BaseRDF;
 import com.irisa.jenautils.CustomQuerySolution;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
+import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.LabeledItemSet;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternPathFragment;
 import com.irisa.swpatterns.data.RDFPatternResource;
 import com.irisa.swpatterns.data.RankNAttributeSet;
 import com.irisa.swpatterns.data.RankUpQuery;
+import com.irisa.swpatterns.data.Transactions;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
@@ -44,10 +46,8 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 public class TransactionsExtractor {
 
 	private static int queryLimit = 0;
-
-	private static RankNAttributeSet attributes = new RankNAttributeSet();
-	private static HashMap<RDFPatternComponent, Integer> attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
-	private static HashMap<Integer, RDFPatternComponent> itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
+	
+	private AttributeIndex index = new AttributeIndex();
 
 	private boolean noTypeBool = false;
 	private boolean noInBool = false;
@@ -60,12 +60,6 @@ public class TransactionsExtractor {
 	
 	private static Logger logger = Logger.getLogger(TransactionsExtractor.class);
 	
-	private static int counterAttribute = 0;
-	
-	public static int getAttributeNumber() {
-		return counterAttribute++;
-	}
-	
 	public static int getQueryLimit() {
 		return queryLimit;
 	}
@@ -74,55 +68,12 @@ public class TransactionsExtractor {
 		TransactionsExtractor.queryLimit = queryLimit;
 	}
 
-	/**
-	 * Print the transaction in the format expected by SPMF (int separated by spaces). Will update the attribute/item indexes
-	 * @param attributes Set of all attributes appearing in the descriptions
-	 * @param transactions
-	 * @param output
-	 * @return
-	 * @throws Exception 
-	 */
-	public static void printTransactionsItems(LinkedList<RankNAttributeSet> transactions, String output) throws Exception {
+	public AttributeIndex getIndex() {
+		return index;
+	}
 
-		try {
-			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
-			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' '));
-			CSVPrinter attributePrinter = new CSVPrinter(new PrintWriter(new BufferedWriter(new FileWriter(output+".attr"))), CSVFormat.TDF);
-
-			// Writing lines
-			Iterator<RankNAttributeSet> itResult = transactions.iterator();
-			while(itResult.hasNext()) {
-				RankNAttributeSet resultLine = itResult.next();
-				// Ecriture des attributs types
-				Iterator<RDFPatternComponent> itTypes = resultLine.getSortedIterator();
-				while(itTypes.hasNext()) {
-					RDFPatternComponent res = itTypes.next();
-					if( null == attributeItemIndex.get(res)) {
-						logger.fatal("RAAAAAAAAAAAAAAAAAAAH " + res);
-					}
-					int itemIndex = attributeItemIndex.get(res);
-					printer.print(itemIndex);
-				}
-				
-				printer.println();
-			}
-
-			printer.close();
-
-			// Writing attributes
-			Iterator<RDFPatternComponent> itAttr = attributeItemIndex.keySet().iterator();
-			while(itAttr.hasNext()) {
-				RDFPatternComponent attr = itAttr.next();
-				attributePrinter.print(attr);
-				attributePrinter.print(attributeItemIndex.get(attr));
-				attributePrinter.println();
-			}
-			attributePrinter.close();
-
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+	public void setIndex(AttributeIndex index) {
+		this.index = index;
 	}
 
 	/**
@@ -132,12 +83,12 @@ public class TransactionsExtractor {
 	 * @param onto
 	 * @return
 	 */
-	public LinkedList<RankNAttributeSet> extractTransactions(BaseRDF baseRDF, UtilOntology onto) {
+	public Transactions extractTransactions(BaseRDF baseRDF, UtilOntology onto) {
 
 		logger.debug(onto.classes().size() + " classes");
 
 		// Accumulation de descriptions des propriétés d'individus
-		LinkedList<RankNAttributeSet> results = new LinkedList<RankNAttributeSet>();
+		Transactions results = new Transactions();
 		Iterator<Resource> itClass = onto.usedClassIterator();
 		while(itClass.hasNext()) 
 		{
@@ -146,7 +97,7 @@ public class TransactionsExtractor {
 		}
 
 		logger.debug("End of extraction");
-		logger.debug(attributes.size() + " attributes");
+		logger.debug(index.size() + " attributes");
 
 		logger.debug(results.size() + " lines");
 		return results;
@@ -163,13 +114,7 @@ public class TransactionsExtractor {
 				RDFPatternResource attribute = new RDFPatternResource(indiType, RDFPatternResource.Type.Type );
 
 				if(onto.isClass(indiType) && ! onto.isOntologyClassVocabulary(indiType)) {
-					if(! attributes.contains(attribute)) {
-						attributes.add(attribute);
-						if(! attributeItemIndex.containsKey(attribute)) {
-							attributeItemIndex.put(attribute, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(attribute), attribute );
-						}
-					}
+					index.add(attribute);
 					indivResult.add(attribute);
 				}
 			}
@@ -192,13 +137,7 @@ public class TransactionsExtractor {
 				RDFPatternResource attribute = new RDFPatternResource(prop, RDFPatternResource.Type.Out );
 
 				if(! onto.isOntologyPropertyVocabulary(prop)) {
-					if(! attributes.contains(prop)) {
-						attributes.add(attribute);
-						if(! attributeItemIndex.containsKey(attribute)) {
-							attributeItemIndex.put(attribute, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(attribute), attribute );
-						}
-					}
+					index.add(attribute);
 					indivResult.add(attribute);
 				}
 			}
@@ -234,11 +173,11 @@ public class TransactionsExtractor {
 		return indivResult;
 	}
 	
-	public LinkedList<RankNAttributeSet> extractTransactionsForClass(BaseRDF baseRDF, UtilOntology onto, Resource currentClass) {
+	public Transactions extractTransactionsForClass(BaseRDF baseRDF, UtilOntology onto, Resource currentClass) {
 
 		logger.debug("Current class: " + currentClass);
 
-		LinkedList<RankNAttributeSet> results = new LinkedList<RankNAttributeSet>();
+		Transactions results = new Transactions();
 
 		HashSet<Resource> indivSet = new HashSet<Resource>();
 		String indivQueryString = "SELECT DISTINCT ?i WHERE { ?i a <" + currentClass + "> . }";
@@ -266,12 +205,12 @@ public class TransactionsExtractor {
 		return results;
 	}
 	
-	public LinkedList<RankNAttributeSet> extractPathAttributes(BaseRDF baseRDF, UtilOntology onto){
+	public Transactions extractPathAttributes(BaseRDF baseRDF, UtilOntology onto){
 		return extractPathAttributes(baseRDF, onto, this.getPathsLength());
 	}
 	
-	private LinkedList<RankNAttributeSet> extractPathAttributes(BaseRDF baseRDF, UtilOntology onto, int rank) {
-		LinkedList<RankNAttributeSet> result = new LinkedList<RankNAttributeSet>();
+	private Transactions extractPathAttributes(BaseRDF baseRDF, UtilOntology onto, int rank) {
+		Transactions result = new Transactions();
 		
 		switch (rank) {
 		case 1:
@@ -360,144 +299,72 @@ public class TransactionsExtractor {
 				RDFPatternResource p3Attr = new RDFPatternResource(p3, RDFPatternComponent.Type.Relation3);
 				RDFPatternResource p4Attr = new RDFPatternResource(p4, RDFPatternComponent.Type.Relation4);
 
-				if(! attributes.contains(i1Attr)) {
-					attributes.add(i1Attr);
-					if(! attributeItemIndex.containsKey(i1Attr)) {
-						attributeItemIndex.put(i1Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i1Attr), i1Attr );
-					}
-				}
+				index.add(i1Attr);
 				line.add(i1Attr);
-				
-				if(! attributes.contains(i2Attr)) {
-					attributes.add(i2Attr);
-					if(! attributeItemIndex.containsKey(i2Attr)) {
-						attributeItemIndex.put(i2Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i2Attr), i2Attr );
-					}
-				}
+
+				index.add(i2Attr);
 				line.add(i2Attr);
 				
-				if(! attributes.contains(i3Attr)) {
-					attributes.add(i3Attr);
-					if(! attributeItemIndex.containsKey(i3Attr)) {
-						attributeItemIndex.put(i3Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i3Attr), i3Attr );
-					}
-				}
+
+				index.add(i3Attr);
 				line.add(i3Attr);
 				
-				if(! attributes.contains(i4Attr)) {
-					attributes.add(i4Attr);
-					if(! attributeItemIndex.containsKey(i4Attr)) {
-						attributeItemIndex.put(i4Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i4Attr), i4Attr );
-					}
-				}
+
+				index.add(i4Attr);
 				line.add(i4Attr);
 				
-				if(! attributes.contains(i5Attr)) {
-					attributes.add(i5Attr);
-					if(! attributeItemIndex.containsKey(i5Attr)) {
-						attributeItemIndex.put(i5Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i5Attr), i5Attr );
-					}
-				}
+
+				index.add(i5Attr);
 				line.add(i5Attr);
 				
-				if(! attributes.contains(p1Attr)) {
-					attributes.add(p1Attr);
-					if(! attributeItemIndex.containsKey(p1Attr)) {
-						attributeItemIndex.put(p1Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p1Attr), p1Attr );
-					}
-				}
+
+				index.add(p1Attr);
 				line.add(p1Attr);
 				
-				if(! attributes.contains(p2Attr)) {
-					attributes.add(p2Attr);
-					if(! attributeItemIndex.containsKey(p2Attr)) {
-						attributeItemIndex.put(p2Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p2Attr), p2Attr );
-					}
-				}
+
+				index.add(p2Attr);
 				line.add(p2Attr);
 				
-				if(! attributes.contains(p3Attr)) {
-					attributes.add(p3Attr);
-					if(! attributeItemIndex.containsKey(p3Attr)) {
-						attributeItemIndex.put(p3Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p3Attr), p3Attr );
-					}
-				}
+
+				index.add(p3Attr);
 				line.add(p3Attr);
 				
-				if(! attributes.contains(p4Attr)) {
-					attributes.add(p4Attr);
-					if(! attributeItemIndex.containsKey(p4Attr)) {
-						attributeItemIndex.put(p4Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p4Attr), p4Attr );
-					}
-				}
+
+				index.add(p4Attr);
 				line.add(p4Attr);
 				
 				if(i1c != null) { 
 					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.Node1Type);
-					if(! attributes.contains(i1cAttr)) {
-						attributes.add(i1cAttr);
-						if(! attributeItemIndex.containsKey(i1cAttr)) {
-							attributeItemIndex.put(i1cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i1cAttr), i1cAttr );
-						}
-					}
+
+					index.add(i1cAttr);
 					line.add(i1cAttr);
 				}
 				
 				if(i2c != null) { 
 					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.Node2Type);
-					if(! attributes.contains(i2cAttr)) {
-						attributes.add(i2cAttr);
-						if(! attributeItemIndex.containsKey(i2cAttr)) {
-							attributeItemIndex.put(i2cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i2cAttr), i2cAttr );
-						}
-					}
+
+					index.add(i2cAttr);
 					line.add(i2cAttr);
 				}
 				
 				if(i3c != null) {
 					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.Node3Type);
-					if(! attributes.contains(i3cAttr)) {
-						attributes.add(i3cAttr);
-						if(! attributeItemIndex.containsKey(i3cAttr)) {
-							attributeItemIndex.put(i3cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i3cAttr), i3cAttr );
-						}
-					}
+
+					index.add(i3cAttr);
 					line.add(i3cAttr);
 				}
 				
 				if(i4c != null) {
 					RDFPatternResource i4cAttr = new RDFPatternResource(i4c, RDFPatternComponent.Type.Node4Type);
-					if(! attributes.contains(i4cAttr)) {
-						attributes.add(i4cAttr);
-						if(! attributeItemIndex.containsKey(i4cAttr)) {
-							attributeItemIndex.put(i4cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i4cAttr), i4cAttr );
-						}
-					}
+
+					index.add(i4cAttr);
 					line.add(i4cAttr);
 				}
 				
 				if(i5c != null) {
 					RDFPatternResource i5cAttr = new RDFPatternResource(i5c, RDFPatternComponent.Type.Node5Type);
-					if(! attributes.contains(i5cAttr)) {
-						attributes.add(i5cAttr);
-						if(! attributeItemIndex.containsKey(i5cAttr)) {
-							attributeItemIndex.put(i5cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i5cAttr), i5cAttr );
-						}
-					}
+
+					index.add(i5cAttr);
 					line.add(i5cAttr);
 				}
 								
@@ -563,114 +430,53 @@ public class TransactionsExtractor {
 				RDFPatternResource p2Attr = new RDFPatternResource(p2, RDFPatternComponent.Type.Relation2);
 				RDFPatternResource p3Attr = new RDFPatternResource(p3, RDFPatternComponent.Type.Relation3);
 
-				if(! attributes.contains(i1Attr)) {
-					attributes.add(i1Attr);
-					if(! attributeItemIndex.containsKey(i1Attr)) {
-						attributeItemIndex.put(i1Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i1Attr), i1Attr );
-					}
-				}
+
+				index.add(i1Attr);
 				line.add(i1Attr);
-				
-				if(! attributes.contains(i2Attr)) {
-					attributes.add(i2Attr);
-					if(! attributeItemIndex.containsKey(i2Attr)) {
-						attributeItemIndex.put(i2Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i2Attr), i2Attr );
-					}
-				}
+
+				index.add(i2Attr);
 				line.add(i2Attr);
-				
-				if(! attributes.contains(i3Attr)) {
-					attributes.add(i3Attr);
-					if(! attributeItemIndex.containsKey(i3Attr)) {
-						attributeItemIndex.put(i3Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i3Attr), i3Attr );
-					}
-				}
+
+				index.add(i3Attr);
 				line.add(i3Attr);
-				
-				if(! attributes.contains(i4Attr)) {
-					attributes.add(i4Attr);
-					if(! attributeItemIndex.containsKey(i4Attr)) {
-						attributeItemIndex.put(i4Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i4Attr), i4Attr );
-					}
-				}
+
+				index.add(i4Attr);
 				line.add(i4Attr);
-				
-				if(! attributes.contains(p1Attr)) {
-					attributes.add(p1Attr);
-					if(! attributeItemIndex.containsKey(p1Attr)) {
-						attributeItemIndex.put(p1Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p1Attr), p1Attr );
-					}
-				}
+
+				index.add(p1Attr);
 				line.add(p1Attr);
-				
-				if(! attributes.contains(p2Attr)) {
-					attributes.add(p2Attr);
-					if(! attributeItemIndex.containsKey(p2Attr)) {
-						attributeItemIndex.put(p2Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p2Attr), p2Attr );
-					}
-				}
+
+				index.add(p2Attr);
 				line.add(p2Attr);
-				
-				if(! attributes.contains(p3Attr)) {
-					attributes.add(p3Attr);
-					if(! attributeItemIndex.containsKey(p3Attr)) {
-						attributeItemIndex.put(p3Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p3Attr), p3Attr );
-					}
-				}
+
+				index.add(p3Attr);
 				line.add(p3Attr);
 				
 				if(i1c != null) { 
 					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.Node1Type);
-					if(! attributes.contains(i1cAttr)) {
-						attributes.add(i1cAttr);
-						if(! attributeItemIndex.containsKey(i1cAttr)) {
-							attributeItemIndex.put(i1cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i1cAttr), i1cAttr );
-						}
-					}
+
+					index.add(i1cAttr);
 					line.add(i1cAttr);
 				}
 				
 				if(i2c != null) { 
 					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.Node2Type);
-					if(! attributes.contains(i2cAttr)) {
-						attributes.add(i2cAttr);
-						if(! attributeItemIndex.containsKey(i2cAttr)) {
-							attributeItemIndex.put(i2cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i2cAttr), i2cAttr );
-						}
-					}
+
+					index.add(i2cAttr);
 					line.add(i2cAttr);
 				}
 				
 				if(i3c != null) {
 					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.Node3Type);
-					if(! attributes.contains(i3cAttr)) {
-						attributes.add(i3cAttr);
-						if(! attributeItemIndex.containsKey(i3cAttr)) {
-							attributeItemIndex.put(i3cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i3cAttr), i3cAttr );
-						}
-					}
+
+					index.add(i3cAttr);
 					line.add(i3cAttr);
 				}
 				
 				if(i4c != null) {
 					RDFPatternResource i4cAttr = new RDFPatternResource(i4c, RDFPatternComponent.Type.Node3Type);
-					if(! attributes.contains(i4cAttr)) {
-						attributes.add(i4cAttr);
-						if(! attributeItemIndex.containsKey(i4cAttr)) {
-							attributeItemIndex.put(i4cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i4cAttr), i4cAttr );
-						}
-					}
+
+					index.add(i4cAttr);
 					line.add(i4cAttr);
 				}
 								
@@ -726,78 +532,37 @@ public class TransactionsExtractor {
 				RDFPatternResource p1Attr = new RDFPatternResource(p1, RDFPatternComponent.Type.Relation1);
 				RDFPatternResource p2Attr = new RDFPatternResource(p2, RDFPatternComponent.Type.Relation2);
 
-				if(! attributes.contains(i1Attr)) {
-					attributes.add(i1Attr);
-					if(! attributeItemIndex.containsKey(i1Attr)) {
-						attributeItemIndex.put(i1Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i1Attr), i1Attr );
-					}
-				}
+				index.add(i1Attr);
 				line.add(i1Attr);
-				if(! attributes.contains(i2Attr)) {
-					attributes.add(i2Attr);
-					if(! attributeItemIndex.containsKey(i2Attr)) {
-						attributeItemIndex.put(i2Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i2Attr), i2Attr );
-					}
-				}
+
+				index.add(i2Attr);
 				line.add(i2Attr);
-				if(! attributes.contains(i3Attr)) {
-					attributes.add(i3Attr);
-					if(! attributeItemIndex.containsKey(i3Attr)) {
-						attributeItemIndex.put(i3Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(i3Attr), i3Attr );
-					}
-				}
+
+				index.add(i3Attr);
 				line.add(i3Attr);
-				if(! attributes.contains(p1Attr)) {
-					attributes.add(p1Attr);
-					if(! attributeItemIndex.containsKey(p1Attr)) {
-						attributeItemIndex.put(p1Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p1Attr), p1Attr );
-					}
-				}
+
+				index.add(p1Attr);
 				line.add(p1Attr);
-				if(! attributes.contains(p2Attr)) {
-					attributes.add(p2Attr);
-					if(! attributeItemIndex.containsKey(p2Attr)) {
-						attributeItemIndex.put(p2Attr, getAttributeNumber());
-						itemAttributeIndex.put(attributeItemIndex.get(p2Attr), p2Attr );
-					}
-				}
+
+				index.add(p2Attr);
 				line.add(p2Attr);
 				
 				if(i1c != null) { 
 					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.Node1Type);
-					if(! attributes.contains(i1cAttr)) {
-						attributes.add(i1cAttr);
-						if(! attributeItemIndex.containsKey(i1cAttr)) {
-							attributeItemIndex.put(i1cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i1cAttr), i1cAttr );
-						}
-					}
+
+					index.add(i1cAttr);
 					line.add(i1cAttr);
 				}
 				if(i2c != null) { 
 					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.Node2Type);
-					if(! attributes.contains(i2cAttr)) {
-						attributes.add(i2cAttr);
-						if(! attributeItemIndex.containsKey(i2cAttr)) {
-							attributeItemIndex.put(i2cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i2cAttr), i2cAttr );
-						}
-					}
+
+					index.add(i2cAttr);
 					line.add(i2cAttr);
 				}
 				if(i3c != null) {
 					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.Node3Type);
-					if(! attributes.contains(i3cAttr)) {
-						attributes.add(i3cAttr);
-						if(! attributeItemIndex.containsKey(i3cAttr)) {
-							attributeItemIndex.put(i3cAttr, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(i3cAttr), i3cAttr );
-						}
-					}
+
+					index.add(i3cAttr);
 					line.add(i3cAttr);
 				}
 								
@@ -811,37 +576,6 @@ public class TransactionsExtractor {
 	private Collection<? extends RankNAttributeSet> extractPathAttributesRankOne(BaseRDF baseRDF, UtilOntology onto) {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	public static LabeledItemSet labelItemSet(Itemset iSet) {
-		LabeledItemSet result = new LabeledItemSet();
-
-		for(int i = 0; i < iSet.getItems().length; i++) {
-			result.addItem(itemAttributeIndex.get(iSet.get(i)));
-		}
-		result.setCount(iSet.getAbsoluteSupport());
-
-		return result;
-	}
-	
-	public static List<LabeledItemSet> labelItemSet(Itemsets iSets) {
-		List<LabeledItemSet> result = new ArrayList<LabeledItemSet>();
-		
-		for(int level = 0; level < iSets.getLevels().size(); level++) {
-			iSets.getLevels().forEach(new Consumer<List<Itemset>>() {
-				@Override
-				public void accept(List<Itemset> l) {
-					l.forEach(new Consumer<Itemset>(){
-						@Override
-						public void accept(Itemset is) {
-							result.add(labelItemSet(is));
-						}
-					});
-				}
-			});
-		}
-		
-		return result;
 	}
 	
 	public RankUpQuery sparqlizeItemSet(LabeledItemSet is) {
@@ -911,13 +645,7 @@ public class TransactionsExtractor {
 				RDFPatternResource attribute = new RDFPatternResource(prop, RDFPatternResource.Type.In );
 
 				if(! onto.isOntologyPropertyVocabulary(prop)) {
-					if(! attributes.contains(attribute)) {
-						attributes.add(attribute);
-						if(! attributeItemIndex.containsKey(attribute)) {
-							attributeItemIndex.put(attribute, getAttributeNumber());
-							itemAttributeIndex.put(attributeItemIndex.get(attribute), attribute );
-						}
-					}
+					index.add(attribute);
 					indivResult.add(attribute);
 				}
 			}
@@ -947,13 +675,7 @@ public class TransactionsExtractor {
 						if(objType != null && prop != null) {
 							RDFPatternPathFragment attribute = new RDFPatternPathFragment(prop, objType, RDFPatternResource.Type.OutNeighbourType );
 							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
-								if(! attributes.contains(attribute)) {
-									attributes.add(attribute);
-									if(! attributeItemIndex.containsKey(attribute)) {
-										attributeItemIndex.put(attribute, getAttributeNumber());
-										itemAttributeIndex.put(attributeItemIndex.get(attribute), attribute );
-									}
-								}
+								index.add(attribute);
 								indivResult.add(attribute);
 							}
 						}
@@ -979,13 +701,7 @@ public class TransactionsExtractor {
 						if(objType != null && prop != null) {
 							RDFPatternPathFragment attribute = new RDFPatternPathFragment(objType, prop, RDFPatternResource.Type.InNeighbourType );
 							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
-								if(! attributes.contains(attribute)) {
-									attributes.add(attribute);
-									if(! attributeItemIndex.containsKey(attribute)) {
-										attributeItemIndex.put(attribute, getAttributeNumber());
-										itemAttributeIndex.put(attributeItemIndex.get(attribute), attribute );
-									}
-								}
+								index.add(attribute);
 								indivResult.add(attribute);
 							}
 						}
@@ -1047,14 +763,6 @@ public class TransactionsExtractor {
 
 	public void setPathsLength(int pathsLength) {
 		this.pathsLength = pathsLength;
-	}
-
-	public RankNAttributeSet getAttributes() {
-		return attributes;
-	}
-
-	public void setAttributes(RankNAttributeSet attributes) {
-		this.attributes = attributes;
 	}
 	
 }

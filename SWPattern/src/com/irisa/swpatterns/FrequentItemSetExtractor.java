@@ -1,57 +1,39 @@
 package com.irisa.swpatterns;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.jena.atlas.web.HttpException;
-import org.apache.jena.query.QuerySolution;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
-import org.apache.jena.vocabulary.RDFS;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import com.irisa.jenautils.BaseRDF;
 import com.irisa.jenautils.BaseRDF.MODE;
-import com.irisa.swpatterns.data.Diagnostic;
+import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.LabeledItemSet;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternPathFragment;
 import com.irisa.swpatterns.data.RDFPatternResource;
-import com.irisa.swpatterns.data.RankNAttributeSet;
-import com.irisa.swpatterns.data.RankUpQuery;
+import com.irisa.swpatterns.data.Transactions;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
-import com.irisa.jenautils.CustomQuerySolution;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
 
-import ca.pfv.spmf.algorithms.frequentpatterns.fin_prepost.PrePost;
 import ca.pfv.spmf.algorithms.frequentpatterns.fpgrowth.AlgoFPClose;
 import ca.pfv.spmf.algorithms.frequentpatterns.fpgrowth.AlgoFPMax;
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 /**
@@ -67,6 +49,8 @@ public class FrequentItemSetExtractor {
 	private boolean algoFPClose = true;
 	
 	private static int countPattern = 0;
+	
+	private static String tmpTransactionFilename = "transactions.tmp";
 
 	public FrequentItemSetExtractor() {
 	}
@@ -75,11 +59,11 @@ public class FrequentItemSetExtractor {
 		return countPattern++;
 	}
 
-	public List<LabeledItemSet> computeItemsets(String outputTransactions) {
+	public Itemsets computeItemsets(Transactions transactions, AttributeIndex index) {
 		if(this.algoFPMax()) {
-			return TransactionsExtractor.labelItemSet(this.computeItemSet_FPMax(outputTransactions));
+			return this.computeItemSet_FPMax(transactions, index);
 		} else if(this.algoFPClose()) {
-			return TransactionsExtractor.labelItemSet(computeItemSet_FPClose(outputTransactions));
+			return computeItemSet_FPClose(transactions, index);
 		}
 		return null;
 	}
@@ -102,31 +86,35 @@ public class FrequentItemSetExtractor {
 		this.algoFPClose = ! algo;
 	}
 	
-	public Itemsets computeItemSet_FPClose(String outputTransactions) {
+	public Itemsets computeItemSet_FPClose(Transactions transactions, AttributeIndex index) {
 		try {
 			AlgoFPClose algoFpc = new AlgoFPClose();
 			logger.debug("FBGrowth Algorithm");
+			index.printTransactionsItems(transactions, tmpTransactionFilename);
 			Itemsets fpcResult;
-			fpcResult = algoFpc.runAlgorithm(outputTransactions, null, 0.01);
+			fpcResult = algoFpc.runAlgorithm(tmpTransactionFilename, null, 0.01);
 			fpcResult.printItemsets(fpcResult.getItemsetsCount());
 			
 			return fpcResult;
 		} catch (IOException e) {
 			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return null;
 	}
 	
-	public Itemsets computeItemSet_FPMax(String outputTransactions) {
+	public Itemsets computeItemSet_FPMax(Transactions transactions, AttributeIndex index) {
 		try {
 			AlgoFPMax algoFpc = new AlgoFPMax();
 			logger.debug("FBGrowth Algorithm");
+			index.printTransactionsItems(transactions, tmpTransactionFilename);
 			Itemsets fpcResult;
-			fpcResult = algoFpc.runAlgorithm(outputTransactions, null, 0.1);
+			fpcResult = algoFpc.runAlgorithm(tmpTransactionFilename, null, 0.1);
 			fpcResult.printItemsets(fpcResult.getItemsetsCount());
 		
 			return fpcResult;
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;
@@ -448,7 +436,7 @@ public class FrequentItemSetExtractor {
 				
 				// Extracting transactions
 				
-				LinkedList<RankNAttributeSet> transactions;
+				Transactions transactions;
 				if(cmd.hasOption("class")) {
 					Resource classRes = onto.getModel().createResource(className);
 					transactions = converter.extractTransactionsForClass(baseRDF, onto, classRes);
@@ -459,50 +447,16 @@ public class FrequentItemSetExtractor {
 				}
 				
 				try {
-					converter.printTransactionsItems(transactions, outputTransactions);
+					converter.getIndex().printTransactionsItems(transactions, outputTransactions);
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
 				}
 				
 				// If we asked more than juste extracting transactions
 				if(! onlytrans) {
-					List<LabeledItemSet> itemSets = fsExtractor.computeItemsets(outputTransactions);
+					List<LabeledItemSet> itemSets = converter.getIndex().labelItemSet(fsExtractor.computeItemsets(transactions, converter.getIndex()));
 					
-					if(cmd.hasOption("compareTo")) { // Comparison of two datasets through Set operations on their frequent itemsets (ToBeDeleted)
-						UtilOntology compareOnto = new UtilOntology();
-						BaseRDF compBase = new BaseRDF(fileCompare, BaseRDF.MODE.LOCAL);
-						compareOnto.init(compBase);
-						converter.printTransactionsItems(converter.extractTransactions(compBase, compareOnto), outputCompareTransactions);
-						List<LabeledItemSet> compareIs = fsExtractor.computeItemsets(outputCompareTransactions);
-						if(compareIs != null) {
-							Diagnostic diag = new Diagnostic(itemSets, compareIs);
-							diag.compareItemsets();
-							logger.debug("Communs:");
-							logger.debug(diag.getCommons());
-							diag.getCommons().forEach(new Consumer<LabeledItemSet>() {
-								@Override
-								public void accept(LabeledItemSet t) {
-									fsExtractor.rdfizePattern(t).write(System.out, "TTL");
-									logger.debug(converter.sparqlizeItemSet(t).getQuery());
-								}
-							});
-							BiConsumer<LabeledItemSet, List<LabeledItemSet>> biCon = new BiConsumer<LabeledItemSet, List<LabeledItemSet>>( ){
-								@Override
-								public void accept(LabeledItemSet t, List<LabeledItemSet> u) {
-									logger.debug(t + " INCLUS  " + u);
-								}
-							};
-							logger.debug("Inclusion dans 1:");
-							diag.getInclusionsIn1().forEach(biCon);
-	
-							logger.debug("Inclusion dans 2:");
-							diag.getInclusionsIn2().forEach(biCon);
-							logger.debug("Difference 1:");
-							logger.debug(diag.getDifference1());
-							logger.debug("Difference 2:");
-							logger.debug(diag.getDifference2());
-						}
-					} else { // Printing the extracted itemsets and their RDF versions
+				// Printing the extracted itemsets and their RDF versions
 						if(itemSets != null) {
 							Model rdfPatterns = ModelFactory.createDefaultModel();
 							Iterator<LabeledItemSet> itlas = itemSets.iterator();
@@ -517,7 +471,7 @@ public class FrequentItemSetExtractor {
 					}
 	
 					baseRDF.close();
-				}
+				
 			}
 		} catch (ParseException e) {
 			e.printStackTrace();
