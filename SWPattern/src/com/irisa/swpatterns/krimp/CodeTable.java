@@ -62,6 +62,7 @@ public class CodeTable {
 			
 			int compoItem = _index.getItem(compo);
 			Itemset single = new Itemset(compoItem);
+			single.setAbsoluteSupport(_index.getAttributeCount(compo));
 			_itemsetUsage.put(single, _index.getAttributeCount(compo));
 			_itemsetCode.put(single, single);
 		}
@@ -73,16 +74,32 @@ public class CodeTable {
 			if(o1.size() != o2.size()) {
 				return Integer.compare(o1.size(), o2.size());
 			} else if(o1.support != o2.support) {
-				return Integer.compare(o1.support, o2.support);
+				return - Integer.compare(o1.support, o2.support);
 			} else if( ! o1.isEqualTo(o2)) {
-				for(int i = 0, j = 0; i < o1.size() && j < o2.size() ; i = j = i +1) {
-					if(i != j) {
-						return Integer.compare(o1.get(i), o2.get(j));
+				for(int i = 0 ; i < o1.size() ; i++) {
+					if(o1.get(i) != o2.get(i)) {
+						return Integer.compare(o1.get(i), o2.get(i));
 					}
 				}
 			}
 			return 0;
 		}
 	};
+	
+	public String toString() {
+
+		// Copied from smpf code, just to see ...
+		StringBuilder r = new StringBuilder ();
+		Iterator<Itemset> itIs = this.sortedItemsetIterator();
+		while(itIs.hasNext()) {
+			Itemset is = itIs.next();
+			r.append(is.toString());
+			r.append(' ');
+			r.append(is.getAbsoluteSupport());
+			r.append('\n');
+		}
+		
+		return r.toString();
+	}
 	
 }
