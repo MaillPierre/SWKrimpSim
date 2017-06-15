@@ -16,8 +16,11 @@ Uses SMPF for the some of the frequent itemsets algorithms.
 Includes JenaUtils classes.
 
 TODO:
-- Hide the passage through files of SMPF to passe only transactions, transactions indexes and Itemsets between classes
 - Implement KRIMP
+
+DONE: 
+- Hide the passage through files of SMPF to passe only transactions, transactions indexes and Itemsets between classes (14/06/17)
 
 Idea:
 - Apply pattern sampling to the maximal frequent patterns ?
+	- Loosing the support information -> use weighting technique of pattern sampling -> need to retrieve number of apparition of each element of the maximal itemsets

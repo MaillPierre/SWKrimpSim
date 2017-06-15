@@ -29,7 +29,7 @@ import com.irisa.swpatterns.data.LabeledItemSet;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternPathFragment;
 import com.irisa.swpatterns.data.RDFPatternResource;
-import com.irisa.swpatterns.data.RankNAttributeSet;
+import com.irisa.swpatterns.data.LabeledTransaction;
 import com.irisa.swpatterns.data.RankUpQuery;
 import com.irisa.swpatterns.data.Transactions;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
@@ -103,8 +103,8 @@ public class TransactionsExtractor {
 		return results;
 	}
 	
-	private RankNAttributeSet extractTypeAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
-		RankNAttributeSet indivResult = new RankNAttributeSet();
+	private LabeledTransaction extractTypeAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+		LabeledTransaction indivResult = new LabeledTransaction();
 		String typeTripQueryString = "SELECT DISTINCT ?t WHERE { <" + currIndiv + "> a ?t }";
 		QueryResultIterator itTypeResult = new QueryResultIterator(typeTripQueryString, baseRDF);
 		try {
@@ -126,8 +126,8 @@ public class TransactionsExtractor {
 		return indivResult;
 	}
 	
-	private RankNAttributeSet extractOutPropertyAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
-		RankNAttributeSet indivResult = new RankNAttributeSet();
+	private LabeledTransaction extractOutPropertyAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+		LabeledTransaction indivResult = new LabeledTransaction();
 		String outTripQueryString = "SELECT DISTINCT ?p WHERE { <" + currIndiv + "> ?p ?o }";
 		QueryResultIterator itOutResult = new QueryResultIterator(outTripQueryString, baseRDF);
 		try {
@@ -148,8 +148,8 @@ public class TransactionsExtractor {
 		}
 		return indivResult;
 	}
-	public RankNAttributeSet extractTransactionsForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
-		RankNAttributeSet indivResult = new RankNAttributeSet();
+	public LabeledTransaction extractTransactionsForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+		LabeledTransaction indivResult = new LabeledTransaction();
 
 		// QUERY types triples
 		if(! noTypeBool) {
@@ -233,8 +233,8 @@ public class TransactionsExtractor {
 		return result;
 	}
 
-	private Collection<? extends RankNAttributeSet> extractPathAttributesRankFour(BaseRDF baseRDF, UtilOntology onto) {
-		LinkedList<RankNAttributeSet> result = new LinkedList<RankNAttributeSet>();
+	private Collection<? extends LabeledTransaction> extractPathAttributesRankFour(BaseRDF baseRDF, UtilOntology onto) {
+		LinkedList<LabeledTransaction> result = new LinkedList<LabeledTransaction>();
 		
 		String rankTwoQueryString = "SELECT ?i1 ?i1c ?p1 ?i2 ?i2c ?p2 ?i3 ?i3c ?p3 ?i4 ?i4c ?p4 ?i5 ?i5c WHERE { ";
 		rankTwoQueryString += " ?i1 ?p1 ?i2 . ?i2 ?p2 ?i3 . ?i3 ?p3 ?i4 . ?i4 ?p4 ?i5 ";
@@ -287,7 +287,7 @@ public class TransactionsExtractor {
 				&& ! onto.isOntologyPropertyVocabulary(p1) && ! onto.isOntologyPropertyVocabulary(p2) && ! onto.isOntologyPropertyVocabulary(p3)
 				&& ! setStat1.equals(setStat2) && ! setStat1.equals(setStat3) && ! setStat1.equals(setStat4) && ! setStat2.equals(setStat3) && ! setStat2.equals(setStat4) && ! setStat3.equals(setStat4)
 				) {
-				RankNAttributeSet line = new RankNAttributeSet();
+				LabeledTransaction line = new LabeledTransaction();
 				
 				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.Node1);
 				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.Node2);
@@ -375,8 +375,8 @@ public class TransactionsExtractor {
 		return result;
 	}
 
-	private Collection<? extends RankNAttributeSet> extractPathAttributesRankThree(BaseRDF baseRDF, UtilOntology onto) {
-		LinkedList<RankNAttributeSet> result = new LinkedList<RankNAttributeSet>();
+	private Collection<? extends LabeledTransaction> extractPathAttributesRankThree(BaseRDF baseRDF, UtilOntology onto) {
+		LinkedList<LabeledTransaction> result = new LinkedList<LabeledTransaction>();
 		
 		String rankTwoQueryString = "SELECT ?i1 ?i1c ?p1 ?i2 ?i2c ?p2 ?i3 ?i3c ?p3 ?i4 ?i4c WHERE { ?i1 ?p1 ?i2 . ?i2 ?p2 ?i3 . ?i3 ?p3 ?i4 ";
 		rankTwoQueryString += " OPTIONAL { ?i1 a ?i1c . } ";
@@ -420,7 +420,7 @@ public class TransactionsExtractor {
 				&& ! onto.isOntologyPropertyVocabulary(p1) && ! onto.isOntologyPropertyVocabulary(p2) && ! onto.isOntologyPropertyVocabulary(p3) // no RDF stuff
 				&& ! setStat1.equals(setStat2) && ! setStat1.equals(setStat3) && ! setStat2.equals(setStat3)
 				) {
-				RankNAttributeSet line = new RankNAttributeSet();
+				LabeledTransaction line = new LabeledTransaction();
 				
 				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.Node1);
 				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.Node2);
@@ -487,8 +487,8 @@ public class TransactionsExtractor {
 		return result;
 	}
 
-	private Collection<? extends RankNAttributeSet> extractPathAttributesRankTwo(BaseRDF baseRDF, UtilOntology onto) {
-		LinkedList<RankNAttributeSet> result = new LinkedList<RankNAttributeSet>();
+	private Collection<? extends LabeledTransaction> extractPathAttributesRankTwo(BaseRDF baseRDF, UtilOntology onto) {
+		LinkedList<LabeledTransaction> result = new LinkedList<LabeledTransaction>();
 		
 		String rankTwoQueryString = "SELECT ?i1 ?i1c ?p1 ?i2 ?i2c ?p2 ?i3 ?i3c WHERE { ?i1 ?p1 ?i2 . ?i2 ?p2 ?i3 .";
 		rankTwoQueryString += " OPTIONAL { ?i1 a ?i1c . } ";
@@ -524,7 +524,7 @@ public class TransactionsExtractor {
 				&& ! onto.isOntologyPropertyVocabulary(p1) && ! onto.isOntologyPropertyVocabulary(p2)
 				&& ! setStat1.equals(setStat2)
 				) {
-				RankNAttributeSet line = new RankNAttributeSet();
+				LabeledTransaction line = new LabeledTransaction();
 				
 				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.Node1);
 				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.Node2);
@@ -573,7 +573,7 @@ public class TransactionsExtractor {
 		return result;
 	}
 
-	private Collection<? extends RankNAttributeSet> extractPathAttributesRankOne(BaseRDF baseRDF, UtilOntology onto) {
+	private Collection<? extends LabeledTransaction> extractPathAttributesRankOne(BaseRDF baseRDF, UtilOntology onto) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -632,9 +632,9 @@ public class TransactionsExtractor {
 	}
 
 	
-	private RankNAttributeSet extractInPropertyAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+	private LabeledTransaction extractInPropertyAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 
-		RankNAttributeSet indivResult = new RankNAttributeSet();
+		LabeledTransaction indivResult = new LabeledTransaction();
 		
 		String inTripQueryString = "SELECT DISTINCT ?p WHERE { ?s ?p <" + currIndiv + "> }";
 		QueryResultIterator itInResult = new QueryResultIterator(inTripQueryString, baseRDF);
@@ -659,9 +659,9 @@ public class TransactionsExtractor {
 	}
 	
 
-	private RankNAttributeSet extractPathFragmentAttributesForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+	private LabeledTransaction extractPathFragmentAttributesForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 
-		RankNAttributeSet indivResult = new RankNAttributeSet();
+		LabeledTransaction indivResult = new LabeledTransaction();
 		
 		if(! this.noOutTriples()) {
 			String outTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { <" + currIndiv + "> ?p ?o . ?o a ?oc }";

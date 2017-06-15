@@ -47,9 +47,9 @@ public class FrequentItemSetExtractor {
 
 	private boolean algoFPMax = false;
 	private boolean algoFPClose = true;
-	
+
 	private static int countPattern = 0;
-	
+
 	private static String tmpTransactionFilename = "transactions.tmp";
 
 	public FrequentItemSetExtractor() {
@@ -85,7 +85,7 @@ public class FrequentItemSetExtractor {
 		this.algoFPMax = algo;
 		this.algoFPClose = ! algo;
 	}
-	
+
 	public Itemsets computeItemSet_FPClose(Transactions transactions, AttributeIndex index) {
 		try {
 			AlgoFPClose algoFpc = new AlgoFPClose();
@@ -94,7 +94,7 @@ public class FrequentItemSetExtractor {
 			Itemsets fpcResult;
 			fpcResult = algoFpc.runAlgorithm(tmpTransactionFilename, null, 0.01);
 			fpcResult.printItemsets(fpcResult.getItemsetsCount());
-			
+
 			return fpcResult;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -103,7 +103,7 @@ public class FrequentItemSetExtractor {
 		}
 		return null;
 	}
-	
+
 	public Itemsets computeItemSet_FPMax(Transactions transactions, AttributeIndex index) {
 		try {
 			AlgoFPMax algoFpc = new AlgoFPMax();
@@ -112,7 +112,7 @@ public class FrequentItemSetExtractor {
 			Itemsets fpcResult;
 			fpcResult = algoFpc.runAlgorithm(tmpTransactionFilename, null, 0.1);
 			fpcResult.printItemsets(fpcResult.getItemsetsCount());
-		
+
 			return fpcResult;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -223,7 +223,7 @@ public class FrequentItemSetExtractor {
 						result.add(mainRes, relation4Rel, ((RDFPatternResource) item).getResource());
 						relation4 = ((RDFPatternResource) item).getResource().as(Property.class);
 						break;
-	
+
 					default:
 						break;
 					}
@@ -240,7 +240,7 @@ public class FrequentItemSetExtractor {
 				}
 			}
 		}
-		
+
 		if(relation1 != null) {
 			Resource subject = null;
 			if(node1 != null) {
@@ -274,7 +274,7 @@ public class FrequentItemSetExtractor {
 			} else {
 				subject = result.createResource();
 			}
-			
+
 			Resource object = null;
 			if(node3 != null) {
 				object = node3;
@@ -284,7 +284,7 @@ public class FrequentItemSetExtractor {
 			} else {
 				object = result.createResource(Global.baseDomain + "nodeRelation/#" + relation2.getLocalName());
 			}
-			
+
 			result.add(subject, relation2, object);
 		}
 		if(relation3 != null) {
@@ -299,7 +299,7 @@ public class FrequentItemSetExtractor {
 			} else {
 				subject = result.createResource();
 			}
-			
+
 			Resource object = null;
 			if(node4 != null) {
 				object = node4;
@@ -309,7 +309,7 @@ public class FrequentItemSetExtractor {
 			} else {
 				object = result.createResource(Global.baseDomain + "nodeRelation/#" + relation3.getLocalName());
 			}
-			
+
 			if(node4Type != null) {
 				result.add(object, RDF.type, node4Type);
 			}
@@ -327,13 +327,13 @@ public class FrequentItemSetExtractor {
 			} else {
 				subject = result.createResource();
 			}
-			
+
 			Resource object = null;
 			if(node5 != null) {
 				object = node5;
 			} else if(node5Type != null) {
-					object = result.createResource(Global.baseDomain + "nodeType/#" + node5Type.getLocalName());
-					result.add(object, RDF.type, node5Type);
+				object = result.createResource(Global.baseDomain + "nodeType/#" + node5Type.getLocalName());
+				result.add(object, RDF.type, node5Type);
 			} else {
 				object = result.createResource(Global.baseDomain + "nodeRelation/#" + relation4.getLocalName());
 			}
@@ -344,7 +344,7 @@ public class FrequentItemSetExtractor {
 
 		return result;
 	}
-	
+
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
 		PropertyConfigurator.configure("log4j-config.txt");
@@ -367,7 +367,7 @@ public class FrequentItemSetExtractor {
 		options.addOption("FPMax", false, "Use FPMax algorithm.");
 		options.addOption("class", true, "Class of the studied individuals.");
 		options.addOption("rank1", false, "Extract informations up to rank 1 (types, out-going and in-going properties and object types), default is only types, out-going and in-going properties.");
-//		options.addOption("rank0", false, "Extract informations up to rank 0 (out-going and in-going properties.");
+		//		options.addOption("rank0", false, "Extract informations up to rank 0 (out-going and in-going properties.");
 		options.addOption("path", true, "Use FPClose algorithm. (default)");
 		options.addOption("help", false, "Display this help.");
 
@@ -417,7 +417,7 @@ public class FrequentItemSetExtractor {
 				} else {
 					UtilOntology.setClassRegex(null);
 				}
-				
+
 				if(pathOption != null) {
 					converter.setPathsLength(Integer.valueOf(pathOption));
 				}
@@ -433,9 +433,9 @@ public class FrequentItemSetExtractor {
 				onto.init(baseRDF);
 
 				logger.debug("extract");
-				
+
 				// Extracting transactions
-				
+
 				Transactions transactions;
 				if(cmd.hasOption("class")) {
 					Resource classRes = onto.getModel().createResource(className);
@@ -445,33 +445,33 @@ public class FrequentItemSetExtractor {
 				} else {
 					transactions = converter.extractTransactions(baseRDF, onto);
 				}
-				
+
 				try {
 					converter.getIndex().printTransactionsItems(transactions, outputTransactions);
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
 				}
-				
+
 				// If we asked more than juste extracting transactions
 				if(! onlytrans) {
 					List<LabeledItemSet> itemSets = converter.getIndex().labelItemSet(fsExtractor.computeItemsets(transactions, converter.getIndex()));
-					
-				// Printing the extracted itemsets and their RDF versions
-						if(itemSets != null) {
-							Model rdfPatterns = ModelFactory.createDefaultModel();
-							Iterator<LabeledItemSet> itlas = itemSets.iterator();
-							while(itlas.hasNext()) {
-								LabeledItemSet labItemS = itlas.next();
-								System.out.println(labItemS.getCount() + " " + labItemS.getItems());
-								rdfPatterns.add(fsExtractor.rdfizePattern(labItemS));
-								rdfPatterns.write(System.err, "TTL");
-							}
-							rdfPatterns.write(new PrintWriter(new BufferedOutputStream(new FileOutputStream(outputRDFPatterns))), "TTL");
+
+					// Printing the extracted itemsets and their RDF versions
+					if(itemSets != null) {
+						Model rdfPatterns = ModelFactory.createDefaultModel();
+						Iterator<LabeledItemSet> itlas = itemSets.iterator();
+						while(itlas.hasNext()) {
+							LabeledItemSet labItemS = itlas.next();
+							System.out.println(labItemS.getCount() + " " + labItemS.getItems());
+							rdfPatterns.add(fsExtractor.rdfizePattern(labItemS));
+							rdfPatterns.write(System.err, "TTL");
 						}
+						rdfPatterns.write(new PrintWriter(new BufferedOutputStream(new FileOutputStream(outputRDFPatterns))), "TTL");
 					}
-	
-					baseRDF.close();
-				
+				}
+
+				baseRDF.close();
+
 			}
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -483,6 +483,6 @@ public class FrequentItemSetExtractor {
 		}
 		onto.close();
 	}
-	
+
 
 }

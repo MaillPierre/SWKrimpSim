@@ -14,20 +14,22 @@ import com.irisa.swpatterns.data.RDFPatternComponent.Type;
  *
  */
 @SuppressWarnings("serial")
-public class RankNAttributeSet extends HashSet<RDFPatternComponent> {
+public class LabeledTransaction extends HashSet<RDFPatternComponent> {
 	
+	/**
+	 * Create a sorted copy of the transaction
+	 * @param comp comparator used for the sort
+	 * @return iterator over a temp set
+	 */
 	public Iterator<RDFPatternComponent> getSortedIterator(Comparator<RDFPatternComponent> comp) {
 		LinkedList<RDFPatternComponent> tmp = new LinkedList<RDFPatternComponent>(this);
-		try {
-			Collections.sort(tmp, comp);
-		} catch(Exception e) {
-			e.printStackTrace();
-			System.err.println(this.toString());
-			throw e;
-		}
+		Collections.sort(tmp, comp);
 		return tmp.iterator();
 	}
 
+	/**
+	 * @return iterator on a temp set using the RDFPatternComponent::getComparator()
+	 */
 	public Iterator<RDFPatternComponent> getSortedIterator() {
 		return getSortedIterator(RDFPatternComponent.getComparator());
 	}
