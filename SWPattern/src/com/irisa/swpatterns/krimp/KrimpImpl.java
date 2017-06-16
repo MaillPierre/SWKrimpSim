@@ -32,6 +32,7 @@ import com.irisa.swpatterns.data.LabeledItemSet;
 import com.irisa.swpatterns.data.Transactions;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
+import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 /**
  * KRIMP magic happens here !
@@ -200,35 +201,35 @@ public class KrimpImpl {
 					converter.getIndex().printTransactionsItems(transactions, outputTransactions);
 					CodeTable codeTab = new CodeTable(converter.getIndex() );
 					logger.debug("Nb items: " + converter.getIndex().size());
-					logger.debug(codeTab);
+					logger.debug(" Code table: " + codeTab);
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
 				}
 
 				// If we asked more than juste extracting transactions
 				if(! onlytrans) {
-					List<LabeledItemSet> itemSets = converter.getIndex().labelItemSet(fsExtractor.computeItemsets(transactions, converter.getIndex()));
+					Itemsets itemsets = fsExtractor.computeItemsets(transactions, converter.getIndex());
+					logger.debug("Candidates: " + new CandidateItemset(itemsets));
+//					List<LabeledItemSet> itemSetsLab = converter.getIndex().labelItemSet(itemsets);
 
-					// Printing the extracted itemsets and their RDF versions
-					if(itemSets != null) {
-						Model rdfPatterns = ModelFactory.createDefaultModel();
-						Iterator<LabeledItemSet> itlas = itemSets.iterator();
-						while(itlas.hasNext()) {
-							LabeledItemSet labItemS = itlas.next();
-							System.out.println(labItemS.getCount() + " " + labItemS.getItems());
-							rdfPatterns.add(fsExtractor.rdfizePattern(labItemS));
-							rdfPatterns.write(System.err, "TTL");
-						}
-						rdfPatterns.write(new PrintWriter(new BufferedOutputStream(new FileOutputStream(outputRDFPatterns))), "TTL");
-					}
+//					// Printing the extracted itemsets and their RDF versions
+//					if(itemSetsLab != null) {
+//						Model rdfPatterns = ModelFactory.createDefaultModel();
+//						Iterator<LabeledItemSet> itlas = itemSetsLab.iterator();
+//						while(itlas.hasNext()) {
+//							LabeledItemSet labItemS = itlas.next();
+//							System.out.println(labItemS.getCount() + " " + labItemS.getItems());
+//							rdfPatterns.add(fsExtractor.rdfizePattern(labItemS));
+//							rdfPatterns.write(System.err, "TTL");
+//						}
+//						rdfPatterns.write(new PrintWriter(new BufferedOutputStream(new FileOutputStream(outputRDFPatterns))), "TTL");
+//					}
 				}
 
 				baseRDF.close();
 
 			}
 		} catch (ParseException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

@@ -61,8 +61,10 @@ public class FrequentItemSetExtractor {
 
 	public Itemsets computeItemsets(Transactions transactions, AttributeIndex index) {
 		if(this.algoFPMax()) {
+			logger.trace("Compute frequentitemsets with FPMax");
 			return this.computeItemSet_FPMax(transactions, index);
 		} else if(this.algoFPClose()) {
+			logger.trace("Compute frequentitemsets with FPClose");
 			return computeItemSet_FPClose(transactions, index);
 		}
 		return null;
