@@ -1,20 +1,10 @@
 package com.irisa.swpatterns;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.function.Consumer;
-
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
@@ -25,17 +15,13 @@ import com.irisa.jenautils.CustomQuerySolution;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
 import com.irisa.swpatterns.data.AttributeIndex;
-import com.irisa.swpatterns.data.LabeledItemSet;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternPathFragment;
 import com.irisa.swpatterns.data.RDFPatternResource;
 import com.irisa.swpatterns.data.LabeledTransaction;
 import com.irisa.swpatterns.data.RankUpQuery;
-import com.irisa.swpatterns.data.Transactions;
+import com.irisa.swpatterns.data.LabeledTransactions;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
-
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 /**
  * Deal with the transaction extraction. Give access to the patternComponent index for later compressions (Good idea ?).
@@ -83,12 +69,12 @@ public class TransactionsExtractor {
 	 * @param onto
 	 * @return
 	 */
-	public Transactions extractTransactions(BaseRDF baseRDF, UtilOntology onto) {
+	public LabeledTransactions extractTransactions(BaseRDF baseRDF, UtilOntology onto) {
 
 		logger.debug(onto.classes().size() + " classes");
 
 		// Accumulation de descriptions des propriétés d'individus
-		Transactions results = new Transactions();
+		LabeledTransactions results = new LabeledTransactions();
 		Iterator<Resource> itClass = onto.usedClassIterator();
 		while(itClass.hasNext()) 
 		{
@@ -173,11 +159,11 @@ public class TransactionsExtractor {
 		return indivResult;
 	}
 	
-	public Transactions extractTransactionsForClass(BaseRDF baseRDF, UtilOntology onto, Resource currentClass) {
+	public LabeledTransactions extractTransactionsForClass(BaseRDF baseRDF, UtilOntology onto, Resource currentClass) {
 
 		logger.debug("Current class: " + currentClass);
 
-		Transactions results = new Transactions();
+		LabeledTransactions results = new LabeledTransactions();
 
 		HashSet<Resource> indivSet = new HashSet<Resource>();
 		String indivQueryString = "SELECT DISTINCT ?i WHERE { ?i a <" + currentClass + "> . }";
@@ -205,12 +191,12 @@ public class TransactionsExtractor {
 		return results;
 	}
 	
-	public Transactions extractPathAttributes(BaseRDF baseRDF, UtilOntology onto){
+	public LabeledTransactions extractPathAttributes(BaseRDF baseRDF, UtilOntology onto){
 		return extractPathAttributes(baseRDF, onto, this.getPathsLength());
 	}
 	
-	private Transactions extractPathAttributes(BaseRDF baseRDF, UtilOntology onto, int rank) {
-		Transactions result = new Transactions();
+	private LabeledTransactions extractPathAttributes(BaseRDF baseRDF, UtilOntology onto, int rank) {
+		LabeledTransactions result = new LabeledTransactions();
 		
 		switch (rank) {
 		case 1:
@@ -578,7 +564,7 @@ public class TransactionsExtractor {
 		return null;
 	}
 	
-	public RankUpQuery sparqlizeItemSet(LabeledItemSet is) {
+	public RankUpQuery sparqlizeItemSet(LabeledTransaction is) {
 		HashMap<RDFPatternComponent, String> variables = new HashMap<RDFPatternComponent, String>();
 		HashMap<String, RDFPatternComponent> patterns = new HashMap<String, RDFPatternComponent>();
 		
@@ -589,7 +575,7 @@ public class TransactionsExtractor {
 		String queryEnd = " }";
 		int varNum = 0;
 		
-		Iterator<RDFPatternComponent> itItems = is.getItems().iterator();
+		Iterator<RDFPatternComponent> itItems = is.iterator();
 		while(itItems.hasNext()) {
 			RDFPatternComponent item = itItems.next();
 			if(item.getType() != Type.Type) {

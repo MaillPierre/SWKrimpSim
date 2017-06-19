@@ -1,43 +1,27 @@
 package com.irisa.swpatterns;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Iterator;
-import java.util.List;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-import com.irisa.jenautils.BaseRDF;
-import com.irisa.jenautils.BaseRDF.MODE;
 import com.irisa.swpatterns.data.AttributeIndex;
-import com.irisa.swpatterns.data.LabeledItemSet;
+import com.irisa.swpatterns.data.LabeledTransaction;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternPathFragment;
 import com.irisa.swpatterns.data.RDFPatternResource;
-import com.irisa.swpatterns.data.Transactions;
+import com.irisa.swpatterns.data.LabeledTransactions;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
-import com.irisa.jenautils.QueryResultIterator;
-import com.irisa.jenautils.UtilOntology;
-
 import ca.pfv.spmf.algorithms.frequentpatterns.fpgrowth.AlgoFPClose;
 import ca.pfv.spmf.algorithms.frequentpatterns.fpgrowth.AlgoFPMax;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 /**
  * Connection to the SMPF "library" or any other way to extract frequent itemsets from a transaction database
+ * 
  * @author pmaillot
  *
  */
@@ -59,7 +43,7 @@ public class FrequentItemSetExtractor {
 		return countPattern++;
 	}
 
-	public Itemsets computeItemsets(Transactions transactions, AttributeIndex index) {
+	public Itemsets computeItemsets(LabeledTransactions transactions, AttributeIndex index) {
 		if(this.algoFPMax()) {
 			logger.trace("Compute frequentitemsets with FPMax");
 			return this.computeItemSet_FPMax(transactions, index);
@@ -88,7 +72,7 @@ public class FrequentItemSetExtractor {
 		this.algoFPClose = ! algo;
 	}
 
-	public Itemsets computeItemSet_FPClose(Transactions transactions, AttributeIndex index) {
+	public Itemsets computeItemSet_FPClose(LabeledTransactions transactions, AttributeIndex index) {
 		try {
 			AlgoFPClose algoFpc = new AlgoFPClose();
 			logger.debug("FBGrowth Algorithm");
@@ -106,7 +90,7 @@ public class FrequentItemSetExtractor {
 		return null;
 	}
 
-	public Itemsets computeItemSet_FPMax(Transactions transactions, AttributeIndex index) {
+	public Itemsets computeItemSet_FPMax(LabeledTransactions transactions, AttributeIndex index) {
 		try {
 			AlgoFPMax algoFpc = new AlgoFPMax();
 			logger.debug("FBGrowth Algorithm");
@@ -122,7 +106,7 @@ public class FrequentItemSetExtractor {
 		return null;
 	}
 
-	public Model rdfizePattern(LabeledItemSet liSet) {
+	public Model rdfizePattern(LabeledTransaction liSet) {
 		Model result = ModelFactory.createDefaultModel();
 
 		Resource mainRes = result.createResource(Global.basePatternUri + getPatternNumber());
@@ -141,7 +125,7 @@ public class FrequentItemSetExtractor {
 		Property relation3 = null;
 		Property relation4 = null;
 
-		Iterator<RDFPatternComponent> itItems = liSet.getItems().iterator();
+		Iterator<RDFPatternComponent> itItems = liSet.iterator();
 		while(itItems.hasNext()) {
 			RDFPatternComponent item = itItems.next();
 			if(item instanceof RDFPatternResource) {
@@ -342,7 +326,7 @@ public class FrequentItemSetExtractor {
 			result.add(subject, relation4, object);
 		}
 
-		result.add(result.createLiteralStatement(mainRes, result.createProperty(Global.baseDomain+"property/support"), liSet.getCount()));
+		result.add(result.createLiteralStatement(mainRes, result.createProperty(Global.baseDomain+"property/support"), liSet.getSupport()));
 
 		return result;
 	}

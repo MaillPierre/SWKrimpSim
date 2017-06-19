@@ -28,10 +28,10 @@ import com.irisa.jenautils.UtilOntology;
 import com.irisa.jenautils.BaseRDF.MODE;
 import com.irisa.swpatterns.FrequentItemSetExtractor;
 import com.irisa.swpatterns.TransactionsExtractor;
-import com.irisa.swpatterns.data.LabeledItemSet;
-import com.irisa.swpatterns.data.Transactions;
+import com.irisa.swpatterns.data.AttributeIndex;
+import com.irisa.swpatterns.data.ItemsetSet;
+import com.irisa.swpatterns.data.LabeledTransactions;
 
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 /**
@@ -43,33 +43,8 @@ public class KrimpImpl {
 	
 	private static Logger logger = Logger.getLogger(KrimpImpl.class);
 
-	/**
-	 * Return the encoded version of an itemset according to a code table
-	 * (ToBeTested)
-	 * @param transact
-	 * @param table
-	 * @return
-	 */
-	public Itemset standardCover(Itemset transact, CodeTable table ) {
-		Itemset result = new Itemset();
-		Itemset currentTrans = transact;
-		
-		Iterator<Itemset> itIs = table.sortedCodeIterator();
-		while(itIs.hasNext()) {
-			Itemset istest = itIs.next();
-			
-			if( CodeTable.isCover(currentTrans, istest)) {
-				if(currentTrans.isEqualTo(istest)) {
-					result = istest;
-				} else {
-					result = CodeTable.addItemsets(result, table.getCode(istest));
-					result = standardCover(CodeTable.substractItemsets(currentTrans, istest), table);
-				}
-			}
-		}
-
-		return result;
-	}
+	private CodeTable _candidates = null;
+	private ItemsetSet _transactions = null;
 
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
@@ -87,7 +62,6 @@ public class KrimpImpl {
 		options.addOption("noOut", false, "Not taking OUT properties into account.");
 		options.addOption("noIn", false, "Not taking IN properties into account.");
 		options.addOption("noTypes", false, "Not taking TYPES into account.");
-		options.addOption("onlyTrans", false, "Juste extract the transactions to a '.dat' file with the index in a '.attr' file.");
 		options.addOption("FPClose", false, "Use FPClose algorithm. (default)");
 		options.addOption("FPMax", false, "Use FPMax algorithm.");
 		options.addOption("class", true, "Class of the studied individuals.");
@@ -117,7 +91,6 @@ public class KrimpImpl {
 				String classRegex = cmd.getOptionValue("classPattern");
 				String className = cmd.getOptionValue("class");
 				String pathOption = cmd.getOptionValue("path");
-				boolean onlytrans = cmd.hasOption("onlyTrans");
 				converter.setNoTypeTriples( cmd.hasOption("noTypes") || converter.noTypeTriples());
 				converter.noInTriples(cmd.hasOption("noIn") || converter.noInTriples());
 				converter.setNoOutTriples(cmd.hasOption("noOut") || converter.noOutTriples());
@@ -159,7 +132,7 @@ public class KrimpImpl {
 
 				// Extracting transactions
 
-				Transactions transactions;
+				LabeledTransactions transactions;
 				if(cmd.hasOption("class")) {
 					Resource classRes = onto.getModel().createResource(className);
 					transactions = converter.extractTransactionsForClass(baseRDF, onto, classRes);
@@ -171,31 +144,14 @@ public class KrimpImpl {
 
 				try {
 					converter.getIndex().printTransactionsItems(transactions, outputTransactions);
-					CodeTable codeTab = new CodeTable(converter.getIndex() );
+					ItemsetSet realtransactions = converter.getIndex().convertToTransactions(transactions);
+					Itemsets codes = fsExtractor.computeItemsets(transactions, converter.getIndex());
+					ItemsetSet realcodes = new ItemsetSet(codes, converter.getIndex());
+					CodeTable codeTab = new CodeTable(converter.getIndex(), realtransactions, realcodes );
 					logger.debug("Nb items: " + converter.getIndex().size());
 					logger.debug(" Code table: " + codeTab);
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
-				}
-
-				// If we asked more than juste extracting transactions
-				if(! onlytrans) {
-					Itemsets itemsets = fsExtractor.computeItemsets(transactions, converter.getIndex());
-					logger.debug("Candidates: " + new CandidateItemset(itemsets, converter.getIndex()));
-//					List<LabeledItemSet> itemSetsLab = converter.getIndex().labelItemSet(itemsets);
-
-//					// Printing the extracted itemsets and their RDF versions
-//					if(itemSetsLab != null) {
-//						Model rdfPatterns = ModelFactory.createDefaultModel();
-//						Iterator<LabeledItemSet> itlas = itemSetsLab.iterator();
-//						while(itlas.hasNext()) {
-//							LabeledItemSet labItemS = itlas.next();
-//							System.out.println(labItemS.getCount() + " " + labItemS.getItems());
-//							rdfPatterns.add(fsExtractor.rdfizePattern(labItemS));
-//							rdfPatterns.write(System.err, "TTL");
-//						}
-//						rdfPatterns.write(new PrintWriter(new BufferedOutputStream(new FileOutputStream(outputRDFPatterns))), "TTL");
-//					}
 				}
 
 				baseRDF.close();

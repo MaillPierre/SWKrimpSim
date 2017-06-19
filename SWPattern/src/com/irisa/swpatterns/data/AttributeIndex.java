@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -66,19 +67,19 @@ public class AttributeIndex {
 		return this.attributeCount.get(compo);
 	}
 
-	public LabeledItemSet labelItemSet(Itemset iSet) {
-		LabeledItemSet result = new LabeledItemSet();
+	public LabeledTransaction labelItemSet(Itemset iSet) {
+		LabeledTransaction result = new LabeledTransaction();
 
 		for(int i = 0; i < iSet.getItems().length; i++) {
-			result.addItem(itemAttributeIndex.get(iSet.get(i)));
+			result.add(itemAttributeIndex.get(iSet.get(i)));
 		}
-		result.setCount(iSet.getAbsoluteSupport());
+		result.setSupport(iSet.getAbsoluteSupport());
 
 		return result;
 	}
 	
-	public List<LabeledItemSet> labelItemSet(Itemsets iSets) {
-		List<LabeledItemSet> result = new ArrayList<LabeledItemSet>();
+	public List<LabeledTransaction> labelItemSet(Itemsets iSets) {
+		List<LabeledTransaction> result = new ArrayList<LabeledTransaction>();
 		
 		for(int level = 0; level < iSets.getLevels().size(); level++) {
 			iSets.getLevels().forEach(new Consumer<List<Itemset>>() {
@@ -95,6 +96,29 @@ public class AttributeIndex {
 		}
 		
 		return result;
+	}
+	
+	public ItemsetSet convertToTransactions(LabeledTransactions labelSet) {
+		ItemsetSet result = new ItemsetSet();
+		labelSet.forEach(new Consumer<LabeledTransaction>() {
+			@Override
+			public void accept(LabeledTransaction t) {
+				result.addItemset(convertToTransaction(t));
+			}
+		});
+		return result;
+	}
+	
+	public Itemset convertToTransaction(LabeledTransaction t ) {
+		LinkedList<Integer> result = new LinkedList<Integer>();
+		Iterator<RDFPatternComponent> itCompo = t.getSortedIterator();
+		while(itCompo.hasNext()) {
+			RDFPatternComponent compo = itCompo.next();
+			
+			result.add(this.getItem(compo));
+		}
+		Collections.sort(result);
+		return new Itemset(result, t.getSupport());
 	}
 	
 	public int size() {
