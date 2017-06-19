@@ -54,49 +54,21 @@ public class KrimpImpl {
 		Itemset result = new Itemset();
 		Itemset currentTrans = transact;
 		
-		Iterator<Itemset> itIs = table.sortedItemsetIterator();
+		Iterator<Itemset> itIs = table.sortedCodeIterator();
 		while(itIs.hasNext()) {
 			Itemset istest = itIs.next();
 			
-			if( istest.size() > 1 && currentTrans.containsAll(istest)) {
+			if( CodeTable.isCover(currentTrans, istest)) {
 				if(currentTrans.isEqualTo(istest)) {
 					result = istest;
 				} else {
-					result = addItemsets(result, table.getCode(istest));
-					result = standardCover(substractItemsets(currentTrans, istest), table);
+					result = CodeTable.addItemsets(result, table.getCode(istest));
+					result = standardCover(CodeTable.substractItemsets(currentTrans, istest), table);
 				}
 			}
 		}
 
 		return result;
-	}
-	
-	private static Itemset addItemsets(Itemset iSet, Itemset added) {
-		TreeSet<Integer> tmpBaseSet = new TreeSet<Integer>();
-		for(int i = 0; i < iSet.getItems().length; i++) {
-			tmpBaseSet.add(iSet.get(i));
-		}
-		TreeSet<Integer> tmpAddedSet = new TreeSet<Integer>();
-		for(int i = 0; i < added.getItems().length; i++) {
-			tmpAddedSet.add(added.get(i));
-		}
-		tmpBaseSet.addAll(tmpAddedSet);
-		
-		return new Itemset(new ArrayList<Integer>(tmpBaseSet), iSet.getAbsoluteSupport());
-	}
-	
-	private static Itemset substractItemsets(Itemset iSet, Itemset substracted) {
-		TreeSet<Integer> tmpBaseSet = new TreeSet<Integer>();
-		for(int i = 0; i < iSet.getItems().length; i++) {
-			tmpBaseSet.add(iSet.get(i));
-		}
-		TreeSet<Integer> tmpSubstractedSet = new TreeSet<Integer>();
-		for(int i = 0; i < substracted.getItems().length; i++) {
-			tmpSubstractedSet.add(substracted.get(i));
-		}
-		tmpBaseSet.removeAll(tmpSubstractedSet);
-		
-		return new Itemset(new ArrayList<Integer>(tmpBaseSet), iSet.getAbsoluteSupport());
 	}
 
 	public static void main(String[] args) {
@@ -209,7 +181,7 @@ public class KrimpImpl {
 				// If we asked more than juste extracting transactions
 				if(! onlytrans) {
 					Itemsets itemsets = fsExtractor.computeItemsets(transactions, converter.getIndex());
-					logger.debug("Candidates: " + new CandidateItemset(itemsets));
+					logger.debug("Candidates: " + new CandidateItemset(itemsets, converter.getIndex()));
 //					List<LabeledItemSet> itemSetsLab = converter.getIndex().labelItemSet(itemsets);
 
 //					// Printing the extracted itemsets and their RDF versions

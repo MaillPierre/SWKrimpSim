@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.ItemsetSet;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
@@ -18,29 +19,21 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
  *
  */
 public class CandidateItemset extends ItemsetSet{
-
-	private LinkedList<Itemset> _candidates = new LinkedList<Itemset>();
 	
-	public CandidateItemset(Collection<Itemset> col) {
-		_candidates.addAll(col);
-		init();
-	}
-	
-	public CandidateItemset(Itemsets sets) {
-		super(sets);
+	public CandidateItemset(Itemsets sets, AttributeIndex index) {
+		super(sets, index);
 		init();
 	}
 	
 	private void init() {
-		Collections.sort(_candidates, standardCandidateOrder);
+		Collections.sort(_items, standardCandidateOrder);
 	}
 	
-	public Iterator<Itemset> candidateIterator() {
-		return this._candidates.iterator();
+	private static int usage(ItemsetSet collection, int item) {
+		return collection.coveredItemsets(item).size();
 	}
 	
 	private Comparator<Itemset> standardCandidateOrder = new Comparator<Itemset>(){
-
 		@Override
 		public int compare(Itemset o1, Itemset o2) {
 			if(o1.support != o2.support) {
@@ -57,20 +50,4 @@ public class CandidateItemset extends ItemsetSet{
 			return 0;
 		}
 	};
-	
-	public String toString() {
-
-		// Copied from smpf code, just to see ...
-		StringBuilder r = new StringBuilder ();
-		Iterator<Itemset> itIs = this.candidateIterator();
-		while(itIs.hasNext()) {
-			Itemset is = itIs.next();
-			r.append(is.toString());
-			r.append(" (");
-			r.append(is.getAbsoluteSupport());
-			r.append(")\n");
-		}
-		
-		return r.toString();
-	}
 }
