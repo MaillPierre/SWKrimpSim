@@ -17,6 +17,11 @@ Includes JenaUtils classes.
 
 TODO:
 - Implement KRIMP
+	- Cover DONE
+		- Usage seems to work
+	- Compression rate of a Codetable TBD
+	- KRIMP TBD
+	- Pruning TBD
 
 DONE: 
 - Hide the passage through files of SMPF to passe only transactions, transactions indexes and Itemsets between classes (14/06/17)
