@@ -55,10 +55,14 @@ public class CodeTable {
 		
 		if(codes != null) {
 			_standardCT = CodeTable.createStandardCodeTable(index, transactions);
-		} else {
-			_standardCT = this;
+		} else { // this is a standard codetable
+			_standardCT = null;
 			_codes = new ItemsetSet();
 		}
+		init();	
+	}
+	
+	private void init() {
 		initializeSingletons();
 		initCodes();
 		Collections.sort(_codes, standardCoverOrderComparator);
@@ -84,12 +88,37 @@ public class CodeTable {
 	public ItemsetSet getTransactions() {
 		return _transactions;
 	}
+	
+	/**
+	 * Trigger reinitialization of the indexes
+	 * @param transactions
+	 */
+	public void setTransactions(ItemsetSet transactions, AttributeIndex index) {
+		this._transactions = transactions;
+		this._index = index;
+		
+		init();
+	}
+	
+	/**
+	 * Trigger reinitialization of the indexes
+	 * @param transactions
+	 */
+	public void setTransactions(ItemsetSet transactions) {
+		this._transactions = transactions;
+		
+		init();
+	}
 
 	/**
 	 * @return Iterator over a sorted temporary copy of the itemset list of the code table
 	 */
 	public Iterator<Itemset> codeIterator() {
 		return _codes.iterator();
+	}
+	
+	public ItemsetSet getCodes() {
+		return this._codes;
 	}
 	
 	/**
@@ -209,9 +238,9 @@ public class CodeTable {
 			int compoItem = _index.getItem(compo);
 			Itemset single = new Itemset(compoItem);
 			single.setAbsoluteSupport(_index.getAttributeCount(compo));
-			_itemsetUsage.put(single, _index.getAttributeCount(compo));
-			_itemsetCode.put(single, compoItem);
 			if(! this._codes.contains(single)) {
+				_itemsetUsage.put(single, _index.getAttributeCount(compo));
+				_itemsetCode.put(single, compoItem);
 				this._codes.addItemset(single);
 			}
 		}

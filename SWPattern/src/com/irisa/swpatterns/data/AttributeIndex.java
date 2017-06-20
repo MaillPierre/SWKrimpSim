@@ -66,6 +66,31 @@ public class AttributeIndex {
 	public int getAttributeCount(RDFPatternComponent compo) {
 		return this.attributeCount.get(compo);
 	}
+	
+	public int getAttributeCount(int item) {
+		return this.attributeCount.get(this.getComponent(item));
+	}
+	
+	public void recount(ItemsetSet transactions) {
+		this.attributes.forEach(new Consumer<RDFPatternComponent>(){
+			@Override
+			public void accept(RDFPatternComponent t) {
+				attributeCount.replace(t, 0);
+			}
+		});
+		
+		transactions.forEach(new Consumer<Itemset>(){
+			@Override
+			public void accept(Itemset line) {
+				for(int i = 0; i < line.size(); i ++) {
+					int itemKey = line.get(i);
+					RDFPatternComponent key = getComponent(itemKey);
+
+					attributeCount.replace(key, attributeCount.get(key) + 1);
+				}
+			}
+		});
+	}
 
 	public LabeledTransaction labelItemSet(Itemset iSet) {
 		LabeledTransaction result = new LabeledTransaction();

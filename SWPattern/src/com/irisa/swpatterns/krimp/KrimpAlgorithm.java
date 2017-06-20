@@ -60,19 +60,20 @@ public class KrimpAlgorithm {
 		Iterator<Itemset> itCandidates = this._candidateCodes.iterator();
 		while(itCandidates.hasNext()) {
 			Itemset candidate = itCandidates.next();
-			logger.debug("Candidate: " + candidate);
+//			logger.debug("Candidate: " + candidate);
 			CodeTable tmpCT = new CodeTable(result);
 			if(candidate.size() > 1) { // F ∈ Fo \ I
 				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
 				double candidateSize = tmpCT.totalCompressedSize();
-				logger.debug("candidate gain: " + (resultSize - candidateSize ));
+//				logger.debug("candidate gain: " + (resultSize - candidateSize ));
 				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
 					result = tmpCT;
 					resultSize = candidateSize;
 				}
 			}
 		}
-		
+
+		logger.debug("KRIMP algorithm ended");
 		return result;
 	}
 
@@ -84,6 +85,7 @@ public class KrimpAlgorithm {
 		CommandLineParser parser = new DefaultParser();
 		Options options = new Options();
 		options.addOption("file", true, "RDF file");
+		options.addOption("otherFile", true, "Other RDF file");
 		options.addOption("endpoint", true, "Endpoint adress");
 		options.addOption("output", true, "Output csv file");
 		options.addOption("limit", true, "Limit to the number of individuals extracted");
@@ -114,6 +116,7 @@ public class KrimpAlgorithm {
 				FrequentItemSetExtractor fsExtractor = new FrequentItemSetExtractor();
 
 				String filename = cmd.getOptionValue("file");
+				String otherFilename = cmd.getOptionValue("otherFile");
 				String endpoint = cmd.getOptionValue("endpoint"); 
 				String output = cmd.getOptionValue("output"); 
 				String limitString = cmd.getOptionValue("limit");
@@ -171,22 +174,47 @@ public class KrimpAlgorithm {
 				} else {
 					transactions = converter.extractTransactions(baseRDF, onto);
 				}
+				
+				LabeledTransactions otherTransactions = converter.extractTransactions(new BaseRDF(otherFilename, MODE.LOCAL),  onto);
 
 				try {
 					converter.getIndex().printTransactionsItems(transactions, outputTransactions);
+					
 					ItemsetSet realtransactions = converter.getIndex().convertToTransactions(transactions);
 					Itemsets codes = fsExtractor.computeItemsets(transactions, converter.getIndex());
 					ItemsetSet realcodes = new ItemsetSet(codes, converter.getIndex());
-					CodeTable codeTab = CodeTable.createStandardCodeTable(converter.getIndex(), realtransactions );
+
+					ItemsetSet otherRealTransactions = converter.getIndex().convertToTransactions(otherTransactions);
+					
+					logger.debug("Equals ? " + realtransactions.equals(otherRealTransactions));
+
+					AttributeIndex index = converter.getIndex();
+					index.recount(realtransactions);
+					CodeTable standardCT = CodeTable.createStandardCodeTable(converter.getIndex(), realtransactions );
+					
 					logger.debug("Nb items: " + converter.getIndex().size());
-					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes, converter.getIndex());
+					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes, index);
 					CodeTable krimpCT = kAlgo.runAlgorithm();
-					double normalSize = codeTab.totalCompressedSize();
+					double normalSize = standardCT.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
-					logger.debug(" Code table: " + krimpCT);
-					logger.debug("NormalLength: " + normalSize);
-					logger.debug("CompressedLength: " + compressedSize);
-					logger.debug("Compression: " + (compressedSize / normalSize));
+//					logger.debug("First Code table: " + krimpCT);
+					logger.debug("First NormalLength: " + normalSize);
+					logger.debug("First CompressedLength: " + compressedSize);
+					logger.debug("First Compression: " + (compressedSize / normalSize));
+					
+//					CodeTable otherStandardCT = CodeTable.createStandardCodeTable(converter.getIndex(), otherRealTransactions);
+
+					index.recount(otherRealTransactions);
+					standardCT = CodeTable.createStandardCodeTable(index, otherRealTransactions );
+					CodeTable otherResult = new CodeTable(index, otherRealTransactions, krimpCT.getCodes());
+					otherResult.setTransactions(otherRealTransactions, index);
+					double otherNormalSize = standardCT.totalCompressedSize();
+					double otherCompressedSize = otherResult.totalCompressedSize();
+//					logger.debug("First Code table: " + krimpCT);
+					logger.debug("Second NormalLength: " + otherNormalSize);
+					logger.debug("Second CompressedLength: " + otherCompressedSize);
+					logger.debug("Second Compression: " + (otherCompressedSize / otherNormalSize));
+					
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
 				}
