@@ -29,8 +29,6 @@ public class CodeTable {
 	private HashMap<Itemset, Integer> _itemsetCode = new HashMap<Itemset, Integer>();
 	private long _usageTotal = 0;
 	
-	private static int _codeNumber = 0;
-	
 	/**
 	 * Initialization of the usages and codes indices
 	 * @param index
@@ -45,10 +43,6 @@ public class CodeTable {
 		initializeSingletons();
 		initCodes();
 		countUsages();
-	}
-	
-	public static int getNewCodeNumber() {
-		return _codeNumber++;
 	}
 	
 	public ItemsetSet getTransactions() {
@@ -70,7 +64,7 @@ public class CodeTable {
 			@Override
 			public void accept(Itemset code) {
 				if(_itemsetCode.get(code) == null) {
-					_itemsetCode.put(code, getNewCodeNumber());
+					_itemsetCode.put(code, AttributeIndex.getAttributeNumber());
 				}
 				if(_itemsetUsage.get(code) == null) {
 					_itemsetUsage.put(code, 0);
@@ -205,6 +199,29 @@ public class CodeTable {
 		this._codes.remove(code);
 		this._itemsetCode.remove(code);
 		this._itemsetUsage.remove(code);
+		
+		countUsages(); // Have to maintain the thing up to date ? 
+	}
+	
+	/**
+	 * Supposed to be a new code
+	 * @param code
+	 */
+	public void addCode(Itemset code) {
+		this.addCode(code, AttributeIndex.getAttributeNumber());
+	}
+	
+	/**
+	 * Add a code and its already existing indice
+	 * @param code
+	 * @param indice
+	 */
+	public void addCode(Itemset code, int indice) {
+		this._codes.add(code);
+		this._itemsetCode.put(code, indice);
+		this._itemsetUsage.put(code, this.getUsage(code));
+		
+		this.countUsages(); // maintain the usage index uptodate ?
 	}
 	
 	public static Itemset itemsetAddition(Itemset iSet, Itemset added) {
