@@ -10,6 +10,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
+import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.ItemsetSet;
 import com.irisa.swpatterns.data.RDFPatternComponent;
@@ -21,6 +24,8 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
  *
  */
 public class CodeTable {
+	
+	private static Logger logger = Logger.getLogger(CodeTable.class);
 
 	private AttributeIndex _index = null;
 	private ItemsetSet _transactions = null;
@@ -29,6 +34,9 @@ public class CodeTable {
 	private HashMap<Itemset, Integer> _itemsetCode = new HashMap<Itemset, Integer>();
 	private long _usageTotal = 0;
 	
+	private boolean _standardFlag = false; // Set true if it is the standard codetable
+	private CodeTable _standardCT = null; // Codetable containing only singletons for the coding length of a CT
+	
 	/**
 	 * Initialization of the usages and codes indices
 	 * @param index
@@ -36,15 +44,43 @@ public class CodeTable {
 	 * @param codes
 	 */
 	public CodeTable(AttributeIndex index, ItemsetSet transactions, ItemsetSet codes) {
+		this(index, transactions, codes, false);
+	}
+	
+	protected CodeTable(AttributeIndex index, ItemsetSet transactions, ItemsetSet codes, boolean standardFlag) {
 		_index = index;
 		_transactions = transactions;
 		_codes = codes;
+		_standardFlag = standardFlag;
 		
+		if(codes != null) {
+			_standardCT = CodeTable.createStandardCodeTable(index, transactions);
+		} else {
+			_standardCT = this;
+			_codes = new ItemsetSet();
+		}
 		initializeSingletons();
 		initCodes();
-		countUsages();
+		Collections.sort(_codes, standardCoverOrderComparator);
+		countUsages();		
 	}
 	
+	public static CodeTable createStandardCodeTable(AttributeIndex index, ItemsetSet transactions) {
+		return new CodeTable(index, transactions, null, true);
+	}
+	
+	public CodeTable(CodeTable ct) {
+		_index = ct._index;
+		_transactions = ct._transactions;
+		_codes = new ItemsetSet(ct._codes);
+		_itemsetUsage = new HashMap<Itemset, Integer>(ct._itemsetUsage);
+		_itemsetCode = new HashMap<Itemset, Integer>(ct._itemsetCode);
+		_usageTotal = ct._usageTotal;
+		_standardFlag = ct._standardFlag;
+		
+		_standardCT = ct._standardCT;
+	}
+
 	public ItemsetSet getTransactions() {
 		return _transactions;
 	}
@@ -71,10 +107,12 @@ public class CodeTable {
 				}
 			}
 		});
-		Collections.sort(_codes, standardCoverOrder);
 	}
 	
 	public int getUsage(Itemset is) {
+		if(this._itemsetUsage.get(is) == null) {
+			return 0;
+		}
 		return this._itemsetUsage.get(is);
 	}
 	
@@ -86,12 +124,82 @@ public class CodeTable {
 		return (double) this.getUsage(code) / (double) this._usageTotal;
 	}
 	
-	public double codeLength(Itemset code) {
+	/**
+	 * L(code_CT(X))
+	 * @param code
+	 * @return
+	 */
+	public double codeLengthOfcode(Itemset code) {
 		return - Math.log(this.probabilisticDistrib(code));
+	}
+	
+	/**
+	 * L(t | CT)  [Dirty version]
+	 * @param transaction
+	 * @return
+	 */
+	public double encodedTransactionCodeLength(Itemset transaction) {
+		double result = 0.0;
+		Iterator<Itemset> itCodes = this.codeIterator();
+		while(itCodes.hasNext()) {
+			Itemset code = itCodes.next();
+			if(isCover(transaction, code)) {
+				result += codeLengthOfcode(code);
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * L(D | CT)
+	 * @return
+	 */
+	public double encodedTransactionSetCodeLength() {
+		double result = 0.0;
+		Iterator<Itemset> itTrans = this._transactions.iterator();
+		while(itTrans.hasNext()) {
+			Itemset trans = itTrans.next();
+			
+			result += this.encodedTransactionCodeLength(trans);
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * L(CT|D)
+	 * @return
+	 */
+	public double codeTableCodeLength() {
+		double result = 0.0;
+		Iterator<Itemset> itCodes = this.codeIterator();
+		while(itCodes.hasNext()) {
+			Itemset code = itCodes.next();
+			if(this.getUsage(code) != 0.0) {
+				double cL = codeLengthOfcode(code);
+				double stcL = 0 ;
+				if(code.size() == 1 && ! this._standardFlag) {
+					stcL = this._standardCT.codeLengthOfcode(code);
+				}
+				result += cL + stcL;
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * L(D, CT)
+	 * @return
+	 */
+	public double totalCompressedSize() {
+		double ctL = codeTableCodeLength();
+		double teL = encodedTransactionSetCodeLength();
+//		logger.debug("CodeTable Length: " + ctL + " transactionLength: " + teL);
+		return ctL + teL;
 	}
 
 	/**
-	 * Add to the code table the singletons of all items 
+	 * Add the singletons of all items to the code table 
 	 */
 	private void initializeSingletons() {
 		Iterator<RDFPatternComponent> itComp = _index.patternComponentIterator();
@@ -120,11 +228,11 @@ public class CodeTable {
 			_transactions.forEach(new Consumer<Itemset>(){
 				@Override
 				public void accept(Itemset trans) {
-					if(trans.size() > 1) {
+//					if(trans.size() > 1) {
 						if(isCover(trans, code)) {
 							_itemsetUsage.replace(code, _itemsetUsage.get(code) +1);
 						}
-					}
+//					}
 				}
 			});
 			
@@ -135,7 +243,7 @@ public class CodeTable {
 	/**
 	 * Comparator to sort the code list
 	 */
-	private Comparator<Itemset> standardCoverOrder = new Comparator<Itemset>() {
+	public static Comparator<Itemset> standardCoverOrderComparator = new Comparator<Itemset>() {
 		@Override
 		public int compare(Itemset o1, Itemset o2) {
 			if(o1.size() != o2.size()) {
@@ -203,6 +311,10 @@ public class CodeTable {
 		countUsages(); // Have to maintain the thing up to date ? 
 	}
 	
+	public boolean contains(Itemset code) {
+		return this._codes.contains(code);
+	}
+	
 	/**
 	 * Supposed to be a new code
 	 * @param code
@@ -220,7 +332,8 @@ public class CodeTable {
 		this._codes.add(code);
 		this._itemsetCode.put(code, indice);
 		this._itemsetUsage.put(code, this.getUsage(code));
-		
+
+		Collections.sort(_codes, standardCoverOrderComparator);
 		this.countUsages(); // maintain the usage index uptodate ?
 	}
 	
@@ -271,7 +384,7 @@ public class CodeTable {
 			r.append(' ');
 			r.append(this.probabilisticDistrib(is));
 			r.append(' ');
-			r.append(this.codeLength(is));
+			r.append(this.codeLengthOfcode(is));
 			r.append('\n');
 		}
 		

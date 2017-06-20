@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import com.irisa.swpatterns.krimp.KrimpImpl;
+import com.irisa.swpatterns.krimp.KrimpAlgorithm;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
@@ -24,6 +24,12 @@ public class ItemsetSet extends LinkedList<Itemset> {
 	
 	public ItemsetSet() {
 		super();
+	}
+	
+	public ItemsetSet(ItemsetSet is) {
+		super(is);
+		itemItemsetIndex = new HashMap<Integer, HashSet<Itemset>>(is.itemItemsetIndex);
+		_index = is._index;
 	}
 	
 	public ItemsetSet(Itemsets iset, AttributeIndex index) {

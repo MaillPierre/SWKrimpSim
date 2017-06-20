@@ -1,13 +1,8 @@
 package com.irisa.swpatterns.krimp;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.function.Consumer;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -15,8 +10,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -32,6 +25,7 @@ import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.ItemsetSet;
 import com.irisa.swpatterns.data.LabeledTransactions;
 
+import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 /**
@@ -39,12 +33,48 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
  * @author pmaillot
  *
  */
-public class KrimpImpl {
+public class KrimpAlgorithm {
 	
-	private static Logger logger = Logger.getLogger(KrimpImpl.class);
+	private static Logger logger = Logger.getLogger(KrimpAlgorithm.class);
 
-	private CodeTable _candidates = null;
+	private CodeTable _candidateCT = null;
 	private ItemsetSet _transactions = null;
+	private ItemsetSet _candidateCodes = null;
+	private AttributeIndex _index = null;
+	
+	
+	public KrimpAlgorithm(ItemsetSet transactions, ItemsetSet candidates, AttributeIndex index) {
+		this._transactions = transactions;
+		this._candidateCodes = candidates;
+		this._candidateCT = new CodeTable(index, transactions, candidates);
+		this._index = index;
+	}
+	
+	public CodeTable runAlgorithm() {
+		logger.debug("Starting KRIMP algorithm");
+		
+		CodeTable result = CodeTable.createStandardCodeTable(_index, _transactions); // CT ←Standard Code Table(D)
+		Collections.sort(_candidateCodes, CodeTable.standardCoverOrderComparator); // Fo ←F in Standard Candidate Order
+		double resultSize = result.totalCompressedSize();
+		
+		Iterator<Itemset> itCandidates = this._candidateCodes.iterator();
+		while(itCandidates.hasNext()) {
+			Itemset candidate = itCandidates.next();
+			logger.debug("Candidate: " + candidate);
+			CodeTable tmpCT = new CodeTable(result);
+			if(candidate.size() > 1) { // F ∈ Fo \ I
+				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
+				double candidateSize = tmpCT.totalCompressedSize();
+				logger.debug("candidate gain: " + (resultSize - candidateSize ));
+				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
+					result = tmpCT;
+					resultSize = candidateSize;
+				}
+			}
+		}
+		
+		return result;
+	}
 
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
@@ -147,9 +177,16 @@ public class KrimpImpl {
 					ItemsetSet realtransactions = converter.getIndex().convertToTransactions(transactions);
 					Itemsets codes = fsExtractor.computeItemsets(transactions, converter.getIndex());
 					ItemsetSet realcodes = new ItemsetSet(codes, converter.getIndex());
-					CodeTable codeTab = new CodeTable(converter.getIndex(), realtransactions, realcodes );
+					CodeTable codeTab = CodeTable.createStandardCodeTable(converter.getIndex(), realtransactions );
 					logger.debug("Nb items: " + converter.getIndex().size());
-					logger.debug(" Code table: " + codeTab);
+					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes, converter.getIndex());
+					CodeTable krimpCT = kAlgo.runAlgorithm();
+					double normalSize = codeTab.totalCompressedSize();
+					double compressedSize = krimpCT.totalCompressedSize();
+					logger.debug(" Code table: " + krimpCT);
+					logger.debug("NormalLength: " + normalSize);
+					logger.debug("CompressedLength: " + compressedSize);
+					logger.debug("Compression: " + (compressedSize / normalSize));
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
 				}

@@ -164,4 +164,23 @@ public class Itemset extends AbstractOrderedItemset{
 		int [] intersection = ArraysAlgos.intersectTwoSortedArrays(this.getItems(), itemset2.getItems());
 		return new Itemset(intersection);
 	}
+	
+	/**
+	 * Added by Pierre Maillot
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if(o instanceof Itemset) {
+			return this.isEqualTo((AbstractOrderedItemset) o);
+		}
+		return false;
+	}
+
+	/**
+	 * Added by Pierre Maillot
+	 */
+	@Override
+	public int hashCode() {
+		return this.toString().hashCode();
+	}
 }
