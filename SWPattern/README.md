@@ -15,6 +15,8 @@ Project to use the Krimp algorithm to extract a codetable form a RDF base and us
 Uses SMPF for the some of the frequent itemsets algorithms.
 Includes JenaUtils classes.
 
+FOR TEST: Launch with options "-file iswc-2013-complete.nt -otherFile iswc-2013-complete.nt -rank1"
+
 TODO:
 - Implement KRIMP
 	- Cover DONE
