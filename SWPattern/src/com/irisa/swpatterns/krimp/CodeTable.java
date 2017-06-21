@@ -358,12 +358,14 @@ public class CodeTable {
 	 * @param indice
 	 */
 	public void addCode(Itemset code, int indice) {
-		this._codes.add(code);
-		this._itemsetCode.put(code, indice);
-		this._itemsetUsage.put(code, this.getUsage(code));
+		if(! this._codes.contains(code)) {
+			this._codes.add(code);
+			this._itemsetCode.put(code, indice);
+			this._itemsetUsage.put(code, this.getUsage(code));
 
-		Collections.sort(_codes, standardCoverOrderComparator);
-		this.countUsages(); // maintain the usage index uptodate ?
+			Collections.sort(_codes, standardCoverOrderComparator);
+			this.countUsages(); // maintain the usage index uptodate ?
+		}
 	}
 	
 	public static Itemset itemsetAddition(Itemset iSet, Itemset added) {
@@ -405,9 +407,9 @@ public class CodeTable {
 		Iterator<Itemset> itIs = this.codeIterator();
 		while(itIs.hasNext()) {
 			Itemset is = itIs.next();
+			r.append('[');
 			r.append(is.toString());
-			r.append(' ');
-			r.append(is.getAbsoluteSupport());
+			r.append(']');
 			r.append(' ');
 			r.append(this.getUsage(is));
 			r.append(' ');

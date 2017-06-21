@@ -62,7 +62,7 @@ public class KrimpAlgorithm {
 			Itemset candidate = itCandidates.next();
 //			logger.debug("Candidate: " + candidate);
 			CodeTable tmpCT = new CodeTable(result);
-			if(candidate.size() > 1) { // F ∈ Fo \ I
+			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
 				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
 				double candidateSize = tmpCT.totalCompressedSize();
 //				logger.debug("candidate gain: " + (resultSize - candidateSize ));
@@ -99,7 +99,7 @@ public class KrimpAlgorithm {
 		options.addOption("class", true, "Class of the studied individuals.");
 		options.addOption("rank1", false, "Extract informations up to rank 1 (types, out-going and in-going properties and object types), default is only types, out-going and in-going properties.");
 		//		options.addOption("rank0", false, "Extract informations up to rank 0 (out-going and in-going properties.");
-		options.addOption("path", true, "Use FPClose algorithm. (default)");
+		options.addOption("path", true, "Extract paths of length N.");
 		options.addOption("help", false, "Display this help.");
 
 		// Setting up options and constants etc.
@@ -195,8 +195,11 @@ public class KrimpAlgorithm {
 					logger.debug("Nb items: " + converter.getIndex().size());
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes, index);
 					CodeTable krimpCT = kAlgo.runAlgorithm();
+					krimpCT.countUsages();
 					double normalSize = standardCT.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
+					logger.debug("-------- FIRST RESULT ---------");
+					logger.debug(krimpCT);
 //					logger.debug("First Code table: " + krimpCT);
 					logger.debug("First NormalLength: " + normalSize);
 					logger.debug("First CompressedLength: " + compressedSize);
@@ -207,13 +210,16 @@ public class KrimpAlgorithm {
 					index.recount(otherRealTransactions);
 					standardCT = CodeTable.createStandardCodeTable(index, otherRealTransactions );
 					CodeTable otherResult = new CodeTable(index, otherRealTransactions, krimpCT.getCodes());
-					otherResult.setTransactions(otherRealTransactions, index);
+					otherResult.countUsages();
 					double otherNormalSize = standardCT.totalCompressedSize();
 					double otherCompressedSize = otherResult.totalCompressedSize();
 //					logger.debug("First Code table: " + krimpCT);
 					logger.debug("Second NormalLength: " + otherNormalSize);
 					logger.debug("Second CompressedLength: " + otherCompressedSize);
 					logger.debug("Second Compression: " + (otherCompressedSize / otherNormalSize));
+					
+					logger.debug("-------- OTHER RESULT ---------");
+					logger.debug(otherResult);
 					
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
