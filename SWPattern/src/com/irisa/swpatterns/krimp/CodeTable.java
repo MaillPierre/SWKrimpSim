@@ -63,9 +63,9 @@ public class CodeTable {
 	}
 	
 	private void init() {
+		Collections.sort(_codes, standardCoverOrderComparator);
 		initializeSingletons();
 		initCodes();
-		Collections.sort(_codes, standardCoverOrderComparator);
 		countUsages();		
 	}
 	
@@ -253,6 +253,8 @@ public class CodeTable {
 		Iterator<Itemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
 			Itemset code = itCodes.next();
+			
+			_itemsetUsage.replace(code, 0);
 			
 			_transactions.forEach(new Consumer<Itemset>(){
 				@Override
