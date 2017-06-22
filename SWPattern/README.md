@@ -8,27 +8,34 @@ Project to use the Krimp algorithm to extract a codetable form a RDF base and us
 2) Generation of candidates itemsets from one base
 	- Using frequent itemsets - FPGrowth for frequents of FPClose for closed ones
 	- using itemset sampling (TBD)
-3) Extraction of a codetable from one base (TBD)
-4) Compression of the second base with the codetable (TBD)
-5) Conclusion regarding the two obtained compression rates (TBD)
+3) Extraction of a codetable from one base
+4) Compression of the second base with the codetable
+5) Conclusion regarding the two obtained compression rates
 
 Uses SMPF for the some of the frequent itemsets algorithms.
 Includes JenaUtils classes.
 
 FOR TEST: Launch with options "-file iswc-2013-complete.nt -otherFile iswc-2013-complete.nt -rank1"
 
-TODO:
+TODO :
 - Implement KRIMP
 	- Pruning TBD
 
-DONE: 
+TESTS :
+- Comparison with official KRIMP
+- Comparison with different codifications 
+- Comparison with different scales of data
+- Comparison of partitions of the same base, of different sizes (10% 90%, etc.)
+- Domain-based comparison
+
+DONE : 
 - Hide the passage through files of SMPF to passe only transactions, transactions indexes and Itemsets between classes (14/06/17)
 - Implement KRIMP
 	- Cover DONE
 		- Usage seems to work
 	- Compression rate of a Codetable
-	- KRIMP
+	- KRIMP (22/06/2017)
 
-Idea:
+Idea :
 - Apply pattern sampling to the maximal frequent patterns ?
 	- Loosing the support information -> use weighting technique of pattern sampling -> need to retrieve number of apparition of each element of the maximal itemsets
