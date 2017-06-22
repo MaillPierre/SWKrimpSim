@@ -46,14 +46,14 @@ public class KrimpAlgorithm {
 	public KrimpAlgorithm(ItemsetSet transactions, ItemsetSet candidates, AttributeIndex index) {
 		this._transactions = transactions;
 		this._candidateCodes = candidates;
-		this._candidateCT = new CodeTable(index, transactions, candidates);
+		this._candidateCT = new CodeTable(/*index,*/ transactions, candidates);
 		this._index = index;
 	}
 	
 	public CodeTable runAlgorithm() {
 		logger.debug("Starting KRIMP algorithm");
 		
-		CodeTable result = CodeTable.createStandardCodeTable(_index, _transactions); // CT ←Standard Code Table(D)
+		CodeTable result = CodeTable.createStandardCodeTable(/*_index,*/ _transactions); // CT ←Standard Code Table(D)
 		Collections.sort(_candidateCodes, CodeTable.standardCoverOrderComparator); // Fo ←F in Standard Candidate Order
 		double resultSize = result.totalCompressedSize();
 		
@@ -190,12 +190,11 @@ public class KrimpAlgorithm {
 
 					AttributeIndex index = converter.getIndex();
 					index.recount(realtransactions);
-					CodeTable standardCT = CodeTable.createStandardCodeTable(converter.getIndex(), realtransactions );
+					CodeTable standardCT = CodeTable.createStandardCodeTable(/*converter.getIndex(),*/ realtransactions );
 					
 					logger.debug("Nb items: " + converter.getIndex().size());
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes, index);
 					CodeTable krimpCT = kAlgo.runAlgorithm();
-					krimpCT.countUsages();
 					double normalSize = standardCT.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
 					logger.debug("-------- FIRST RESULT ---------");
@@ -208,9 +207,8 @@ public class KrimpAlgorithm {
 //					CodeTable otherStandardCT = CodeTable.createStandardCodeTable(converter.getIndex(), otherRealTransactions);
 
 					index.recount(otherRealTransactions);
-					standardCT = CodeTable.createStandardCodeTable(index, otherRealTransactions );
-					CodeTable otherResult = new CodeTable(index, otherRealTransactions, krimpCT.getCodes());
-					otherResult.countUsages();
+					standardCT = CodeTable.createStandardCodeTable(/*index,*/ otherRealTransactions );
+					CodeTable otherResult = new CodeTable(/*index, */ otherRealTransactions, krimpCT.getCodes());
 					double otherNormalSize = standardCT.totalCompressedSize();
 					double otherCompressedSize = otherResult.totalCompressedSize();
 //					logger.debug("First Code table: " + krimpCT);
