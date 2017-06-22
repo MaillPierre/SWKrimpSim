@@ -210,17 +210,41 @@ public class CodeTable {
 		while(itCodes.hasNext()) {
 			Itemset code = itCodes.next();
 			if(this.getUsage(code) != 0.0) {
+				// CB: this is the code length according to the CT
 				double cL = codeLengthOfcode(code);
+				
+				// CB: we also need the code length according to the ST: we codify the codeusing it
 				double stcL = 0 ;
-				if(code.size() == 1 && ! this._standardFlag) {
-					stcL = this._standardCT.codeLengthOfcode(code);
-				} else if(this._standardFlag) {
-					stcL = cL;
+				if (!_standardFlag) {
+					stcL = this._standardCT.codeLengthOfCodeAccordingST(code);
 				}
+				// else => it is a 0.0
+				
+//				if(code.size() == 1 && ! this._standardFlag) {
+//					stcL = this._standardCT.codeLengthOfcode(code);
+//				} else if(this._standardFlag) {
+//					stcL = cL;
+//				}
+				
 				result += cL + stcL;
 			}
 		}
 		return result;
+	}
+	
+	/** 
+	 * L(code_ST(X))
+	 */
+	
+	public double codeLengthOfCodeAccordingST(Itemset code) {
+		double result = 0.0;
+		// this method should return 0 if the codetable is not the ST
+		if (!_standardFlag) {
+			for (int i=0; i<code.size(); i++) {
+				result+= this._standardCT.codeLengthOfCodeAccordingST(new Itemset(code.get(i))); 
+			}
+		}
+		return result; 
 	}
 	
 	/**
