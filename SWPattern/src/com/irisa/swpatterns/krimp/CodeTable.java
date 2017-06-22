@@ -214,6 +214,8 @@ public class CodeTable {
 				double stcL = 0 ;
 				if(code.size() == 1 && ! this._standardFlag) {
 					stcL = this._standardCT.codeLengthOfcode(code);
+				} else if(this._standardFlag) {
+					stcL = cL;
 				}
 				result += cL + stcL;
 			}
@@ -437,6 +439,7 @@ public class CodeTable {
 		StringBuilder r = new StringBuilder ();
 		r.append("Total Usages: ");
 		r.append(this._usageTotal);
+		r.append('\n');
 		Iterator<Itemset> itIs = this.codeIterator();
 		while(itIs.hasNext()) {
 			Itemset is = itIs.next();
