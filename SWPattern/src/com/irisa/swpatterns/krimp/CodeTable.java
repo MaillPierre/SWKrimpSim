@@ -5,18 +5,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
 import org.apache.log4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.ItemsetSet;
-import com.irisa.swpatterns.data.RDFPatternComponent;
-
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
 /**
@@ -27,7 +21,8 @@ public class CodeTable {
 	
 	private static Logger logger = Logger.getLogger(CodeTable.class);
 
-	private AttributeIndex _index = null;
+//	private AttributeIndex _index = null;
+	private HashMap<Integer, Integer> _supports = new HashMap<Integer, Integer>();
 	private ItemsetSet _transactions = null;
 	private ItemsetSet _codes = null;
 	private HashMap<Itemset, Integer> _itemsetUsage = new HashMap<Itemset, Integer>();
@@ -43,18 +38,22 @@ public class CodeTable {
 	 * @param transactions
 	 * @param codes
 	 */
-	public CodeTable(AttributeIndex index, ItemsetSet transactions, ItemsetSet codes) {
-		this(index, transactions, codes, false);
+	public CodeTable(/*AttributeIndex index,*/ ItemsetSet transactions, ItemsetSet codes) {
+		this(/*index,*/ transactions, codes, false);
 	}
 	
-	protected CodeTable(AttributeIndex index, ItemsetSet transactions, ItemsetSet codes, boolean standardFlag) {
-		_index = index;
+	protected CodeTable(/*AttributeIndex index,*/ ItemsetSet transactions, ItemsetSet codes, boolean standardFlag) {
+//		_index = index;
 		_transactions = transactions;
-		_codes = codes;
+		if(codes == null) {
+			_codes = new ItemsetSet();
+		} else {
+			_codes = new ItemsetSet(codes);
+		}
 		_standardFlag = standardFlag;
 		
 		if(codes != null) {
-			_standardCT = CodeTable.createStandardCodeTable(index, transactions);
+			_standardCT = CodeTable.createStandardCodeTable(/*index,*/ transactions);
 		} else { // this is a standard codetable
 			_standardCT = null;
 			_codes = new ItemsetSet();
@@ -63,18 +62,20 @@ public class CodeTable {
 	}
 	
 	private void init() {
-		Collections.sort(_codes, standardCoverOrderComparator);
+		initSupports();
 		initializeSingletons();
 		initCodes();
-		countUsages();		
+		countUsages();	
+		Collections.sort(_codes, standardCandidateOrderComparator);	
 	}
 	
-	public static CodeTable createStandardCodeTable(AttributeIndex index, ItemsetSet transactions) {
-		return new CodeTable(index, transactions, null, true);
+	public static CodeTable createStandardCodeTable(/*AttributeIndex index,*/ ItemsetSet transactions) {
+		return new CodeTable(/*index,*/ transactions, null, true);
 	}
 	
 	public CodeTable(CodeTable ct) {
-		_index = ct._index;
+//		_index = ct._index;
+		_supports = ct._supports;
 		_transactions = ct._transactions;
 		_codes = new ItemsetSet(ct._codes);
 		_itemsetUsage = new HashMap<Itemset, Integer>(ct._itemsetUsage);
@@ -87,17 +88,6 @@ public class CodeTable {
 
 	public ItemsetSet getTransactions() {
 		return _transactions;
-	}
-	
-	/**
-	 * Trigger reinitialization of the indexes
-	 * @param transactions
-	 */
-	public void setTransactions(ItemsetSet transactions, AttributeIndex index) {
-		this._transactions = transactions;
-		this._index = index;
-		
-		init();
 	}
 	
 	/**
@@ -133,6 +123,21 @@ public class CodeTable {
 				}
 				if(_itemsetUsage.get(code) == null) {
 					_itemsetUsage.put(code, 0);
+				}
+			}
+		});
+	}
+	
+	private void initSupports() {
+		this._transactions.forEach(new Consumer<Itemset>() {
+			@Override
+			public void accept(Itemset t) {
+				for(int i = 0; i < t.size() ; i++) {
+					int item = t.get(i);
+					if(_supports.get(item) == null) {
+						_supports.put(item, 0);
+					}
+					_supports.replace(item, _supports.get(item) + 1);
 				}
 			}
 		});
@@ -231,16 +236,15 @@ public class CodeTable {
 	 * Add the singletons of all items to the code table 
 	 */
 	private void initializeSingletons() {
-		Iterator<RDFPatternComponent> itComp = _index.patternComponentIterator();
-		while(itComp.hasNext()) {
-			RDFPatternComponent compo = itComp.next();
+		Iterator<Integer> itItems = _supports.keySet().iterator();
+		while(itItems.hasNext()) {
+			Integer item = itItems.next();
 			
-			int compoItem = _index.getItem(compo);
-			Itemset single = new Itemset(compoItem);
-			single.setAbsoluteSupport(_index.getAttributeCount(compo));
+			Itemset single = new Itemset(item);
+			single.setAbsoluteSupport(_supports.get(item));
 			if(! this._codes.contains(single)) {
-				_itemsetUsage.put(single, _index.getAttributeCount(compo));
-				_itemsetCode.put(single, compoItem);
+				_itemsetUsage.put(single, single.getAbsoluteSupport());
+				_itemsetCode.put(single, item);
 				this._codes.addItemset(single);
 			}
 		}
@@ -249,7 +253,10 @@ public class CodeTable {
 	/**
 	 * Initialize the usage of each code according to the cover
 	 */
-	public void countUsages() {
+	protected void countUsages() {
+		this._usageTotal = 0;
+		Collections.sort(this._codes, CodeTable.standardCoverOrderComparator);
+		
 		Iterator<Itemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
 			Itemset code = itCodes.next();
@@ -269,6 +276,7 @@ public class CodeTable {
 			
 			this._usageTotal += _itemsetUsage.get(code);
 		}
+		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 	}
 	
 	/**
@@ -281,6 +289,27 @@ public class CodeTable {
 				return - Integer.compare(o1.size(), o2.size());
 			} else if(o1.support != o2.support) {
 				return - Integer.compare(o1.support, o2.support);
+			} else if( ! o1.isEqualTo(o2)) {
+				for(int i = 0 ; i < o1.size() ; i++) {
+					if(o1.get(i) != o2.get(i)) {
+						return Integer.compare(o1.get(i), o2.get(i));
+					}
+				}
+			}
+			return 0;
+		}
+	};
+	
+	/**
+	 * Comparator to sort the code list
+	 */
+	public static Comparator<Itemset> standardCandidateOrderComparator = new Comparator<Itemset>() {
+		@Override
+		public int compare(Itemset o1, Itemset o2) {
+			if(o1.support != o2.support) {
+				return - Integer.compare(o1.support, o2.support);
+			} else if(o1.size() != o2.size()) {
+				return - Integer.compare(o1.size(), o2.size());
 			} else if( ! o1.isEqualTo(o2)) {
 				for(int i = 0 ; i < o1.size() ; i++) {
 					if(o1.get(i) != o2.get(i)) {
@@ -340,6 +369,7 @@ public class CodeTable {
 		this._itemsetUsage.remove(code);
 		
 		countUsages(); // Have to maintain the thing up to date ? 
+		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 	}
 	
 	public boolean contains(Itemset code) {
@@ -365,7 +395,6 @@ public class CodeTable {
 			this._itemsetCode.put(code, indice);
 			this._itemsetUsage.put(code, this.getUsage(code));
 
-			Collections.sort(_codes, standardCoverOrderComparator);
 			this.countUsages(); // maintain the usage index uptodate ?
 		}
 	}
@@ -406,17 +435,19 @@ public class CodeTable {
 
 		// StringBuilder copied from smpf code, just to see ...
 		StringBuilder r = new StringBuilder ();
+		r.append("Total Usages: ");
+		r.append(this._usageTotal);
 		Iterator<Itemset> itIs = this.codeIterator();
 		while(itIs.hasNext()) {
 			Itemset is = itIs.next();
 			r.append('[');
 			r.append(is.toString());
 			r.append(']');
-			r.append(' ');
+			r.append(" u:");
 			r.append(this.getUsage(is));
-			r.append(' ');
+			r.append(" P:");
 			r.append(this.probabilisticDistrib(is));
-			r.append(' ');
+			r.append(" L:");
 			r.append(this.codeLengthOfcode(is));
 			r.append('\n');
 		}
