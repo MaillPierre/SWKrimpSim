@@ -354,8 +354,7 @@ public class CodeTable {
 					}else if (tmpCode.intersection(code).size() != 0) { // if another cover code overlap with code = !OK
 						return false;
 					} else { // transaction partially covered but there is still some chances
-						Itemset covered = CodeTable.itemsetAddition(trans, createCodeSingleton(getCodeIndice(tmpCode)));
-						covered = CodeTable.itemsetSubstraction(covered, tmpCode);
+						Itemset covered = CodeTable.itemsetSubstraction(trans, tmpCode);
 						return isCover(covered, code); 
 					}
 				}
