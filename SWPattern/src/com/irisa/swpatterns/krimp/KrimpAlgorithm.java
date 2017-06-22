@@ -96,9 +96,11 @@ public class KrimpAlgorithm {
 		options.addOption("noTypes", false, "Not taking TYPES into account.");
 		options.addOption("FPClose", false, "Use FPClose algorithm. (default)");
 		options.addOption("FPMax", false, "Use FPMax algorithm.");
+		options.addOption("FIN", false, "Use FIN algorithm.");
+		options.addOption("Relim", false, "Use Relim algorithm.");
 		options.addOption("class", true, "Class of the studied individuals.");
 		options.addOption("rank1", false, "Extract informations up to rank 1 (types, out-going and in-going properties and object types), default is only types, out-going and in-going properties.");
-		//		options.addOption("rank0", false, "Extract informations up to rank 0 (out-going and in-going properties.");
+		options.addOption("transactionFile", false, "Only create a .dat transaction for each given file.");
 		options.addOption("path", true, "Extract paths of length N.");
 		options.addOption("help", false, "Display this help.");
 
@@ -127,8 +129,18 @@ public class KrimpAlgorithm {
 				converter.setNoTypeTriples( cmd.hasOption("noTypes") || converter.noTypeTriples());
 				converter.noInTriples(cmd.hasOption("noIn") || converter.noInTriples());
 				converter.setNoOutTriples(cmd.hasOption("noOut") || converter.noOutTriples());
-				fsExtractor.setAlgoFPClose(cmd.hasOption("FPClose") || fsExtractor.algoFPClose() );
-				fsExtractor.setAlgoFPMax(cmd.hasOption("FPMax") || fsExtractor.algoFPMax() );
+				if(cmd.hasOption("FPClose")) {
+					fsExtractor.setAlgoFPClose();
+				}
+				if(cmd.hasOption("FPMax")) {
+					fsExtractor.setAlgoFPMax();
+				}
+				if(cmd.hasOption("FIN")) {
+					fsExtractor.setAlgoFIN();
+				}
+				if(cmd.hasOption("Relim")) {
+					fsExtractor.setAlgoRelim();
+				}
 				converter.setRankOne(cmd.hasOption("rank1") || converter.isRankOne());
 
 				String outputTransactions = "transactions."+filename + ".dat"; 
@@ -166,6 +178,7 @@ public class KrimpAlgorithm {
 				// Extracting transactions
 
 				LabeledTransactions transactions;
+				
 				if(cmd.hasOption("class")) {
 					Resource classRes = onto.getModel().createResource(className);
 					transactions = converter.extractTransactionsForClass(baseRDF, onto, classRes);
@@ -175,7 +188,14 @@ public class KrimpAlgorithm {
 					transactions = converter.extractTransactions(baseRDF, onto);
 				}
 				
-				LabeledTransactions otherTransactions = converter.extractTransactions(new BaseRDF(otherFilename, MODE.LOCAL),  onto);
+				// Printing transactions
+				if(cmd.hasOption("transactionFile")) {
+					converter.getIndex().printTransactionsItems(transactions, filename + ".dat");
+
+					if(cmd.hasOption("otherFile")) {
+						converter.getIndex().printTransactionsItems(transactions, otherFilename + ".dat");
+					}
+				}
 
 				try {
 					converter.getIndex().printTransactionsItems(transactions, outputTransactions);
@@ -183,10 +203,6 @@ public class KrimpAlgorithm {
 					ItemsetSet realtransactions = converter.getIndex().convertToTransactions(transactions);
 					Itemsets codes = fsExtractor.computeItemsets(transactions, converter.getIndex());
 					ItemsetSet realcodes = new ItemsetSet(codes, converter.getIndex());
-
-					ItemsetSet otherRealTransactions = converter.getIndex().convertToTransactions(otherTransactions);
-					
-					logger.debug("Equals ? " + realtransactions.equals(otherRealTransactions));
 
 					AttributeIndex index = converter.getIndex();
 					index.recount(realtransactions);
@@ -206,18 +222,44 @@ public class KrimpAlgorithm {
 					
 //					CodeTable otherStandardCT = CodeTable.createStandardCodeTable(converter.getIndex(), otherRealTransactions);
 
-					index.recount(otherRealTransactions);
-					standardCT = CodeTable.createStandardCodeTable(/*index,*/ otherRealTransactions );
-					CodeTable otherResult = new CodeTable(/*index, */ otherRealTransactions, krimpCT.getCodes());
-					double otherNormalSize = standardCT.totalCompressedSize();
-					double otherCompressedSize = otherResult.totalCompressedSize();
-//					logger.debug("First Code table: " + krimpCT);
-					logger.debug("Second NormalLength: " + otherNormalSize);
-					logger.debug("Second CompressedLength: " + otherCompressedSize);
-					logger.debug("Second Compression: " + (otherCompressedSize / otherNormalSize));
-					
-					logger.debug("-------- OTHER RESULT ---------");
-					logger.debug(otherResult);
+					if(cmd.hasOption("transactionFile")) {
+						converter.getIndex().printTransactionsItems(transactions, filename + ".dat");
+					}
+
+					if(cmd.hasOption("otherFile")) {
+
+						LabeledTransactions otherTransactions;
+							if(cmd.hasOption("class")) {
+								Resource classRes = onto.getModel().createResource(className);
+								otherTransactions = converter.extractTransactionsForClass(new BaseRDF(otherFilename, MODE.LOCAL),  onto, classRes);
+							} else if(cmd.hasOption("path")) {
+								otherTransactions = converter.extractPathAttributes(new BaseRDF(otherFilename, MODE.LOCAL),  onto);
+							} else {
+								otherTransactions = converter.extractTransactions(new BaseRDF(otherFilename, MODE.LOCAL),  onto);
+							}
+						
+						ItemsetSet otherRealTransactions = converter.getIndex().convertToTransactions(otherTransactions);
+						
+						logger.debug("Equals ? " + realtransactions.equals(otherRealTransactions));
+						
+						index.recount(otherRealTransactions);
+						standardCT = CodeTable.createStandardCodeTable(/*index,*/ otherRealTransactions );
+						CodeTable otherResult = new CodeTable(/*index, */ otherRealTransactions, krimpCT.getCodes());
+						double otherNormalSize = standardCT.totalCompressedSize();
+						double otherCompressedSize = otherResult.totalCompressedSize();
+	//					logger.debug("First Code table: " + krimpCT);
+						logger.debug("Second NormalLength: " + otherNormalSize);
+						logger.debug("Second CompressedLength: " + otherCompressedSize);
+						logger.debug("Second Compression: " + (otherCompressedSize / otherNormalSize));
+						
+						logger.debug("-------- OTHER RESULT ---------");
+						logger.debug(otherResult);
+						
+
+						if(cmd.hasOption("transactionFile")) {
+							converter.getIndex().printTransactionsItems(otherTransactions, otherFilename + ".dat");
+						}
+					}
 					
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);

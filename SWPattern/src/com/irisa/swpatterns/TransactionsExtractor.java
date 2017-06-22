@@ -71,7 +71,7 @@ public class TransactionsExtractor {
 	 */
 	public LabeledTransactions extractTransactions(BaseRDF baseRDF, UtilOntology onto) {
 
-		logger.debug(onto.classes().size() + " classes");
+//		logger.debug(onto.classes().size() + " classes");
 
 		// Accumulation de descriptions des propriétés d'individus
 		LabeledTransactions results = new LabeledTransactions();
@@ -82,9 +82,9 @@ public class TransactionsExtractor {
 			results.addAll(extractTransactionsForClass(baseRDF, onto, currentClass));
 		}
 
-		logger.debug("End of extraction");
+//		logger.debug("End of extraction");
 		logger.debug(index.size() + " attributes");
-
+//
 		logger.debug(results.size() + " lines");
 		return results;
 	}
@@ -161,7 +161,7 @@ public class TransactionsExtractor {
 	
 	public LabeledTransactions extractTransactionsForClass(BaseRDF baseRDF, UtilOntology onto, Resource currentClass) {
 
-		logger.debug("Current class: " + currentClass);
+//		logger.debug("Current class: " + currentClass);
 
 		LabeledTransactions results = new LabeledTransactions();
 
