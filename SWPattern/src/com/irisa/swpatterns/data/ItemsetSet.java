@@ -32,7 +32,7 @@ public class ItemsetSet extends LinkedList<Itemset> {
 		_index = is._index;
 	}
 	
-	public ItemsetSet(Itemsets iset, AttributeIndex index) {
+	public ItemsetSet(Itemsets iset) {
 		super();
 		
 		// Add the itemsets
@@ -74,5 +74,18 @@ public class ItemsetSet extends LinkedList<Itemset> {
 		}
 		
 		return r.toString();
+	}
+	
+	public Itemsets toItemsets() {
+		Itemsets result = new Itemsets("");
+		
+		this.forEach(new Consumer<Itemset>() {
+			@Override
+			public void accept(Itemset t) {
+				result.addItemset(t, t.size());
+			}
+		});
+		
+		return result;
 	}
 }

@@ -9,6 +9,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 import com.irisa.swpatterns.data.AttributeIndex;
+import com.irisa.swpatterns.data.ItemsetSet;
 import com.irisa.swpatterns.data.LabeledTransaction;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternPathFragment;
@@ -54,22 +55,55 @@ public class FrequentItemSetExtractor {
 	}
 
 	public Itemsets computeItemsets(LabeledTransactions transactions, AttributeIndex index) {
+		return computeItemsets(index.convertToTransactions(transactions));
+	}
+
+
+	public Itemsets computeItemsets(ItemsetSet is) {
+		return computeItemsets(is.toItemsets());
+	}
+
+	public Itemsets computeItemsets(Itemsets transactions) {
 		switch(this._algo) {
 		case FPClose:
-			logger.debug("Compute frequentitemsets with FPClose");
-			return computeItemSet_FPClose(transactions, index);
+			logger.debug("Compute Frequent Itemsets with FPClose");
+			return computeItemSet_FPClose(transactions);
 		case FPMax:
-			logger.debug("Compute frequentitemsets with FPMax");
-			return this.computeItemSet_FPMax(transactions, index);
+			logger.debug("Compute Frequent Itemsets with FPMax");
+			return this.computeItemSet_FPMax(transactions);
 		case FIN:
-			logger.debug("Compute frequentitemsets with FIN");
-			return this.computeItemSet_FIN(transactions, index);
+			logger.debug("Compute Frequent Itemsets with FIN");
+			return this.computeItemSet_FIN(transactions);
 		case Relim:
-			logger.debug("Compute frequentitemsets with Relim");
-			return this.computeItemSet_Relim(transactions, index);
+			logger.debug("Compute Frequent Itemsets with Relim");
+			return this.computeItemSet_Relim(transactions);
 		default:
 			return null;
 		}
+	}
+
+	public Itemsets computeItemSet_FPMax(Itemsets transactions) {
+		try {
+			Utils.printItemsets(transactions, tmpTransactionFilename);
+			return this.computeItemSet_FPMax(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FPMax(String input) {
+		try {
+			logger.debug("FPMax Algorithm");
+			AlgoFPMax algoFpc = new AlgoFPMax();
+			Itemsets fpcResult = algoFpc.runAlgorithm(input, null, 0.0);
+//			fpcResult.printItemsets(fpcResult.getItemsetsCount());
+
+			return fpcResult;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	public boolean algoFPClose() {
@@ -106,11 +140,34 @@ public class FrequentItemSetExtractor {
 
 	public Itemsets computeItemSet_FPClose(LabeledTransactions transactions, AttributeIndex index) {
 		try {
-			AlgoFPClose algoFpc = new AlgoFPClose();
-			logger.debug("FBGrowth Algorithm");
 			index.printTransactionsItems(transactions, tmpTransactionFilename);
+
+			return computeItemSet_FPClose(tmpTransactionFilename);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FPClose(Itemsets is) {
+		try {
+			Utils.printItemsets(is, tmpTransactionFilename);
+
+			return computeItemSet_FPClose(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FPClose(String input) {
+		try {
+			AlgoFPClose algoFpc = new AlgoFPClose();
+			logger.debug("FPClose Algorithm");
 			Itemsets fpcResult;
-			fpcResult = algoFpc.runAlgorithm(tmpTransactionFilename, null, 0.0);
+			fpcResult = algoFpc.runAlgorithm(input, null, 0.0);
 			fpcResult.printItemsets(fpcResult.getItemsetsCount());
 
 			return fpcResult;
@@ -129,7 +186,7 @@ public class FrequentItemSetExtractor {
 			index.printTransactionsItems(transactions, tmpTransactionFilename);
 			Itemsets fpcResult;
 			fpcResult = algoFpc.runAlgorithm(tmpTransactionFilename, null, 0.0);
-			fpcResult.printItemsets(fpcResult.getItemsetsCount());
+//			fpcResult.printItemsets(fpcResult.getItemsetsCount());
 
 			return fpcResult;
 		} catch (Exception e) {
@@ -138,15 +195,14 @@ public class FrequentItemSetExtractor {
 		return null;
 	}
 
-	public Itemsets computeItemSet_Relim(LabeledTransactions transactions, AttributeIndex index) {
+	public Itemsets computeItemSet_Relim(String input) {
 		try {
 			AlgoRelim algoFpc = new AlgoRelim();
 			logger.debug("Relim Algorithm");
-			index.printTransactionsItems(transactions, tmpTransactionFilename);
 			Itemsets fpcResult;
-			algoFpc.runAlgorithm(0.0, tmpTransactionFilename, tmpItemsetFilename);
+			algoFpc.runAlgorithm(0.0, input, tmpItemsetFilename);
 			fpcResult = Utils.readItemsetFile(tmpItemsetFilename);
-			fpcResult.printItemsets(fpcResult.getItemsetsCount());
+//			fpcResult.printItemsets(fpcResult.getItemsetsCount());
 
 			return fpcResult;
 		} catch (Exception e) {
@@ -155,15 +211,54 @@ public class FrequentItemSetExtractor {
 		return null;
 	}
 
-	public Itemsets computeItemSet_FIN(LabeledTransactions transactions, AttributeIndex index) {
+	public Itemsets computeItemSet_Relim(Itemsets input) {
+		try {
+			Utils.printItemsets(input, tmpTransactionFilename);
+			return this.computeItemSet_Relim(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_Relim(LabeledTransactions input, AttributeIndex index) {
+		try {
+			index.printTransactionsItems(input, tmpTransactionFilename);
+			return this.computeItemSet_Relim(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FIN(Itemsets input) {
+		try {
+			Utils.printItemsets(input, tmpTransactionFilename);
+			return this.computeItemSet_FIN(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FIN(LabeledTransactions input, AttributeIndex index) {
+		try {
+			index.printTransactionsItems(input, tmpTransactionFilename);
+			return this.computeItemSet_FIN(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FIN(String input) {
 		try {
 			FIN algoFpc = new FIN();
 			logger.debug("FIN Algorithm");
-			index.printTransactionsItems(transactions, tmpTransactionFilename);
 			Itemsets fpcResult;
-			algoFpc.runAlgorithm(tmpTransactionFilename, 0.0, tmpItemsetFilename);
+			algoFpc.runAlgorithm(input, 0.0, tmpItemsetFilename);
 			fpcResult = Utils.readItemsetFile(tmpItemsetFilename);
-			fpcResult.printItemsets(fpcResult.getItemsetsCount());
+//			fpcResult.printItemsets(fpcResult.getItemsetsCount());
 
 			return fpcResult;
 		} catch (Exception e) {
