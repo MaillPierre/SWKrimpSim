@@ -75,8 +75,8 @@ public class CodeTable {
 	
 	public CodeTable(CodeTable ct) {
 //		_index = ct._index;
-		_supports = ct._supports;
-		_transactions = ct._transactions;
+		_supports = new HashMap<Integer, Integer>(ct._supports);
+		_transactions = new ItemsetSet(ct._transactions);
 		_codes = new ItemsetSet(ct._codes);
 		_itemsetUsage = new HashMap<Itemset, Integer>(ct._itemsetUsage);
 		_itemsetCode = new HashMap<Itemset, Integer>(ct._itemsetCode);
