@@ -42,7 +42,7 @@ public class CodeTable {
 		this(/*index,*/ transactions, codes, false);
 	}
 	
-	protected CodeTable(/*AttributeIndex index,*/ ItemsetSet transactions, ItemsetSet codes, boolean standardFlag) {
+	protected CodeTable(ItemsetSet transactions, ItemsetSet codes, boolean standardFlag) {
 //		_index = index;
 		_transactions = transactions;
 		if(codes == null) {
@@ -268,11 +268,14 @@ public class CodeTable {
 			
 			Itemset single = new Itemset(item);
 			single.setAbsoluteSupport(_supports.get(item));
-			if(! this._codes.contains(single)) {
-				_itemsetUsage.put(single, single.getAbsoluteSupport());
-				_itemsetCode.put(single, item);
-				this._codes.addItemset(single);
+			if(this._codes.contains(single)) {
+				this._codes.removeFirstOccurrence(single);
+				_itemsetUsage.remove(single);
+				_itemsetCode.remove(single);
 			}
+			_itemsetUsage.put(single, single.getAbsoluteSupport());
+			_itemsetCode.put(single, item);
+			this._codes.addItemset(single);
 		}
 	}
 	
