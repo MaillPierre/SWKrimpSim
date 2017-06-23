@@ -20,7 +20,6 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 public class ItemsetSet extends LinkedList<Itemset> {
 
 	protected HashMap<Integer, HashSet<Itemset>> itemItemsetIndex = new HashMap<Integer, HashSet<Itemset>>();
-	protected AttributeIndex _index = null;
 	
 	public ItemsetSet() {
 		super();
@@ -29,7 +28,6 @@ public class ItemsetSet extends LinkedList<Itemset> {
 	public ItemsetSet(ItemsetSet is) {
 		super(is);
 		itemItemsetIndex = new HashMap<Integer, HashSet<Itemset>>(is.itemItemsetIndex);
-		_index = is._index;
 	}
 	
 	public ItemsetSet(Itemsets iset) {
@@ -41,13 +39,6 @@ public class ItemsetSet extends LinkedList<Itemset> {
 			List<Itemset> list = itSets.next();
 			
 			addAll(list);
-			
-			list.forEach(new Consumer<Itemset>() {
-				@Override
-				public void accept(Itemset is) {
-					addItemset(is);
-				}
-			});
 		}
 	}
 	
