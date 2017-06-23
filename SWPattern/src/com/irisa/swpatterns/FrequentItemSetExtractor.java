@@ -168,7 +168,7 @@ public class FrequentItemSetExtractor {
 			logger.debug("FPClose Algorithm");
 			Itemsets fpcResult;
 			fpcResult = algoFpc.runAlgorithm(input, null, 0.0);
-			fpcResult.printItemsets(fpcResult.getItemsetsCount());
+//			fpcResult.printItemsets(fpcResult.getItemsetsCount());
 
 			return fpcResult;
 		} catch (IOException e) {

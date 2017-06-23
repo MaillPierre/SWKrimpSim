@@ -38,33 +38,32 @@ public class KrimpAlgorithm {
 
 	private static Logger logger = Logger.getLogger(KrimpAlgorithm.class);
 
-	private CodeTable _candidateCT = null;
 	private ItemsetSet _transactions = null;
 	private ItemsetSet _candidateCodes = null;
 
 
 	public KrimpAlgorithm(ItemsetSet transactions, ItemsetSet candidates) {
-		this._transactions = transactions;
-		this._candidateCodes = candidates;
-		this._candidateCT = new CodeTable(/*index,*/ transactions, candidates);
+		this._transactions = new ItemsetSet(transactions);
+		this._candidateCodes = new ItemsetSet(candidates);
 	}
 
 	public CodeTable runAlgorithm() {
 		logger.debug("Starting KRIMP algorithm");
+		logger.debug(this._transactions.size() + " transactions, " + this._candidateCodes.size() + " codes");
 
-		CodeTable result = CodeTable.createStandardCodeTable(/*_index,*/ _transactions); // CT ←Standard Code Table(D)
-		Collections.sort(_candidateCodes, CodeTable.standardCoverOrderComparator); // Fo ←F in Standard Candidate Order
+		CodeTable result = CodeTable.createStandardCodeTable( _transactions); // CT ←Standard Code Table(D)
+		Collections.sort(_candidateCodes, CodeTable.standardCandidateOrderComparator); // Fo ←F in Standard Candidate Order
 		double resultSize = result.totalCompressedSize();
 
 		Iterator<Itemset> itCandidates = this._candidateCodes.iterator();
 		while(itCandidates.hasNext()) {
 			Itemset candidate = itCandidates.next();
-			//			logger.debug("Candidate: " + candidate);
+//			logger.debug("Candidate: " + candidate);
 			CodeTable tmpCT = new CodeTable(result);
 			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
 				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
 				double candidateSize = tmpCT.totalCompressedSize();
-				//				logger.debug("candidate gain: " + (resultSize - candidateSize ));
+//				logger.debug("candidate gain: " + (resultSize - candidateSize ));
 				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
 					result = tmpCT;
 					resultSize = candidateSize;
@@ -144,40 +143,37 @@ public class KrimpAlgorithm {
 					fsExtractor.setAlgoRelim();
 				}
 				converter.setRankOne(cmd.hasOption("rank1") || converter.isRankOne());
-
-				String outputTransactions = "transactions."+filename + ".dat"; 
-				String outputRDFPatterns = "rdfpatternes."+filename+".ttl"; 
 				logger.debug("output: " + output + " limit:" + limitString + " resultWindow:" + resultWindow + " classpattern:" + classRegex + " noType:" + converter.noTypeTriples() + " noOut:" + converter.noOutTriples() + " noIn:"+ converter.noInTriples());
 
 
 				if(!cmd.hasOption("inputTransaction")) {
-				if(limitString != null) {
-					QueryResultIterator.setDefaultLimit(Integer.valueOf(limitString));
-				}
-				if(resultWindow != null) {
-					QueryResultIterator.setDefaultLimit(Integer.valueOf(resultWindow));
-				}
-				if(cmd.hasOption("classPattern")) {
-					UtilOntology.setClassRegex(classRegex);
-				} else {
-					UtilOntology.setClassRegex(null);
-				}
+					if(limitString != null) {
+						QueryResultIterator.setDefaultLimit(Integer.valueOf(limitString));
+					}
+					if(resultWindow != null) {
+						QueryResultIterator.setDefaultLimit(Integer.valueOf(resultWindow));
+					}
+					if(cmd.hasOption("classPattern")) {
+						UtilOntology.setClassRegex(classRegex);
+					} else {
+						UtilOntology.setClassRegex(null);
+					}
 
-				if(pathOption != null) {
-					converter.setPathsLength(Integer.valueOf(pathOption));
-				}
+					if(pathOption != null) {
+						converter.setPathsLength(Integer.valueOf(pathOption));
+					}
 
-				BaseRDF baseRDF = null;
-				if(filename != null) {
-					baseRDF = new BaseRDF(filename, MODE.LOCAL);
-				} else if (endpoint != null){
-					baseRDF = new BaseRDF(endpoint, MODE.DISTANT);
-				}
+					BaseRDF baseRDF = null;
+					if(filename != null) {
+						baseRDF = new BaseRDF(filename, MODE.LOCAL);
+					} else if (endpoint != null){
+						baseRDF = new BaseRDF(endpoint, MODE.DISTANT);
+					}
 
-				logger.debug("initOnto");
-				onto.init(baseRDF);
+					logger.debug("initOnto");
+					onto.init(baseRDF);
 
-				logger.debug("extract");
+					logger.debug("extract");
 					// Extracting transactions
 
 					LabeledTransactions transactions;
@@ -191,39 +187,38 @@ public class KrimpAlgorithm {
 						transactions = converter.extractTransactions(baseRDF, onto);
 					}
 
+					AttributeIndex index = converter.getIndex();
+
 					// Printing transactions
 					if(cmd.hasOption("transactionFile")) {
-						converter.getIndex().printTransactionsItems(transactions, filename + ".dat");
+						index.printTransactionsItems(transactions, filename + ".dat");
 
 						if(cmd.hasOption("otherFile")) {
-							converter.getIndex().printTransactionsItems(transactions, otherFilename + ".dat");
+							index.printTransactionsItems(transactions, otherFilename + ".dat");
 						}
 					}
 
-					AttributeIndex index = converter.getIndex();
-
-					index.printTransactionsItems(transactions, outputTransactions);
-
 					realtransactions = index.convertToTransactions(transactions);
 					codes = fsExtractor.computeItemsets(transactions, index);
+					logger.debug("Nb Lines: " + realtransactions.size());
 
 					if(cmd.hasOption("transactionFile")) {
 						index.printTransactionsItems(transactions, filename + ".dat");
 					}
+					logger.debug("Nb items: " + converter.getIndex().size());
 
 					baseRDF.close();
 
 				} else {
-
 					realtransactions = new ItemsetSet(Utils.readTransactionFile(cmd.getOptionValue("inputTransaction")));
 					codes = fsExtractor.computeItemsets(realtransactions);
+					logger.debug("Nb Lines: " + realtransactions.size());
 				}
 				ItemsetSet realcodes = new ItemsetSet(codes);
 
 				try {
-					CodeTable standardCT = CodeTable.createStandardCodeTable(/*converter.getIndex(),*/ realtransactions );
+					CodeTable standardCT = CodeTable.createStandardCodeTable(realtransactions );
 
-					logger.debug("Nb items: " + converter.getIndex().size());
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes);
 					CodeTable krimpCT = kAlgo.runAlgorithm();
 					double normalSize = standardCT.totalCompressedSize();
@@ -234,8 +229,6 @@ public class KrimpAlgorithm {
 					logger.debug("First NormalLength: " + normalSize);
 					logger.debug("First CompressedLength: " + compressedSize);
 					logger.debug("First Compression: " + (compressedSize / normalSize));
-
-					//					CodeTable otherStandardCT = CodeTable.createStandardCodeTable(converter.getIndex(), otherRealTransactions);
 
 
 					if(cmd.hasOption("otherFile")) {
@@ -255,7 +248,7 @@ public class KrimpAlgorithm {
 						logger.debug("Equals ? " + realtransactions.equals(otherRealTransactions));
 
 						standardCT = CodeTable.createStandardCodeTable(/*index,*/ otherRealTransactions );
-						CodeTable otherResult = new CodeTable(/*index, */ otherRealTransactions, krimpCT.getCodes());
+						CodeTable otherResult = new CodeTable( otherRealTransactions, krimpCT.getCodes());
 						double otherNormalSize = standardCT.totalCompressedSize();
 						double otherCompressedSize = otherResult.totalCompressedSize();
 						//					logger.debug("First Code table: " + krimpCT);

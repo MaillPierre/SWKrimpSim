@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,6 +71,7 @@ public class Utils {
 						logger.error(itemString, e);
 					}
 				}
+				Collections.sort(itemsetLine);
 				result.addItemset(new Itemset(itemsetLine, lineSupport), itemsetLine.size());
 			}
 			// close the input file
@@ -96,7 +98,7 @@ public class Utils {
 			// for each line (transaction) until the end of file
 			while (((line = reader.readLine()) != null)){ 
 				LinkedList<Integer> itemsetLine = new LinkedList<Integer>();
-				int lineSupport = 0;
+				int lineSupport = 1;
 				// if the line is  a comment, is  empty or is a
 				// kind of metadata
 				if (line.isEmpty() == true ||
@@ -122,6 +124,7 @@ public class Utils {
 						logger.error(itemString, e);
 					}
 				}
+				Collections.sort(itemsetLine);
 				result.addItemset(new Itemset(itemsetLine, lineSupport), itemsetLine.size());
 			}
 			// close the input file
