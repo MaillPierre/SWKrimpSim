@@ -47,7 +47,7 @@ public class KrimpAlgorithm {
 		this._candidateCodes = new ItemsetSet(candidates);
 	}
 
-	public CodeTable runAlgorithm() {
+	public CodeTable runAlgorithm(boolean pruning) {
 		logger.debug("Starting KRIMP algorithm");
 		logger.debug(this._transactions.size() + " transactions, " + this._candidateCodes.size() + " codes");
 
@@ -58,21 +58,100 @@ public class KrimpAlgorithm {
 		Iterator<Itemset> itCandidates = this._candidateCodes.iterator();
 		while(itCandidates.hasNext()) {
 			Itemset candidate = itCandidates.next();
-//			logger.debug("Candidate: " + candidate);
+
 			CodeTable tmpCT = new CodeTable(result);
 			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
 				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
 				double candidateSize = tmpCT.totalCompressedSize();
-//				logger.debug("candidate gain: " + (resultSize - candidateSize ));
 				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
-					result = tmpCT;
-					resultSize = candidateSize;
+					
+					if (!pruning) {
+						result = tmpCT;
+						resultSize = candidateSize;
+					} else {
+						result = postAcceptancePruning(tmpCT, result);
+						// we have to update the size 
+						resultSize = result.totalCompressedSize(); 
+					}					
+					
 				}
 			}
 		}
 
 		logger.debug("KRIMP algorithm ended");
 		return result;
+	}
+	
+	public CodeTable postAcceptancePruning(CodeTable candidateTable, CodeTable previousTable) {
+		
+		// CB: after the acceptance of the new code
+		// first we have to get the PruneSet => those codes whose usage has become lower 
+		// after adding the candidate
+		logger.debug("--> Pruning ... ");
+		ItemsetSet pruneSet = new ItemsetSet();
+		Itemset auxCode = null; 
+		Iterator<Itemset> itCodes = previousTable.codeIterator(); 
+		while (itCodes.hasNext()) {
+			auxCode = itCodes.next(); 
+			if (auxCode.size() >1 ) {
+				if (candidateTable.getUsage(auxCode) < previousTable.getUsage(auxCode) ) {
+					pruneSet.addItemset(auxCode);
+				}
+			}
+		}
+		logger.debug("#PruneSet: "+pruneSet.size()+" pruning candidates");
+		
+		// names are taken from the paper 
+		CodeTable CTc = new CodeTable(candidateTable);
+		double CTcSize = -1; 
+		CodeTable CTp = null;
+		double CTpSize = -1; 
+		Itemset pruneCandidate = null;
+		
+		CTcSize = CTc.totalCompressedSize(); 
+		while (!pruneSet.isEmpty()) {
+			logger.debug(pruneSet.size()) ;
+			pruneCandidate = findLowestUsageCode (pruneSet, CTc);
+			logger.debug(pruneCandidate);
+			pruneSet.remove(pruneCandidate); 
+			CTp = new CodeTable(CTc); 
+			CTp.removeCode(pruneCandidate);
+			CTpSize = CTp.totalCompressedSize(); 
+			if (CTpSize < CTcSize) {
+				// we update the pruneSet with new potential candidates
+				itCodes = CTp.codeIterator(); 
+				while (itCodes.hasNext() ) {
+					auxCode = itCodes.next(); 
+					if (auxCode.size() >1 ) {
+						if (CTp.getUsage(auxCode) < CTc.getUsage(auxCode) ) {
+							// if it was there already, there shouldn't be any problem :)  
+							pruneSet.add(auxCode);
+						}
+					}
+				}
+				logger.debug("#PruneSet: "+pruneSet.size()+" pruning candidates");
+				CTc = CTp; 
+				CTcSize = CTpSize; 
+			}			
+		}
+		return CTc; 
+	}
+	
+	private Itemset findLowestUsageCode (ItemsetSet pSet, CodeTable CT) {
+		Itemset result = null;
+		Itemset auxCode = null; 
+		Iterator<Itemset> codes = CT.codeIterator();
+		if (codes.hasNext()) {
+			result = codes.next(); 
+		}
+		while (codes.hasNext()) {
+			auxCode = codes.next(); 
+			if (CT.getUsage(auxCode) < CT.getUsage(result)) {
+				result = auxCode; 
+			}
+		}
+		
+		return result; 
 	}
 
 	public static void main(String[] args) {
@@ -102,6 +181,8 @@ public class KrimpAlgorithm {
 		options.addOption("path", true, "Extract paths of length N.");
 		options.addOption("help", false, "Display this help.");
 		options.addOption("inputTransaction", true, "Transaction file (RDF data will be ignored).");
+		// added for pruning 
+		options.addOption("pruning", false, "Activate post-acceptance pruning"); 
 
 		// Setting up options and constants etc.
 		UtilOntology onto = new UtilOntology();
@@ -117,6 +198,8 @@ public class KrimpAlgorithm {
 				FrequentItemSetExtractor fsExtractor = new FrequentItemSetExtractor();
 				ItemsetSet realtransactions ;
 				Itemsets codes = null;
+				
+				boolean activatePruning = false; 
 
 				String filename = cmd.getOptionValue("file");
 				String otherFilename = cmd.getOptionValue("otherFile");
@@ -130,6 +213,9 @@ public class KrimpAlgorithm {
 				converter.setNoTypeTriples( cmd.hasOption("noTypes") || converter.noTypeTriples());
 				converter.noInTriples(cmd.hasOption("noIn") || converter.noInTriples());
 				converter.setNoOutTriples(cmd.hasOption("noOut") || converter.noOutTriples());
+				
+				activatePruning = cmd.hasOption("pruning"); 
+				
 				if(cmd.hasOption("FPClose")) {
 					fsExtractor.setAlgoFPClose();
 				}
@@ -144,8 +230,9 @@ public class KrimpAlgorithm {
 				}
 				converter.setRankOne(cmd.hasOption("rank1") || converter.isRankOne());
 				logger.debug("output: " + output + " limit:" + limitString + " resultWindow:" + resultWindow + " classpattern:" + classRegex + " noType:" + converter.noTypeTriples() + " noOut:" + converter.noOutTriples() + " noIn:"+ converter.noInTriples());
-
-
+				logger.debug("Pruning activated: "+activatePruning);
+			
+				
 				if(!cmd.hasOption("inputTransaction")) {
 					if(limitString != null) {
 						QueryResultIterator.setDefaultLimit(Integer.valueOf(limitString));
@@ -220,7 +307,7 @@ public class KrimpAlgorithm {
 					CodeTable standardCT = CodeTable.createStandardCodeTable(realtransactions );
 
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes);
-					CodeTable krimpCT = kAlgo.runAlgorithm();
+					CodeTable krimpCT = kAlgo.runAlgorithm(activatePruning);
 					double normalSize = standardCT.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
 					logger.debug("-------- FIRST RESULT ---------");

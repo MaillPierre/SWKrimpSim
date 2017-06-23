@@ -397,7 +397,7 @@ public class CodeTable {
 		this._itemsetUsage.remove(code);
 		
 		countUsages(); // Have to maintain the thing up to date ? 
-		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
+		
 	}
 	
 	public boolean contains(Itemset code) {
