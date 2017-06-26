@@ -385,13 +385,9 @@ public class CodeTable {
 				if(isCoverCandidate(trans, tmpCode)) { // If the size of code is correct and it is contained in trans
 					if(tmpCode.isEqualTo(code)) { // if code cover = OK
 						return true;
-					} else if(trans.isEqualTo(tmpCode)) { // if another cover code cover everything = !OK
+					} else if (tmpCode.intersection(code).size() != 0) { // if another cover code overlap with code = !OK
 						return false;
-					}
-//					else if (tmpCode.intersection(code).size() != 0) { // if another cover code overlap with code = !OK
-//						return false;
-//					}
-					else { // transaction partially covered but there is still some chances
+					} else { // transaction partially covered but there is still some chances
 						Itemset covered = CodeTable.itemsetSubstraction(trans, tmpCode);
 						return isCover(covered, code); 
 					}
@@ -471,7 +467,13 @@ public class CodeTable {
 	}
 	
 	public String toString() {
-
+		Collections.sort(this._codes, new Comparator<Itemset>(){
+			@Override
+			public int compare(Itemset o1, Itemset o2) {
+				return - Integer.compare(o1.size(), o2.size());
+			}
+		});
+		
 		// StringBuilder copied from smpf code, just to see ...
 		StringBuilder r = new StringBuilder ();
 		r.append("Total Usages: ");
@@ -492,6 +494,7 @@ public class CodeTable {
 			r.append('\n');
 		}
 		
+		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 		return r.toString();
 	}
 	
