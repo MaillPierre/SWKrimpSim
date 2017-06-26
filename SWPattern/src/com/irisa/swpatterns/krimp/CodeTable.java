@@ -175,10 +175,13 @@ public class CodeTable {
 	public double encodedTransactionCodeLength(Itemset transaction) {
 		double result = 0.0;
 		Iterator<Itemset> itCodes = this.codeIterator();
+		logger.debug("encodingTransaction: "+transaction);
 		while(itCodes.hasNext()) {
 			Itemset code = itCodes.next();
 			if(isCover(transaction, code)) {
+				logger.debug("coveredBy: "+code);
 				result += codeLengthOfcode(code);
+				logger.debug("newLength: "+result);
 			}
 		}
 		return result;
@@ -254,7 +257,7 @@ public class CodeTable {
 	public double totalCompressedSize() {
 		double ctL = codeTableCodeLength();
 		double teL = encodedTransactionSetCodeLength();
-//		logger.debug("CodeTable Length: " + ctL + " transactionLength: " + teL);
+		logger.debug("CodeTable Length: " + ctL + " transactionLength: " + teL);
 		return ctL + teL;
 	}
 
