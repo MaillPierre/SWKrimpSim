@@ -1,6 +1,7 @@
 package com.irisa.swpatterns.krimp;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ public class CodeTable {
 	private HashMap<Itemset, Integer> _itemsetUsage = new HashMap<Itemset, Integer>();
 	private HashMap<Itemset, Integer> _itemsetCode = new HashMap<Itemset, Integer>();
 	private long _usageTotal = 0;
+	private HashMap<Itemset, BitSet> _codeSupportVector = new HashMap<Itemset, BitSet>();
 	
 	private boolean _standardFlag = false; // Set true if it is the standard codetable
 	private CodeTable _standardCT = null; // Codetable containing only singletons for the coding length of a CT
@@ -40,12 +42,11 @@ public class CodeTable {
 	 * @param transactions
 	 * @param codes
 	 */
-	public CodeTable(/*AttributeIndex index,*/ ItemsetSet transactions, ItemsetSet codes) {
-		this(/*index,*/ transactions, codes, false);
+	public CodeTable(ItemsetSet transactions, ItemsetSet codes) {
+		this(transactions, codes, false);
 	}
 	
 	protected CodeTable(ItemsetSet transactions, ItemsetSet codes, boolean standardFlag) {
-//		_index = index;
 		_transactions = transactions;
 		if(codes == null) {
 			_codes = new ItemsetSet();
@@ -71,8 +72,8 @@ public class CodeTable {
 		Collections.sort(_codes, standardCandidateOrderComparator);	
 	}
 	
-	public static CodeTable createStandardCodeTable(/*AttributeIndex index,*/ ItemsetSet transactions) {
-		return new CodeTable(/*index,*/ transactions, null, true);
+	public static CodeTable createStandardCodeTable(ItemsetSet transactions) {
+		return new CodeTable(transactions, null, true);
 	}
 	
 	public CodeTable(CodeTable ct) {
@@ -84,6 +85,7 @@ public class CodeTable {
 		_itemsetCode = new HashMap<Itemset, Integer>(ct._itemsetCode);
 		_usageTotal = ct._usageTotal;
 		_standardFlag = ct._standardFlag;
+		_codeSupportVector = new HashMap<Itemset, BitSet>(ct._codeSupportVector);
 		
 		_standardCT = ct._standardCT;
 	}
@@ -126,23 +128,36 @@ public class CodeTable {
 				if(_itemsetUsage.get(code) == null) {
 					_itemsetUsage.put(code, 0);
 				}
+				if(_codeSupportVector.get(code) == null) {
+					_codeSupportVector.put(code, new BitSet(_transactions.size()));
+				}
 			}
 		});
 	}
 	
 	private void initSupports() {
-		this._transactions.forEach(new Consumer<Itemset>() {
-			@Override
-			public void accept(Itemset t) {
-				for(int i = 0; i < t.size() ; i++) {
-					int item = t.get(i);
-					if(_supports.get(item) == null) {
-						_supports.put(item, 0);
+		for(int iTrans = 0; iTrans < this._transactions.size(); iTrans++) {
+			Itemset trans = this._transactions.get(iTrans);
+			for(int i = 0; i < trans.size() ; i++) {
+				int item = trans.get(i);
+				if(_supports.get(item) == null) {
+					_supports.put(item, 0);
+				}
+				_supports.replace(item, _supports.get(item) + 1);
+				
+				
+				Itemset itemcode = createCodeSingleton(item);
+				this._codeSupportVector.putIfAbsent(itemcode, new BitSet(this._transactions.size()));
+				this._codeSupportVector.get(itemcode).set(iTrans);
+				
+				
+				for(int iCode = 0; iCode < this._codes.size(); iCode++) {
+					if(this._codes.get(iCode).size() > 0) {
+						_codeSupportVector.get(this._codes.get(iCode)).set(iTrans);
 					}
-					_supports.replace(item, _supports.get(item) + 1);
 				}
 			}
-		});
+		}
 	}
 	
 	public int getUsage(Itemset is) {

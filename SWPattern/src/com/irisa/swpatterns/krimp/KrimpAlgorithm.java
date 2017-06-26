@@ -3,8 +3,6 @@ package com.irisa.swpatterns.krimp;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.function.Consumer;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
