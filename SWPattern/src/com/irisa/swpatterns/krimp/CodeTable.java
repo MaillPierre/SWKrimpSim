@@ -11,6 +11,8 @@ import java.util.function.Consumer;
 import org.apache.log4j.Logger;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.ItemsetSet;
+import com.irisa.swpatterns.exception.LogicException;
+
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
 /**
@@ -171,17 +173,21 @@ public class CodeTable {
 	 * L(t | CT)  [Dirty version]
 	 * @param transaction
 	 * @return
+	 * @throws LogicException 
 	 */
-	public double encodedTransactionCodeLength(Itemset transaction) {
+	public double encodedTransactionCodeLength(Itemset transaction) throws LogicException {
 		double result = 0.0;
 		Iterator<Itemset> itCodes = this.codeIterator();
-		logger.debug("encodingTransaction: "+transaction);
+//		logger.debug("encodingTransaction: "+transaction);
 		while(itCodes.hasNext()) {
 			Itemset code = itCodes.next();
-			if(isCover(transaction, code)) {
-				logger.debug("coveredBy: "+code);
+			if(this.getUsage(code) > 0 && isCover(transaction, code) ) {
+//				logger.debug("coveredBy: "+code);
 				result += codeLengthOfcode(code);
-				logger.debug("newLength: "+result);
+				if(result == Double.NEGATIVE_INFINITY || result == Double.POSITIVE_INFINITY) {
+					throw new LogicException( "INFINITY: " + transaction + " code: " + code + " usage: " + this.getUsage(code) + " cover ?: " + this.isCover(transaction, code)); // If the code is cover, it shouldn't have an usage = 0
+				}
+//				logger.debug("newLength: "+result);
 			}
 		}
 		return result;
@@ -190,8 +196,9 @@ public class CodeTable {
 	/**
 	 * L(D | CT)
 	 * @return
+	 * @throws LogicException 
 	 */
-	public double encodedTransactionSetCodeLength() {
+	public double encodedTransactionSetCodeLength() throws LogicException {
 		double result = 0.0;
 		Iterator<Itemset> itTrans = this._transactions.iterator();
 		while(itTrans.hasNext()) {
@@ -253,11 +260,12 @@ public class CodeTable {
 	/**
 	 * L(D, CT)
 	 * @return
+	 * @throws LogicException 
 	 */
-	public double totalCompressedSize() {
+	public double totalCompressedSize() throws LogicException {
 		double ctL = codeTableCodeLength();
 		double teL = encodedTransactionSetCodeLength();
-		logger.debug("CodeTable Length: " + ctL + " transactionLength: " + teL);
+//		logger.debug("CodeTable Length: " + ctL + " transactionLength: " + teL);
 		return ctL + teL;
 	}
 
@@ -295,16 +303,14 @@ public class CodeTable {
 			
 			_itemsetUsage.replace(code, 0);
 			
-			_transactions.forEach(new Consumer<Itemset>(){
-				@Override
-				public void accept(Itemset trans) {
-//					if(trans.size() > 1) {
+				_transactions.forEach(new Consumer<Itemset>(){
+					@Override
+					public void accept(Itemset trans) {
 						if(isCover(trans, code)) {
 							_itemsetUsage.replace(code, _itemsetUsage.get(code) +1);
 						}
-//					}
-				}
-			});
+					}
+				});
 			
 			this._usageTotal += _itemsetUsage.get(code);
 		}

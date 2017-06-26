@@ -1,6 +1,7 @@
 package com.irisa.swpatterns.krimp;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
@@ -25,6 +26,7 @@ import com.irisa.swpatterns.Utils;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.ItemsetSet;
 import com.irisa.swpatterns.data.LabeledTransactions;
+import com.irisa.swpatterns.exception.LogicException;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
@@ -47,7 +49,7 @@ public class KrimpAlgorithm {
 		this._candidateCodes = new ItemsetSet(candidates);
 	}
 
-	public CodeTable runAlgorithm(boolean pruning) {
+	public CodeTable runAlgorithm(boolean pruning) throws LogicException {
 		logger.debug("Starting KRIMP algorithm");
 		logger.debug(this._transactions.size() + " transactions, " + this._candidateCodes.size() + " codes");
 
@@ -55,8 +57,8 @@ public class KrimpAlgorithm {
 		Collections.sort(_candidateCodes, CodeTable.standardCandidateOrderComparator); // Fo ←F in Standard Candidate Order
 		double resultSize = result.totalCompressedSize();
 
-		logger.debug("CANDIDATE CODES");
-		logger.debug(_candidateCodes);
+//		logger.debug("CANDIDATE CODES");
+//		logger.debug(_candidateCodes);
 		
 		Iterator<Itemset> itCandidates = this._candidateCodes.iterator();
 		while(itCandidates.hasNext()) {
@@ -66,7 +68,7 @@ public class KrimpAlgorithm {
 			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
 				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
 				double candidateSize = tmpCT.totalCompressedSize();
-				logger.debug("candidateSize: "+candidateSize +" resultSize: "+resultSize); 
+//				logger.debug("candidateSize: "+candidateSize +" resultSize: "+resultSize); 
 				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
 					
 					if (!pruning) {
@@ -89,22 +91,35 @@ public class KrimpAlgorithm {
 		return result;
 	}
 	
-	public CodeTable postAcceptancePruning(CodeTable candidateTable, CodeTable previousTable) {
-		
-		// CB: after the acceptance of the new code
-		// first we have to get the PruneSet => those codes whose usage has become lower 
-		// after adding the candidates
+	/**
+	 * PruneSet ←{X ∈ CTinferior | usageCTinferior (X)< usageCTsuperior(X)}
+	 * @param inferior
+	 * @param superior
+	 * @return
+	 */
+	private ItemsetSet pruneSet(CodeTable inferior, CodeTable superior) {
 		ItemsetSet pruneSet = new ItemsetSet();
 		Itemset auxCode = null; 
-		Iterator<Itemset> itCodes = previousTable.codeIterator(); 
-		while (itCodes.hasNext()) {
-			auxCode = itCodes.next(); 
+		Iterator<Itemset> itInferiorCodes = inferior.codeIterator(); 
+		// Iterator<Itemset> itCodes = previousTable.codeIterator(); 
+		while (itInferiorCodes.hasNext()) {
+			auxCode = itInferiorCodes.next(); 
 			if (auxCode.size() >1 ) {
-				if (candidateTable.getUsage(auxCode) < previousTable.getUsage(auxCode) ) {
+				if (inferior.getUsage(auxCode) < superior.getUsage(auxCode) ) {
 					pruneSet.addItemset(auxCode);
 				}
 			}
 		}
+		return pruneSet;
+	}
+	
+	public CodeTable postAcceptancePruning(CodeTable candidateTable, CodeTable previousTable) throws LogicException {
+		
+		// CB: after the acceptance of the new code
+		// first we have to get the PruneSet => those codes whose usage has become lower 
+		// after adding the candidates
+		ItemsetSet pruneSet = pruneSet(candidateTable, previousTable);
+		
 
 		// names are taken from the paper 
 		CodeTable CTc = new CodeTable(candidateTable);
@@ -121,17 +136,7 @@ public class KrimpAlgorithm {
 			CTp.removeCode(pruneCandidate);
 			CTpSize = CTp.totalCompressedSize(); 
 			if (CTpSize < CTcSize) {
-				// we update the pruneSet with new potential candidates
-				itCodes = CTp.codeIterator(); 
-				while (itCodes.hasNext() ) {
-					auxCode = itCodes.next(); 
-					if (auxCode.size() >1 ) {
-						if (CTp.getUsage(auxCode) < CTc.getUsage(auxCode) ) {
-							// if it was there already, there shouldn't be any problem :)  
-							pruneSet.add(auxCode);
-						}
-					}
-				}
+				pruneSet = pruneSet(CTp, CTc);
 				CTc = CTp; 
 				CTcSize = CTpSize; 
 			}			
@@ -140,20 +145,26 @@ public class KrimpAlgorithm {
 	}
 	
 	private Itemset findLowestUsageCode (ItemsetSet pSet, CodeTable CT) {
-		Itemset result = null;
-		Itemset auxCode = null; 
-		Iterator<Itemset> codes = pSet.iterator();
-		if (codes.hasNext()) {
-			result = codes.next(); 
-		}
-		while (codes.hasNext()) {
-			auxCode = codes.next(); 
-			if (CT.getUsage(auxCode) < CT.getUsage(result)) {
-				result = auxCode; 
+//		Itemset result = null;
+//		Itemset auxCode = null; 
+//		Iterator<Itemset> codes = pSet.iterator();
+//		if (codes.hasNext()) {
+//			result = codes.next(); 
+//		}
+//		while (codes.hasNext()) {
+//			auxCode = codes.next(); 
+//			if (CT.getUsage(auxCode) < CT.getUsage(result)) {
+//				result = auxCode; 
+//			}
+//		}
+		Collections.sort(pSet, new Comparator<Itemset>() {
+			@Override
+			public int compare(Itemset arg0, Itemset arg1) {
+				return Integer.compare(CT.getUsage(arg0), CT.getUsage(arg1));
 			}
-		}
+		});
 		
-		return result; 
+		return pSet.getFirst(); 
 	}
 
 	public static void main(String[] args) {
