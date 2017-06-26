@@ -183,4 +183,19 @@ public class Itemset extends AbstractOrderedItemset{
 	public int hashCode() {
 		return this.toString().hashCode();
 	}
+	
+	/** 
+	 * Added by Carlos Bobed
+	 */
+	
+	public String toString () {
+		StringBuilder result = new StringBuilder();
+		result.append("[ "); 
+		for (int i=0; i<itemset.length; i++) {
+			result.append(itemset[i]+" "); 
+		}
+		result.append("]");
+		return result.toString(); 
+	}
+	
 }

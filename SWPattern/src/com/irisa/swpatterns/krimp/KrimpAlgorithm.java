@@ -55,6 +55,9 @@ public class KrimpAlgorithm {
 		Collections.sort(_candidateCodes, CodeTable.standardCandidateOrderComparator); // Fo ←F in Standard Candidate Order
 		double resultSize = result.totalCompressedSize();
 
+		logger.debug("CANDIDATE CODES");
+		logger.debug(_candidateCodes);
+		
 		Iterator<Itemset> itCandidates = this._candidateCodes.iterator();
 		while(itCandidates.hasNext()) {
 			Itemset candidate = itCandidates.next();
@@ -86,8 +89,7 @@ public class KrimpAlgorithm {
 		
 		// CB: after the acceptance of the new code
 		// first we have to get the PruneSet => those codes whose usage has become lower 
-		// after adding the candidate
-		logger.debug("--> Pruning ... ");
+		// after adding the candidates
 		ItemsetSet pruneSet = new ItemsetSet();
 		Itemset auxCode = null; 
 		Iterator<Itemset> itCodes = previousTable.codeIterator(); 
@@ -99,8 +101,7 @@ public class KrimpAlgorithm {
 				}
 			}
 		}
-		logger.debug("#PruneSet: "+pruneSet.size()+" pruning candidates");
-		
+
 		// names are taken from the paper 
 		CodeTable CTc = new CodeTable(candidateTable);
 		double CTcSize = -1; 
@@ -110,9 +111,7 @@ public class KrimpAlgorithm {
 		
 		CTcSize = CTc.totalCompressedSize(); 
 		while (!pruneSet.isEmpty()) {
-			logger.debug(pruneSet.size()) ;
-			pruneCandidate = findLowestUsageCode (pruneSet, CTc);
-			logger.debug(pruneCandidate);
+			pruneCandidate = findLowestUsageCode (pruneSet, CTc);		
 			pruneSet.remove(pruneCandidate); 
 			CTp = new CodeTable(CTc); 
 			CTp.removeCode(pruneCandidate);
@@ -129,7 +128,6 @@ public class KrimpAlgorithm {
 						}
 					}
 				}
-				logger.debug("#PruneSet: "+pruneSet.size()+" pruning candidates");
 				CTc = CTp; 
 				CTcSize = CTpSize; 
 			}			
@@ -140,7 +138,7 @@ public class KrimpAlgorithm {
 	private Itemset findLowestUsageCode (ItemsetSet pSet, CodeTable CT) {
 		Itemset result = null;
 		Itemset auxCode = null; 
-		Iterator<Itemset> codes = CT.codeIterator();
+		Iterator<Itemset> codes = pSet.iterator();
 		if (codes.hasNext()) {
 			result = codes.next(); 
 		}
