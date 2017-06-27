@@ -84,6 +84,8 @@ public class KrimpAlgorithm {
 				logger.debug(candidate+ " skipped");
 			}
 		}
+		
+		
 
 		logger.debug("KRIMP algorithm ended");
 		return result;

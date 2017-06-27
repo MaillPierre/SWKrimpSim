@@ -413,6 +413,51 @@ public class CodeTable {
 		return false;
 	}
 	
+
+	/** 
+	 * 
+	 * Codifying function according to the KRIMP paper
+	 * 
+	 * @param trans
+	 * @return
+	 */
+	public ItemsetSet codify(Itemset trans) {
+		Itemset auxTrans = new Itemset(trans.itemset);
+		ItemsetSet result = new ItemsetSet(); 
+		Iterator<Itemset> itIs = codeIterator();
+		Itemset auxCode = null; 
+		while (itIs.hasNext() && (auxTrans.size() != 0) ) {
+			auxCode = itIs.next(); 
+			if (auxTrans.containsAll(auxCode)) {
+				result.add(auxCode); 
+				auxTrans = auxTrans.cloneItemSetMinusAnItemset(auxCode); 
+			}
+		}
+		assert trans.size() == 0; // this should always happen 
+		return result; 
+	}
+	
+	/** 
+	 * 
+	 * Codifying function using isCover function
+	 * 
+	 */
+	
+	public ItemsetSet codifyUsingIsCover (Itemset trans) {
+		ItemsetSet result = new ItemsetSet(); 
+		Iterator<Itemset> itIs = codeIterator();
+		
+		Itemset auxCode = null; 
+		while (itIs.hasNext()) {
+			auxCode = itIs.next();
+			if (this.isCover(trans, auxCode)) {
+				result.add(auxCode); 
+			}
+		}
+		return result; 
+	}
+	
+	
 	public void removeCode(Itemset code) {
 		this._codes.remove(code);
 		this._itemsetCode.remove(code);
@@ -482,12 +527,12 @@ public class CodeTable {
 	}
 	
 	public String toString() {
-		Collections.sort(this._codes, new Comparator<Itemset>(){
-			@Override
-			public int compare(Itemset o1, Itemset o2) {
-				return - Integer.compare(o1.size(), o2.size());
-			}
-		});
+//		Collections.sort(this._codes, new Comparator<Itemset>(){
+//			@Override
+//			public int compare(Itemset o1, Itemset o2) {
+//				return - Integer.compare(o1.size(), o2.size());
+//			}
+//		});
 		
 		// StringBuilder copied from smpf code, just to see ...
 		StringBuilder r = new StringBuilder ();
@@ -509,8 +554,16 @@ public class CodeTable {
 			r.append('\n');
 		}
 		
-		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
+		// Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 		return r.toString();
+	}
+	
+	public void orderCodesStandardCoverageOrder() {
+		Collections.sort(this._codes, CodeTable.standardCoverOrderComparator);
+	}
+	
+	public void orderCodesStandardCandidateOrder() {
+		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 	}
 	
 }
