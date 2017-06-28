@@ -8,7 +8,7 @@
 // Modifications: 
 ///////////////////////////////////////////////////////////////////////////////
 
-package com.irisa.swpatterns.krimp;
+package com.irisa.swpatterns.krimp.test;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -31,13 +31,15 @@ import com.irisa.swpatterns.Utils;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.ItemsetSet;
 import com.irisa.swpatterns.data.LabeledTransactions;
+import com.irisa.swpatterns.krimp.CodeTable;
+import com.irisa.swpatterns.krimp.KrimpAlgorithm;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 public class CoverAnalysis {
 	
-	private static Logger logger = Logger.getLogger(KrimpAlgorithm.class);
+	private static Logger logger = Logger.getLogger(CoverAnalysis.class);
 
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
