@@ -18,7 +18,9 @@ import com.irisa.swpatterns.data.LabeledTransactions;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 
 import ca.pfv.spmf.algorithms.frequentpatterns.fin_prepost.FIN;
+import ca.pfv.spmf.algorithms.frequentpatterns.fin_prepost.PrePost;
 import ca.pfv.spmf.algorithms.frequentpatterns.fpgrowth.AlgoFPClose;
+import ca.pfv.spmf.algorithms.frequentpatterns.fpgrowth.AlgoFPGrowth;
 import ca.pfv.spmf.algorithms.frequentpatterns.fpgrowth.AlgoFPMax;
 import ca.pfv.spmf.algorithms.frequentpatterns.relim.AlgoRelim;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
@@ -43,8 +45,10 @@ public class FrequentItemSetExtractor {
 	public enum ALGORITHM {
 		FPMax,
 		FPClose,
+		FPGrowth,
 		Relim,
-		FIN
+		FIN,
+		PrePost
 	}
 
 	public FrequentItemSetExtractor() {
@@ -66,10 +70,10 @@ public class FrequentItemSetExtractor {
 	public Itemsets computeItemsets(Itemsets transactions) {
 		switch(this._algo) {
 		case FPClose:
-			logger.debug("Compute Frequent Itemsets with FPClose");
+			logger.debug("Compute Frequent Closed Itemsets with FPClose");
 			return computeItemSet_FPClose(transactions);
 		case FPMax:
-			logger.debug("Compute Frequent Itemsets with FPMax");
+			logger.debug("Compute Frequent Maximal Itemsets with FPMax");
 			return this.computeItemSet_FPMax(transactions);
 		case FIN:
 			logger.debug("Compute Frequent Itemsets with FIN");
@@ -77,33 +81,15 @@ public class FrequentItemSetExtractor {
 		case Relim:
 			logger.debug("Compute Frequent Itemsets with Relim");
 			return this.computeItemSet_Relim(transactions);
+		case FPGrowth:
+			logger.debug("Compute Frequent Itemsets with FPGrowth");
+			return this.computeItemSet_FPGrowth(transactions);
+		case PrePost:
+			logger.debug("Compute Frequent Itemsets with PrePost");
+			return this.computeItemSet_PrePost(transactions);
 		default:
 			return null;
 		}
-	}
-
-	public Itemsets computeItemSet_FPMax(Itemsets transactions) {
-		try {
-			Utils.printItemsets(transactions, tmpTransactionFilename);
-			return this.computeItemSet_FPMax(tmpTransactionFilename);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	public Itemsets computeItemSet_FPMax(String input) {
-		try {
-			logger.debug("FPMax Algorithm");
-			AlgoFPMax algoFpc = new AlgoFPMax();
-			Itemsets fpcResult = algoFpc.runAlgorithm(input, null, 0.0);
-//			fpcResult.printItemsets(fpcResult.getItemsetsCount());
-
-			return fpcResult;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 	public boolean algoFPClose() {
@@ -136,6 +122,63 @@ public class FrequentItemSetExtractor {
 
 	public void setAlgoFIN() {
 		this._algo = ALGORITHM.FIN;
+	}
+
+	public boolean algoFPGrowth() {
+		return this._algo == ALGORITHM.FPGrowth;
+	}
+
+	public void setAlgoFPGrowth() {
+		this._algo = ALGORITHM.FPGrowth;
+	}
+
+	public boolean algoPrePost() {
+		return this._algo == ALGORITHM.PrePost;
+	}
+
+	public void setAlgoPrePost() {
+		this._algo = ALGORITHM.PrePost;
+	}
+
+	public Itemsets computeItemSet_FPGrowth(LabeledTransactions transactions, AttributeIndex index) {
+		try {
+			index.printTransactionsItems(transactions, tmpTransactionFilename);
+
+			return computeItemSet_FPGrowth(tmpTransactionFilename);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FPGrowth(Itemsets is) {
+		try {
+			Utils.printItemsets(is, tmpTransactionFilename);
+
+			return computeItemSet_FPGrowth(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FPGrowth(String input) {
+		try {
+			AlgoFPGrowth algoFpc = new AlgoFPGrowth();
+			logger.debug("FPGrowth Algorithm");
+			Itemsets fpcResult;
+			fpcResult = algoFpc.runAlgorithm(input, null, 0.0);
+//			fpcResult.printItemsets(fpcResult.getItemsetsCount());
+
+			return fpcResult;
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	public Itemsets computeItemSet_FPClose(LabeledTransactions transactions, AttributeIndex index) {
@@ -179,16 +222,76 @@ public class FrequentItemSetExtractor {
 		return null;
 	}
 
+	public Itemsets computeItemSet_FPMax(Itemsets transactions) {
+		try {
+			Utils.printItemsets(transactions, tmpTransactionFilename);
+			return this.computeItemSet_FPMax(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_FPMax(String input) {
+		try {
+			logger.debug("FPMax Algorithm");
+			AlgoFPMax algoFpc = new AlgoFPMax();
+			Itemsets fpcResult = algoFpc.runAlgorithm(input, null, 0.0);
+//			fpcResult.printItemsets(fpcResult.getItemsetsCount());
+
+			return fpcResult;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	public Itemsets computeItemSet_FPMax(LabeledTransactions transactions, AttributeIndex index) {
 		try {
 			AlgoFPMax algoFpc = new AlgoFPMax();
-			logger.debug("FBGrowth Algorithm");
+			logger.debug("FPMax Algorithm");
 			index.printTransactionsItems(transactions, tmpTransactionFilename);
 			Itemsets fpcResult;
 			fpcResult = algoFpc.runAlgorithm(tmpTransactionFilename, null, 0.0);
 //			fpcResult.printItemsets(fpcResult.getItemsetsCount());
 
 			return fpcResult;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_PrePost(Itemsets transactions) {
+		try {
+			Utils.printItemsets(transactions, tmpTransactionFilename);
+			return this.computeItemSet_PrePost(tmpTransactionFilename);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_PrePost(String input) {
+		try {
+			logger.debug("PrePost+ Algorithm");
+			Itemsets fpcResult;
+			PrePost algoFpc = new PrePost();
+			algoFpc.setUsePrePostPlus(true);
+			algoFpc.runAlgorithm(input, 0.0, tmpItemsetFilename);
+			fpcResult = Utils.readItemsetFile(tmpItemsetFilename);
+
+			return fpcResult;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public Itemsets computeItemSet_PrePost(LabeledTransactions transactions, AttributeIndex index) {
+		try {
+			index.printTransactionsItems(transactions, tmpTransactionFilename);
+			return computeItemSet_PrePost(tmpTransactionFilename);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

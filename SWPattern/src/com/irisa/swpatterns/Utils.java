@@ -17,6 +17,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.log4j.Logger;
 
+import com.irisa.swpatterns.data.ItemsetSet;
 import com.irisa.swpatterns.data.LabeledTransaction;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 
@@ -169,7 +170,36 @@ public class Utils {
 			} catch (IOException e) {
 				logger.error(e);
 			}
+	}
 
+	/**
+	 * Print the transaction in the format expected by SPMF (int separated by spaces).
+	 * @param transactions
+	 * @param output
+	 */
+	public void printItemsetSet(ItemsetSet transactions, String output) {
+
+		try {
+			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
+			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' '));
+
+			// Writing lines
+			Iterator<Itemset> itResult = transactions.iterator();
+			while(itResult.hasNext()) {
+				Itemset resultLine = itResult.next();
+				// Ecriture des attributs types
+				for(int i = 0; i < resultLine.size(); i++) {
+					printer.print(resultLine.get(i));
+				}
+				
+				printer.println();
+			}
+
+			printer.close();
+
+		} catch (IOException e1) {
+			logger.error(e1);
+		}
 	}
 	
 }
