@@ -591,4 +591,23 @@ public class CodeTable {
 		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 	}
 	
+	public Itemset getCodeFromIndex (Integer idx) {
+		
+		// CB: this should be stored as an inverted index
+		// done this way only for testing purposes
+		Itemset result = null; 
+		for (Itemset it: _codes) {
+			Integer aux = _itemsetCode.get(it); 
+			if (aux != null) {
+				if (aux.equals(idx)) {
+					result = it; 
+					break; // early termination
+				}
+			}
+		}
+		return result; 
+		
+	}
+	
+	
 }
