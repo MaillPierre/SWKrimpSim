@@ -68,7 +68,7 @@ public class KrimpAlgorithm {
 				double candidateSize = tmpCT.totalCompressedSize();
 //				logger.debug("candidateSize: "+candidateSize +" resultSize: "+resultSize); 
 				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
-					
+					logger.debug("--> Added:"+candidate);
 					if (!pruning) {
 						result = tmpCT;
 						resultSize = candidateSize;
@@ -76,17 +76,13 @@ public class KrimpAlgorithm {
 						result = postAcceptancePruning(tmpCT, result);
 						// we have to update the size 
 						resultSize = result.totalCompressedSize(); 
-					}					
-					
+					}										
 				}
 			}
 			else {
 				logger.debug(candidate+ " skipped");
 			}
 		}
-		
-		
-
 		logger.debug("KRIMP algorithm ended");
 		return result;
 	}

@@ -31,7 +31,8 @@ public class CodeTable {
 	private HashMap<Itemset, Integer> _itemsetUsage = new HashMap<Itemset, Integer>();
 	private HashMap<Itemset, Integer> _itemsetCode = new HashMap<Itemset, Integer>();
 	private long _usageTotal = 0;
-	private HashMap<Itemset, BitSet> _codeSupportVector = new HashMap<Itemset, BitSet>();
+
+	// 	private HashMap<Itemset, BitSet> _codeSupportVector = new HashMap<Itemset, BitSet>();
 	
 	private boolean _standardFlag = false; // Set true if it is the standard codetable
 	private CodeTable _standardCT = null; // Codetable containing only singletons for the coding length of a CT
@@ -68,8 +69,8 @@ public class CodeTable {
 		initSupports();
 		initializeSingletons();
 		initCodes();
-		countUsages();	
-		Collections.sort(_codes, standardCandidateOrderComparator);	
+		orderCodesStandardCoverageOrder();
+		countUsages();		
 	}
 	
 	public static CodeTable createStandardCodeTable(ItemsetSet transactions) {
@@ -85,9 +86,11 @@ public class CodeTable {
 		_itemsetCode = new HashMap<Itemset, Integer>(ct._itemsetCode);
 		_usageTotal = ct._usageTotal;
 		_standardFlag = ct._standardFlag;
-		_codeSupportVector = new HashMap<Itemset, BitSet>(ct._codeSupportVector);
-		
+				
 		_standardCT = ct._standardCT;
+		
+		// CB: We ensure that the copy is in standardCoverageOrder 
+		orderCodesStandardCoverageOrder();
 	}
 
 	public ItemsetSet getTransactions() {
@@ -100,7 +103,6 @@ public class CodeTable {
 	 */
 	public void setTransactions(ItemsetSet transactions) {
 		this._transactions = transactions;
-		
 		init();
 	}
 
@@ -128,9 +130,6 @@ public class CodeTable {
 				if(_itemsetUsage.get(code) == null) {
 					_itemsetUsage.put(code, 0);
 				}
-				if(_codeSupportVector.get(code) == null) {
-					_codeSupportVector.put(code, new BitSet(_transactions.size()));
-				}
 			}
 		});
 	}
@@ -144,18 +143,6 @@ public class CodeTable {
 					_supports.put(item, 0);
 				}
 				_supports.replace(item, _supports.get(item) + 1);
-				
-				
-				Itemset itemcode = createCodeSingleton(item);
-				this._codeSupportVector.putIfAbsent(itemcode, new BitSet(this._transactions.size()));
-				this._codeSupportVector.get(itemcode).set(iTrans);
-				
-				
-				for(int iCode = 0; iCode < this._codes.size(); iCode++) {
-					if(this._codes.get(iCode).size() > 0) {
-						_codeSupportVector.get(this._codes.get(iCode)).set(iTrans);
-					}
-				}
 			}
 		}
 	}
@@ -186,6 +173,7 @@ public class CodeTable {
 	
 	/**
 	 * L(t | CT)  [Dirty version]
+	 * PRE: codeTable in standardCoverageOrder 
 	 * @param transaction
 	 * @return
 	 * @throws LogicException 
@@ -210,6 +198,7 @@ public class CodeTable {
 	
 	/**
 	 * L(D | CT)
+	 * PRE: codetable in standardCoverageOrder
 	 * @return
 	 * @throws LogicException 
 	 */
@@ -218,7 +207,6 @@ public class CodeTable {
 		Iterator<Itemset> itTrans = this._transactions.iterator();
 		while(itTrans.hasNext()) {
 			Itemset trans = itTrans.next();
-			
 			result += this.encodedTransactionCodeLength(trans);
 		}
 		
@@ -307,11 +295,10 @@ public class CodeTable {
 	
 	/**
 	 * Initialize the usage of each code according to the cover
+	 * PRE: the codeTable must be in standardCoverTable order
 	 */
 	protected void countUsages() {
 		this._usageTotal = 0;
-		Collections.sort(this._codes, CodeTable.standardCoverOrderComparator);
-		
 		Iterator<Itemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
 			Itemset code = itCodes.next();
@@ -329,7 +316,6 @@ public class CodeTable {
 			
 			this._usageTotal += _itemsetUsage.get(code);
 		}
-		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 	}
 	
 	/**
@@ -462,7 +448,7 @@ public class CodeTable {
 		this._codes.remove(code);
 		this._itemsetCode.remove(code);
 		this._itemsetUsage.remove(code);
-		
+		// CB: removing from an ordered list must not alter the order
 		countUsages(); // Have to maintain the thing up to date ? 
 		
 	}
@@ -489,8 +475,10 @@ public class CodeTable {
 			this._codes.add(code);
 			this._itemsetCode.put(code, indice);
 			this._itemsetUsage.put(code, this.getUsage(code));
-
+			// after adding it we have to reorder 
+			orderCodesStandardCoverageOrder();
 			this.countUsages(); // maintain the usage index uptodate ?
+			
 		}
 	}
 	
@@ -527,12 +515,6 @@ public class CodeTable {
 	}
 	
 	public String toString() {
-//		Collections.sort(this._codes, new Comparator<Itemset>(){
-//			@Override
-//			public int compare(Itemset o1, Itemset o2) {
-//				return - Integer.compare(o1.size(), o2.size());
-//			}
-//		});
 		
 		// StringBuilder copied from smpf code, just to see ...
 		StringBuilder r = new StringBuilder ();
@@ -542,9 +524,9 @@ public class CodeTable {
 		Iterator<Itemset> itIs = this.codeIterator();
 		while(itIs.hasNext()) {
 			Itemset is = itIs.next();
-			r.append('[');
 			r.append(is.toString());
-			r.append(']');
+			r.append(" s:"); 
+			r.append(is.getAbsoluteSupport()); 
 			r.append(" u:");
 			r.append(this.getUsage(is));
 			r.append(" P:");
@@ -553,8 +535,6 @@ public class CodeTable {
 			r.append(this.codeLengthOfcode(is));
 			r.append('\n');
 		}
-		
-		// Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 		return r.toString();
 	}
 	
