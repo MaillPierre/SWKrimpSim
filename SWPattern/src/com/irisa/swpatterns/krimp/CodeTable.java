@@ -379,22 +379,35 @@ public class CodeTable {
 	public boolean isCover(Itemset trans, Itemset code) {
 		if(isCoverCandidate(trans, code)) {
 			Iterator<Itemset> itIs = codeIterator();
-			Itemset tmpCode = null;
-			while(itIs.hasNext()) {
-				tmpCode = itIs.next();
-				
-				if(isCoverCandidate(trans, tmpCode)) { // If the size of code is correct and it is contained in trans
-					if(tmpCode.isEqualTo(code)) { // if code cover = OK
-						return true;
-					} else if (tmpCode.intersection(code).size() != 0) { // if another cover code overlap with code = !OK
-						return false;
-					} else { // transaction partially covered but there is still some chances
-						Itemset covered = CodeTable.itemsetSubstraction(trans, tmpCode);
-						return isCover(covered, code); 
-					}
+			return isCover(trans, code, itIs);
+			
+		}
+		return false;
+	}
+	
+	/**
+	 * 
+	 * @param trans transaction
+	 * @param code code from the codetable
+	 * @param itLastTestedCode Iterator over codes, used for recursive calls to avoid re-iteration
+	 *  over the whole code set when one is cover without intersection with code
+	 * @return true if the code is part of the transaction cover
+	 */
+	public boolean isCover(Itemset trans, Itemset code, Iterator<Itemset> itLastTestedCode) {
+		Itemset tmpCode = null;
+		while(itLastTestedCode.hasNext()) {
+			tmpCode = itLastTestedCode.next();
+			
+			if(isCoverCandidate(trans, tmpCode)) { // If the size of code is correct and it is contained in trans
+				if(tmpCode.isEqualTo(code)) { // if code cover = OK
+					return true;
+				} else if (tmpCode.intersection(code).size() != 0) { // if another cover code overlap with code = !OK
+					return false;
+				} else { // transaction partially covered but there is still some chances
+					Itemset covered = CodeTable.itemsetSubstraction(trans, tmpCode);
+					return isCover(covered, code, itLastTestedCode); 
 				}
 			}
-			
 		}
 		return false;
 	}
