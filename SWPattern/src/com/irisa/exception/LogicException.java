@@ -1,4 +1,4 @@
-package com.irisa.swpatterns.exception;
+package com.irisa.exception;
 
 public class LogicException extends Exception {
 

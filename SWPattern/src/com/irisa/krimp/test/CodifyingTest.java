@@ -7,7 +7,7 @@
 // Modifications: 
 ///////////////////////////////////////////////////////////////////////////////
 
-package com.irisa.swpatterns.krimp.test;
+package com.irisa.krimp.test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,14 +29,14 @@ import com.irisa.jenautils.BaseRDF;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
 import com.irisa.jenautils.BaseRDF.MODE;
-import com.irisa.swpatterns.FrequentItemSetExtractor;
+import com.irisa.krimp.CodeTable;
+import com.irisa.krimp.FrequentItemSetExtractor;
+import com.irisa.krimp.KrimpAlgorithm;
+import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.TransactionsExtractor;
-import com.irisa.swpatterns.Utils;
 import com.irisa.swpatterns.data.AttributeIndex;
-import com.irisa.swpatterns.data.ItemsetSet;
 import com.irisa.swpatterns.data.LabeledTransactions;
-import com.irisa.swpatterns.krimp.CodeTable;
-import com.irisa.swpatterns.krimp.KrimpAlgorithm;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;

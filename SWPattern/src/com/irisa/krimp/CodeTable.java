@@ -1,4 +1,4 @@
-package com.irisa.swpatterns.krimp;
+package com.irisa.krimp;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -10,9 +10,10 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 
 import org.apache.log4j.Logger;
+
+import com.irisa.exception.LogicException;
+import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.swpatterns.data.AttributeIndex;
-import com.irisa.swpatterns.data.ItemsetSet;
-import com.irisa.swpatterns.exception.LogicException;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 

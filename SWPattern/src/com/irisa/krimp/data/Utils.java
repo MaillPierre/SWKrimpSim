@@ -1,4 +1,4 @@
-package com.irisa.swpatterns;
+package com.irisa.krimp.data;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -17,7 +17,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.log4j.Logger;
 
-import com.irisa.swpatterns.data.ItemsetSet;
 import com.irisa.swpatterns.data.LabeledTransaction;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 

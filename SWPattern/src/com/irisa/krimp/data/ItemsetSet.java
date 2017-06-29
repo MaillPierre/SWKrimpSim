@@ -1,4 +1,4 @@
-package com.irisa.swpatterns.data;
+package com.irisa.krimp.data;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import com.irisa.swpatterns.krimp.KrimpAlgorithm;
+import com.irisa.krimp.KrimpAlgorithm;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
