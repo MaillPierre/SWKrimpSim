@@ -15,11 +15,9 @@ Project to use the Krimp algorithm to extract a codetable form a RDF base and us
 Uses SMPF for the some of the frequent itemsets algorithms.
 Includes JenaUtils classes.
 
-FOR TEST: Launch with options "-file iswc-2013-complete.nt -otherFile iswc-2013-complete.nt -rank1"
+FOR TEST: Launch with options "-file iswc-2013-complete.nt -otherFile iswc-2013-complete.nt -nPropertiesAndTypes"
 
 TODO :
-- Implement KRIMP
-	- Pruning TBD
 
 TESTS :
 - Comparison with official KRIMP
@@ -35,6 +33,11 @@ DONE :
 		- Usage seems to work
 	- Compression rate of a Codetable
 	- KRIMP (22/06/2017)
+	- Pruning (27/06/2017)
+- Conversion from RDF to transaction possible: instance-based, containing either:
+	- instance type and property
+	- instance type, property and other resource type if existing
+	- instance type, property and other resource
 
 Idea :
 - Apply pattern sampling to the maximal frequent patterns ?

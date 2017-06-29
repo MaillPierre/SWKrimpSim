@@ -10,26 +10,28 @@ import java.util.Comparator;
 public abstract class RDFPatternComponent {
 
 	public enum Type {
-		Type, // Type resource alone
-		In, // Property resource of an in-going triple alone
-		Out, // Property resource of an out-going triple alone
-		OutNeighbourType, // Property and type of the object of an out-going triple
-		InNeighbourType, // Property and type of the subject of an in-going triple
+		TYPE, // Type resource alone
+		IN_PROPERTY, // Property resource of an in-going triple alone
+		OUT_PROPERTY, // Property resource of an out-going triple alone
+		OUT_NEIGHBOUR_TYPE, // Property and type of the object of an out-going triple
+		OUT_NEIGHBOUR, // Property and object of an out-going triple
+		IN_NEIGHBOUR_TYPE, // Property and type of the subject of an in-going triple
+		IN_NEIGHBOUR, // Property and subject of an in-going triple
 		// For Paths
-		Node1, // First node of a path
-		Node1Type, // Type of the first node of a path
-		Relation1, // First relation of a path
-		Node2, // Second node of a path
-		Node2Type, // Type of the second node of a path
-		Relation2, // Second relation of a path
-		Node3, // Third node of a path
-		Node3Type, // Type of the third node of a path
-		Relation3, // Third relation of a path
-		Node4, // Fourth node of a path
-		Node4Type, // Type of the fourth node of a path
-		Relation4, // Fourth relation of a path
-		Node5, // Fifth node of a path
-		Node5Type, // Type of the fifth node of a path
+		NODE1, // First node of a path
+		NODE1TYPE, // Type of the first node of a path
+		RELATION1, // First relation of a path
+		NODE2, // Second node of a path
+		NODE2TYPE, // Type of the second node of a path
+		RELATION2, // Second relation of a path
+		NODE3, // Third node of a path
+		NODE3TYPE, // Type of the third node of a path
+		RELATION3, // Third relation of a path
+		NODE4, // Fourth node of a path
+		NODE4TYPE, // Type of the fourth node of a path
+		RELATION4, // Fourth relation of a path
+		NODE5, // Fifth node of a path
+		NODE5TYPE, // Type of the fifth node of a path
 	};
 	
 	protected RDFPatternElement _element = null; 
@@ -72,81 +74,89 @@ public abstract class RDFPatternComponent {
 			public int compare(RDFPatternComponent o1, RDFPatternComponent o2) {
 				if(o1.getType() == o2.getType()) {
 					return o1.toString().compareTo(o2.toString());
-				} else if(o1.getType() == Type.Type ) {
+				} else if(o1.getType() == Type.TYPE ) {
 					return 1;
-				}else if(o2.getType() == Type.Type ) {
+				}else if(o2.getType() == Type.TYPE ) {
 					return -1;
-				} else if(o1.getType() == Type.Out) {
+				} else if(o1.getType() == Type.OUT_PROPERTY) {
 					return 1;
-				}else if(o2.getType() == Type.Out ) {
+				}else if(o2.getType() == Type.OUT_PROPERTY ) {
 					return -1;
-				} else if(o1.getType() == Type.In) {
+				} else if(o1.getType() == Type.IN_PROPERTY) {
 					return 1;
-				} else if(o2.getType() == Type.In ) {
+				} else if(o2.getType() == Type.IN_PROPERTY ) {
 					return -1;
-				} else if(o1.getType() == Type.OutNeighbourType) {
+				} else if(o1.getType() == Type.OUT_NEIGHBOUR_TYPE) {
 					return 1;
-				} else if(o2.getType() == Type.OutNeighbourType) {
+				} else if(o2.getType() == Type.OUT_NEIGHBOUR_TYPE) {
 					return -1;
-				} else if(o1.getType() == Type.InNeighbourType) {
+				} else if(o1.getType() == Type.IN_NEIGHBOUR_TYPE) {
 					return 1;
-				} else if(o2.getType() == Type.InNeighbourType) {
+				} else if(o2.getType() == Type.IN_NEIGHBOUR_TYPE) {
 					return -1;
-				} else if(o1.getType() == Type.Node1) {
+				} else if(o1.getType() == Type.OUT_NEIGHBOUR) {
 					return 1;
-				} else if(o2.getType() == Type.Node1) {
+				} else if(o2.getType() == Type.OUT_NEIGHBOUR) {
 					return -1;
-				} else if(o1.getType() == Type.Node1Type) {
+				} else if(o1.getType() == Type.IN_NEIGHBOUR) {
 					return 1;
-				} else if(o2.getType() == Type.Node1Type) {
+				} else if(o2.getType() == Type.IN_NEIGHBOUR) {
 					return -1;
-				} else if(o1.getType() == Type.Relation1) {
+				} else if(o1.getType() == Type.NODE1) {
 					return 1;
-				} else if(o2.getType() == Type.Relation1) {
+				} else if(o2.getType() == Type.NODE1) {
 					return -1;
-				} else if(o1.getType() == Type.Node2) {
+				} else if(o1.getType() == Type.NODE1TYPE) {
 					return 1;
-				} else if(o2.getType() == Type.Node2) {
+				} else if(o2.getType() == Type.NODE1TYPE) {
 					return -1;
-				} else if(o1.getType() == Type.Node2Type) {
+				} else if(o1.getType() == Type.RELATION1) {
 					return 1;
-				} else if(o2.getType() == Type.Node2Type) {
+				} else if(o2.getType() == Type.RELATION1) {
 					return -1;
-				} else if(o1.getType() == Type.Relation2) {
+				} else if(o1.getType() == Type.NODE2) {
 					return 1;
-				} else if(o2.getType() == Type.Relation2) {
+				} else if(o2.getType() == Type.NODE2) {
 					return -1;
-				} else if(o1.getType() == Type.Node3) {
+				} else if(o1.getType() == Type.NODE2TYPE) {
 					return 1;
-				} else if(o2.getType() == Type.Node3) {
+				} else if(o2.getType() == Type.NODE2TYPE) {
 					return -1;
-				} else if(o1.getType() == Type.Node3Type) {
+				} else if(o1.getType() == Type.RELATION2) {
 					return 1;
-				} else if(o2.getType() == Type.Node3Type) {
+				} else if(o2.getType() == Type.RELATION2) {
 					return -1;
-				} else if(o1.getType() == Type.Relation3) {
+				} else if(o1.getType() == Type.NODE3) {
 					return 1;
-				} else if(o2.getType() == Type.Relation3) {
+				} else if(o2.getType() == Type.NODE3) {
 					return -1;
-				} else if(o1.getType() == Type.Node4) {
+				} else if(o1.getType() == Type.NODE3TYPE) {
 					return 1;
-				} else if(o2.getType() == Type.Node4) {
+				} else if(o2.getType() == Type.NODE3TYPE) {
 					return -1;
-				} else if(o1.getType() == Type.Node4Type) {
+				} else if(o1.getType() == Type.RELATION3) {
 					return 1;
-				} else if(o2.getType() == Type.Node4Type) {
+				} else if(o2.getType() == Type.RELATION3) {
 					return -1;
-				} else if(o1.getType() == Type.Relation4) {
+				} else if(o1.getType() == Type.NODE4) {
 					return 1;
-				} else if(o2.getType() == Type.Relation4) {
+				} else if(o2.getType() == Type.NODE4) {
 					return -1;
-				} else if(o1.getType() == Type.Node5) {
+				} else if(o1.getType() == Type.NODE4TYPE) {
 					return 1;
-				} else if(o2.getType() == Type.Node5) {
+				} else if(o2.getType() == Type.NODE4TYPE) {
 					return -1;
-				} else if(o1.getType() == Type.Node5Type) {
+				} else if(o1.getType() == Type.RELATION4) {
 					return 1;
-				} else if(o2.getType() == Type.Node5Type) {
+				} else if(o2.getType() == Type.RELATION4) {
+					return -1;
+				} else if(o1.getType() == Type.NODE5) {
+					return 1;
+				} else if(o2.getType() == Type.NODE5) {
+					return -1;
+				} else if(o1.getType() == Type.NODE5TYPE) {
+					return 1;
+				} else if(o2.getType() == Type.NODE5TYPE) {
 					return -1;
 				}
 				return -1;

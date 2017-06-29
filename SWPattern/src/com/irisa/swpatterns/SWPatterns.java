@@ -16,10 +16,10 @@ import com.irisa.jenautils.BaseRDF.MODE;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
 import com.irisa.krimp.CodeTable;
-import com.irisa.krimp.FrequentItemSetExtractor;
 import com.irisa.krimp.KrimpAlgorithm;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
+import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.LabeledTransactions;
 
@@ -53,16 +53,18 @@ public class SWPatterns {
 		options.addOption("FPGrowth", false, "Use FPGrowth algorithm.");
 		options.addOption("Relim", false, "Use Relim algorithm.");
 		options.addOption("class", true, "Class of the studied individuals.");
-		options.addOption("rank1", false, "Extract informations up to rank 1 (types, out-going and in-going properties and object types), default is only types, out-going and in-going properties.");
+		options.addOption("nProperties", false, "Extract items representing only properties (central individual types, out-going and in-going properties).");
+		options.addOption("nPropertiesAndTypes", false, "Extract items representing only properties and connected ressources types.");
+		options.addOption("nPropertiesAndOthers", false, "Extract items representing properties and connected ressources.");
 		options.addOption("transactionFile", false, "Only create a .dat transaction for each given file.");
 		options.addOption("path", true, "Extract paths of length N.");
 		options.addOption("help", false, "Display this help.");
 		options.addOption("inputTransaction", true, "Transaction file (RDF data will be ignored).");
+		options.addOption("otherInputTransaction", true, "Other transaction file (RDF data will be ignored).");
 		// added for pruning 
 		options.addOption("pruning", false, "Activate post-acceptance pruning"); 
 	
 		// Setting up options and constants etc.
-		UtilOntology onto = new UtilOntology();
 		try {
 			CommandLine cmd = parser.parse( options, args);
 	
@@ -71,6 +73,7 @@ public class SWPatterns {
 				HelpFormatter formatter = new HelpFormatter();
 				formatter.printHelp( "RDFtoTransactionConverter", options );
 			} else {
+				UtilOntology onto = new UtilOntology();
 				TransactionsExtractor converter = new TransactionsExtractor();
 				SWFrequentItemsetExtractor fsExtractor = new SWFrequentItemsetExtractor();
 				ItemsetSet realtransactions ;
@@ -111,7 +114,16 @@ public class SWPatterns {
 				if(cmd.hasOption("PrePost")) {
 					fsExtractor.setAlgoPrePost();
 				}
-				converter.setRankOne(cmd.hasOption("rank1") || converter.isRankOne());
+				if(cmd.hasOption("nProperties")) {
+					converter.setNeighborLevel(Neighborhood.Property);
+				}
+				if(cmd.hasOption("nPropertiesAndTypes")) {
+					converter.setNeighborLevel(Neighborhood.PropertyAndObjectType);
+				}
+				if(cmd.hasOption("nPropertiesAndOthers")) {
+					converter.setNeighborLevel(Neighborhood.PropertyAndObject);
+				}
+
 				logger.debug("output: " + output + " limit:" + limitString + " resultWindow:" + resultWindow + " classpattern:" + classRegex + " noType:" + converter.noTypeTriples() + " noOut:" + converter.noOutTriples() + " noIn:"+ converter.noInTriples());
 				logger.debug("Pruning activated: "+activatePruning);
 			
@@ -194,7 +206,7 @@ public class SWPatterns {
 					double normalSize = standardCT.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
 					logger.debug("-------- FIRST RESULT ---------");
-					logger.debug(krimpCT);
+//					logger.debug(krimpCT);
 					//					logger.debug("First Code table: " + krimpCT);
 					logger.debug("First NormalLength: " + normalSize);
 					logger.debug("First CompressedLength: " + compressedSize);
@@ -203,17 +215,26 @@ public class SWPatterns {
 	
 					if(cmd.hasOption("otherFile")) {
 	
-						LabeledTransactions otherTransactions;
-						if(cmd.hasOption("class")) {
-							Resource classRes = onto.getModel().createResource(className);
-							otherTransactions = converter.extractTransactionsForClass(new BaseRDF(otherFilename, MODE.LOCAL),  onto, classRes);
-						} else if(cmd.hasOption("path")) {
-							otherTransactions = converter.extractPathAttributes(new BaseRDF(otherFilename, MODE.LOCAL),  onto);
+						ItemsetSet otherRealTransactions;
+						
+						if(! cmd.hasOption("otherInputTransaction")) {
+							LabeledTransactions otherTransactions;
+							if(cmd.hasOption("class")) {
+								Resource classRes = onto.getModel().createResource(className);
+								otherTransactions = converter.extractTransactionsForClass(new BaseRDF(otherFilename, MODE.LOCAL),  onto, classRes);
+							} else if(cmd.hasOption("path")) {
+								otherTransactions = converter.extractPathAttributes(new BaseRDF(otherFilename, MODE.LOCAL),  onto);
+							} else {
+								otherTransactions = converter.extractTransactions(new BaseRDF(otherFilename, MODE.LOCAL),  onto);
+							}
+		
+							otherRealTransactions = converter.getIndex().convertToTransactions(otherTransactions);
+							if(cmd.hasOption("transactionFile")) {
+								converter.getIndex().printTransactionsItems(otherTransactions, otherFilename + ".dat");
+							}
 						} else {
-							otherTransactions = converter.extractTransactions(new BaseRDF(otherFilename, MODE.LOCAL),  onto);
+							otherRealTransactions = new ItemsetSet(Utils.readTransactionFile(cmd.getOptionValue("otherInputTransaction")));
 						}
-	
-						ItemsetSet otherRealTransactions = converter.getIndex().convertToTransactions(otherTransactions);
 	
 						logger.debug("Equals ? " + realtransactions.equals(otherRealTransactions));
 	
@@ -226,18 +247,16 @@ public class SWPatterns {
 						logger.debug("Second CompressedLength: " + otherCompressedSize);
 						logger.debug("Second Compression: " + (otherCompressedSize / otherNormalSize));
 	
-						logger.debug("-------- OTHER RESULT ---------");
-						logger.debug(otherResult);
+//						logger.debug("-------- OTHER RESULT ---------");
+//						logger.debug(otherResult);
+
 	
-	
-						if(cmd.hasOption("transactionFile")) {
-							converter.getIndex().printTransactionsItems(otherTransactions, otherFilename + ".dat");
-						}
 					}
 	
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
 				}
+				onto.close();
 	
 			}
 		} catch (ParseException e) {
@@ -246,7 +265,6 @@ public class SWPatterns {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		onto.close();
 	}
 	
 

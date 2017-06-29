@@ -131,82 +131,82 @@ public class SWFrequentItemsetExtractor extends FrequentItemSetExtractor {
 		while(itItems.hasNext()) {
 			RDFPatternComponent item = itItems.next();
 			if(item instanceof RDFPatternResource) {
-				if(item.getType()== Type.Type) {
+				if(item.getType()== Type.TYPE) {
 					result.add(mainRes, RDF.type, ((RDFPatternResource) item).getResource());
 				}
-				else if(item.getType()== Type.Out) {
+				else if(item.getType()== Type.OUT_PROPERTY) {
 					result.add(mainRes, ((RDFPatternResource) item).getResource().as(Property.class), result.createResource());
 				}
-				else if(item.getType()== Type.In) {
+				else if(item.getType()== Type.IN_PROPERTY) {
 					result.add(result.createResource(), ((RDFPatternResource) item).getResource().as(Property.class), mainRes);
 				} else {
 					switch (item.getType()) {
-					case Node1:
+					case NODE1:
 						Property node1Rel = result.createProperty(Global.baseDomain+"property/node1");
 						result.add(mainRes, node1Rel, ((RDFPatternResource) item).getResource());
 						node1 = ((RDFPatternResource) item).getResource();
 						break;
-					case Node2:
+					case NODE2:
 						Property node2Rel = result.createProperty(Global.baseDomain+"property/node2");
 						result.add(mainRes, node2Rel, ((RDFPatternResource) item).getResource());
 						node2 = ((RDFPatternResource) item).getResource();
 						break;
-					case Node3:
+					case NODE3:
 						Property node3Rel = result.createProperty(Global.baseDomain+"property/node3");
 						result.add(mainRes, node3Rel, ((RDFPatternResource) item).getResource());
 						node3 = ((RDFPatternResource) item).getResource();
 						break;
-					case Node4:
+					case NODE4:
 						Property node4Rel = result.createProperty(Global.baseDomain+"property/node4");
 						result.add(mainRes, node4Rel, ((RDFPatternResource) item).getResource());
 						node4 = ((RDFPatternResource) item).getResource();
 						break;
-					case Node5:
+					case NODE5:
 						Property node5Rel = result.createProperty(Global.baseDomain+"property/node5");
 						result.add(mainRes, node5Rel, ((RDFPatternResource) item).getResource());
 						node5 = ((RDFPatternResource) item).getResource();
 						break;
-					case Node1Type:
+					case NODE1TYPE:
 						Property node1TypeRel = result.createProperty(Global.baseDomain+"property/node1type");
 						result.add(mainRes, node1TypeRel, ((RDFPatternResource) item).getResource());
 						node1Type = ((RDFPatternResource) item).getResource();
 						break;
-					case Node2Type:
+					case NODE2TYPE:
 						Property node2TypeRel = result.createProperty(Global.baseDomain+"property/node2type");
 						result.add(mainRes, node2TypeRel, ((RDFPatternResource) item).getResource());
 						node2Type = ((RDFPatternResource) item).getResource();
 						break;
-					case Node3Type:
+					case NODE3TYPE:
 						Property node3TypeRel = result.createProperty(Global.baseDomain+"property/node3type");
 						result.add(mainRes, node3TypeRel, ((RDFPatternResource) item).getResource());
 						node3Type = ((RDFPatternResource) item).getResource();
 						break;
-					case Node4Type:
+					case NODE4TYPE:
 						Property node4TypeRel = result.createProperty(Global.baseDomain+"property/node4type");
 						result.add(mainRes, node4TypeRel, ((RDFPatternResource) item).getResource());
 						node4Type = ((RDFPatternResource) item).getResource();
 						break;
-					case Node5Type:
+					case NODE5TYPE:
 						Property node5TypeRel = result.createProperty(Global.baseDomain+"property/node5type");
 						result.add(mainRes, node5TypeRel, ((RDFPatternResource) item).getResource());
 						node5Type = ((RDFPatternResource) item).getResource();
 						break;
-					case Relation1:
+					case RELATION1:
 						Property relation1Rel = result.createProperty(Global.baseDomain+"property/relation1");
 						result.add(mainRes, relation1Rel, ((RDFPatternResource) item).getResource());
 						relation1 = ((RDFPatternResource) item).getResource().as(Property.class);
 						break;
-					case Relation2:
+					case RELATION2:
 						Property relation2Rel = result.createProperty(Global.baseDomain+"property/relation2");
 						result.add(mainRes, relation2Rel, ((RDFPatternResource) item).getResource());
 						relation2 = ((RDFPatternResource) item).getResource().as(Property.class);
 						break;
-					case Relation3:
+					case RELATION3:
 						Property relation3Rel = result.createProperty(Global.baseDomain+"property/relation3");
 						result.add(mainRes, relation3Rel, ((RDFPatternResource) item).getResource());
 						relation3 = ((RDFPatternResource) item).getResource().as(Property.class);
 						break;
-					case Relation4:
+					case RELATION4:
 						Property relation4Rel = result.createProperty(Global.baseDomain+"property/relation4");
 						result.add(mainRes, relation4Rel, ((RDFPatternResource) item).getResource());
 						relation4 = ((RDFPatternResource) item).getResource().as(Property.class);
@@ -217,11 +217,11 @@ public class SWFrequentItemsetExtractor extends FrequentItemSetExtractor {
 					}
 				}
 			} else if(item instanceof RDFPatternPathFragment) {
-				if(item.getType() == Type.OutNeighbourType) {
+				if(item.getType() == Type.OUT_NEIGHBOUR_TYPE) {
 					Resource object = result.createResource();
 					result.add(mainRes, ((RDFPatternPathFragment) item).getPathFragment().getFirst().as(Property.class), object);
 					result.add(object, RDF.type, ((RDFPatternPathFragment) item).getPathFragment().getSecond());
-				} else if(item.getType() == Type.InNeighbourType) {
+				} else if(item.getType() == Type.IN_NEIGHBOUR_TYPE) {
 					Resource subject = result.createResource();
 					result.add(subject, ((RDFPatternPathFragment) item).getPathFragment().getSecond().as(Property.class), mainRes);
 					result.add(subject, RDF.type, ((RDFPatternPathFragment) item).getPathFragment().getFirst());

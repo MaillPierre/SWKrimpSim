@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import org.apache.jena.atlas.web.HttpException;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
@@ -33,16 +34,20 @@ public class TransactionsExtractor {
 
 	private static int queryLimit = 0;
 	
-	private AttributeIndex index = new AttributeIndex();
+	private AttributeIndex _index = new AttributeIndex();
 
-	private boolean noTypeBool = false;
-	private boolean noInBool = false;
-	private boolean noOutBool = false;	
+	private boolean _noTypeBool = false;
+	private boolean _noInBool = false;
+	private boolean _noOutBool = false;	
+
+	public enum Neighborhood {
+		Property,
+		PropertyAndObjectType,
+		PropertyAndObject
+	}
+	private Neighborhood _neighborLevel = Neighborhood.PropertyAndObjectType;
 	
-	private boolean rankOne = false;
-	private boolean randZero = true;
-	
-	private int pathsLength = 0;
+	private int _pathsLength = 0;
 	
 	private static Logger logger = Logger.getLogger(TransactionsExtractor.class);
 	
@@ -55,15 +60,15 @@ public class TransactionsExtractor {
 	}
 
 	public AttributeIndex getIndex() {
-		return index;
+		return _index;
 	}
 
 	public void setIndex(AttributeIndex index) {
-		this.index = index;
+		this._index = index;
 	}
 
 	/**
-	 * Rank zero translations: type and outgoing/ingoing properties.
+	 * Neighbor properties transactions: type and outgoing/ingoing properties.
 	 * For each class, if limit is > 0, only take into account the limited amount of individual
 	 * @param baseRDF
 	 * @param onto
@@ -83,7 +88,7 @@ public class TransactionsExtractor {
 		}
 
 //		logger.debug("End of extraction");
-		logger.debug(index.size() + " attributes");
+		logger.debug(_index.size() + " attributes");
 //
 		logger.debug(results.size() + " lines");
 		return results;
@@ -97,10 +102,10 @@ public class TransactionsExtractor {
 			while(itTypeResult.hasNext()) {
 				CustomQuerySolution queryResultLine = itTypeResult.nextAnswerSet();
 				Resource indiType = queryResultLine.getResource("t");
-				RDFPatternResource attribute = new RDFPatternResource(indiType, RDFPatternResource.Type.Type );
+				RDFPatternResource attribute = new RDFPatternResource(indiType, RDFPatternResource.Type.TYPE );
 
 				if(onto.isClass(indiType) && ! onto.isOntologyClassVocabulary(indiType)) {
-					index.add(attribute);
+					_index.add(attribute);
 					indivResult.add(attribute);
 				}
 			}
@@ -113,17 +118,46 @@ public class TransactionsExtractor {
 	}
 	
 	private LabeledTransaction extractOutPropertyAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+
 		LabeledTransaction indivResult = new LabeledTransaction();
-		String outTripQueryString = "SELECT DISTINCT ?p WHERE { <" + currIndiv + "> ?p ?o }";
+		
+		String outTripQueryString = "SELECT DISTINCT ?p "; 
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+			outTripQueryString += " ?ot " ;
+		}
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndObject) {
+			outTripQueryString += " ?o " ;
+		}
+		outTripQueryString += " WHERE { <" + currIndiv + "> ?p ?o . ";
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+			outTripQueryString += " OPTIONAL { ?o a ?ot . } ";
+		}
+		outTripQueryString += " FILTER( isIri(?o) ) }";
 		QueryResultIterator itOutResult = new QueryResultIterator(outTripQueryString, baseRDF);
 		try {
 			while(itOutResult.hasNext()) {
 				CustomQuerySolution queryResultLine = itOutResult.nextAnswerSet();
 				Resource prop = queryResultLine.getResource("p");
-				RDFPatternResource attribute = new RDFPatternResource(prop, RDFPatternResource.Type.Out );
-
-				if(! onto.isOntologyPropertyVocabulary(prop)) {
-					index.add(attribute);
+				if(prop != null && ! onto.isOntologyPropertyVocabulary(prop)) {
+					RDFPatternComponent attribute = null;
+					if(this.getNeighborLevel()== Neighborhood.PropertyAndObject 
+							&& queryResultLine.getResource("o") != null) {
+						Resource obj = queryResultLine.getResource("o");
+						attribute = new RDFPatternPathFragment(prop, obj, RDFPatternResource.Type.OUT_NEIGHBOUR );
+					} else if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType 
+							&& queryResultLine.getResource("ot") != null) {
+						Resource sType = queryResultLine.getResource("ot");
+						if(sType != null) {
+							attribute = new RDFPatternPathFragment(prop, sType, RDFPatternResource.Type.OUT_NEIGHBOUR_TYPE );
+						}
+					} else /* if(this.getNeighborLevel() == Neighborhood.Property)*/ {
+						attribute = new RDFPatternResource(prop, RDFPatternResource.Type.OUT_PROPERTY );
+					}
+					
+					if(! _index.contains(attribute)) {
+						_index.add(attribute);
+					}
+					logger.debug("Attribute: " + attribute);
 					indivResult.add(attribute);
 				}
 			}
@@ -132,29 +166,32 @@ public class TransactionsExtractor {
 		} finally {
 			itOutResult.close();
 		}
+		
 		return indivResult;
 	}
+	
+	
 	public LabeledTransaction extractTransactionsForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 		LabeledTransaction indivResult = new LabeledTransaction();
 
 		// QUERY types triples
-		if(! noTypeBool) {
+		if(! _noTypeBool) {
 			indivResult.addAll(this.extractTypeAttributeForIndividual(baseRDF, onto, currIndiv));
 		}
 
 		// QUERY out triples
-		if(! noOutBool) {
+		if(! _noOutBool) {
 			indivResult.addAll(this.extractOutPropertyAttributeForIndividual(baseRDF, onto, currIndiv));
 		}
 
 		// QUERY in triples
-		if(! noInBool) {
-			indivResult.addAll(this.extractInPropertyAttributeForIndividual(baseRDF, onto, currIndiv));
+		if(! _noInBool) {
+			indivResult.addAll(this.extractInPropertyAttributesForIndividual(baseRDF, onto, currIndiv));
 		}
 		
-		if(this.rankOne) {
-			indivResult.addAll(this.extractPathFragmentAttributesForIndividual(baseRDF, onto, currIndiv));
-		}
+//		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+//			indivResult.addAll(this.extractPathFragmentAttributesForIndividual(baseRDF, onto, currIndiv));
+//		}
 		
 		return indivResult;
 	}
@@ -275,82 +312,82 @@ public class TransactionsExtractor {
 				) {
 				LabeledTransaction line = new LabeledTransaction();
 				
-				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.Node1);
-				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.Node2);
-				RDFPatternResource i3Attr = new RDFPatternResource(i3, RDFPatternComponent.Type.Node3);
-				RDFPatternResource i4Attr = new RDFPatternResource(i4, RDFPatternComponent.Type.Node4);
-				RDFPatternResource i5Attr = new RDFPatternResource(i5, RDFPatternComponent.Type.Node5);
-				RDFPatternResource p1Attr = new RDFPatternResource(p1, RDFPatternComponent.Type.Relation1);
-				RDFPatternResource p2Attr = new RDFPatternResource(p2, RDFPatternComponent.Type.Relation2);
-				RDFPatternResource p3Attr = new RDFPatternResource(p3, RDFPatternComponent.Type.Relation3);
-				RDFPatternResource p4Attr = new RDFPatternResource(p4, RDFPatternComponent.Type.Relation4);
+				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.NODE1);
+				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.NODE2);
+				RDFPatternResource i3Attr = new RDFPatternResource(i3, RDFPatternComponent.Type.NODE3);
+				RDFPatternResource i4Attr = new RDFPatternResource(i4, RDFPatternComponent.Type.NODE4);
+				RDFPatternResource i5Attr = new RDFPatternResource(i5, RDFPatternComponent.Type.NODE5);
+				RDFPatternResource p1Attr = new RDFPatternResource(p1, RDFPatternComponent.Type.RELATION1);
+				RDFPatternResource p2Attr = new RDFPatternResource(p2, RDFPatternComponent.Type.RELATION2);
+				RDFPatternResource p3Attr = new RDFPatternResource(p3, RDFPatternComponent.Type.RELATION3);
+				RDFPatternResource p4Attr = new RDFPatternResource(p4, RDFPatternComponent.Type.RELATION4);
 
-				index.add(i1Attr);
+				_index.add(i1Attr);
 				line.add(i1Attr);
 
-				index.add(i2Attr);
+				_index.add(i2Attr);
 				line.add(i2Attr);
 				
 
-				index.add(i3Attr);
+				_index.add(i3Attr);
 				line.add(i3Attr);
 				
 
-				index.add(i4Attr);
+				_index.add(i4Attr);
 				line.add(i4Attr);
 				
 
-				index.add(i5Attr);
+				_index.add(i5Attr);
 				line.add(i5Attr);
 				
 
-				index.add(p1Attr);
+				_index.add(p1Attr);
 				line.add(p1Attr);
 				
 
-				index.add(p2Attr);
+				_index.add(p2Attr);
 				line.add(p2Attr);
 				
 
-				index.add(p3Attr);
+				_index.add(p3Attr);
 				line.add(p3Attr);
 				
 
-				index.add(p4Attr);
+				_index.add(p4Attr);
 				line.add(p4Attr);
 				
 				if(i1c != null) { 
-					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.Node1Type);
+					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.NODE1TYPE);
 
-					index.add(i1cAttr);
+					_index.add(i1cAttr);
 					line.add(i1cAttr);
 				}
 				
 				if(i2c != null) { 
-					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.Node2Type);
+					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.NODE2TYPE);
 
-					index.add(i2cAttr);
+					_index.add(i2cAttr);
 					line.add(i2cAttr);
 				}
 				
 				if(i3c != null) {
-					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.Node3Type);
+					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.NODE3TYPE);
 
-					index.add(i3cAttr);
+					_index.add(i3cAttr);
 					line.add(i3cAttr);
 				}
 				
 				if(i4c != null) {
-					RDFPatternResource i4cAttr = new RDFPatternResource(i4c, RDFPatternComponent.Type.Node4Type);
+					RDFPatternResource i4cAttr = new RDFPatternResource(i4c, RDFPatternComponent.Type.NODE4TYPE);
 
-					index.add(i4cAttr);
+					_index.add(i4cAttr);
 					line.add(i4cAttr);
 				}
 				
 				if(i5c != null) {
-					RDFPatternResource i5cAttr = new RDFPatternResource(i5c, RDFPatternComponent.Type.Node5Type);
+					RDFPatternResource i5cAttr = new RDFPatternResource(i5c, RDFPatternComponent.Type.NODE5TYPE);
 
-					index.add(i5cAttr);
+					_index.add(i5cAttr);
 					line.add(i5cAttr);
 				}
 								
@@ -408,61 +445,61 @@ public class TransactionsExtractor {
 				) {
 				LabeledTransaction line = new LabeledTransaction();
 				
-				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.Node1);
-				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.Node2);
-				RDFPatternResource i3Attr = new RDFPatternResource(i3, RDFPatternComponent.Type.Node3);
-				RDFPatternResource i4Attr = new RDFPatternResource(i4, RDFPatternComponent.Type.Node4);
-				RDFPatternResource p1Attr = new RDFPatternResource(p1, RDFPatternComponent.Type.Relation1);
-				RDFPatternResource p2Attr = new RDFPatternResource(p2, RDFPatternComponent.Type.Relation2);
-				RDFPatternResource p3Attr = new RDFPatternResource(p3, RDFPatternComponent.Type.Relation3);
+				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.NODE1);
+				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.NODE2);
+				RDFPatternResource i3Attr = new RDFPatternResource(i3, RDFPatternComponent.Type.NODE3);
+				RDFPatternResource i4Attr = new RDFPatternResource(i4, RDFPatternComponent.Type.NODE4);
+				RDFPatternResource p1Attr = new RDFPatternResource(p1, RDFPatternComponent.Type.RELATION1);
+				RDFPatternResource p2Attr = new RDFPatternResource(p2, RDFPatternComponent.Type.RELATION2);
+				RDFPatternResource p3Attr = new RDFPatternResource(p3, RDFPatternComponent.Type.RELATION3);
 
 
-				index.add(i1Attr);
+				_index.add(i1Attr);
 				line.add(i1Attr);
 
-				index.add(i2Attr);
+				_index.add(i2Attr);
 				line.add(i2Attr);
 
-				index.add(i3Attr);
+				_index.add(i3Attr);
 				line.add(i3Attr);
 
-				index.add(i4Attr);
+				_index.add(i4Attr);
 				line.add(i4Attr);
 
-				index.add(p1Attr);
+				_index.add(p1Attr);
 				line.add(p1Attr);
 
-				index.add(p2Attr);
+				_index.add(p2Attr);
 				line.add(p2Attr);
 
-				index.add(p3Attr);
+				_index.add(p3Attr);
 				line.add(p3Attr);
 				
 				if(i1c != null) { 
-					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.Node1Type);
+					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.NODE1TYPE);
 
-					index.add(i1cAttr);
+					_index.add(i1cAttr);
 					line.add(i1cAttr);
 				}
 				
 				if(i2c != null) { 
-					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.Node2Type);
+					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.NODE2TYPE);
 
-					index.add(i2cAttr);
+					_index.add(i2cAttr);
 					line.add(i2cAttr);
 				}
 				
 				if(i3c != null) {
-					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.Node3Type);
+					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.NODE3TYPE);
 
-					index.add(i3cAttr);
+					_index.add(i3cAttr);
 					line.add(i3cAttr);
 				}
 				
 				if(i4c != null) {
-					RDFPatternResource i4cAttr = new RDFPatternResource(i4c, RDFPatternComponent.Type.Node3Type);
+					RDFPatternResource i4cAttr = new RDFPatternResource(i4c, RDFPatternComponent.Type.NODE3TYPE);
 
-					index.add(i4cAttr);
+					_index.add(i4cAttr);
 					line.add(i4cAttr);
 				}
 								
@@ -512,43 +549,43 @@ public class TransactionsExtractor {
 				) {
 				LabeledTransaction line = new LabeledTransaction();
 				
-				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.Node1);
-				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.Node2);
-				RDFPatternResource i3Attr = new RDFPatternResource(i3, RDFPatternComponent.Type.Node3);
-				RDFPatternResource p1Attr = new RDFPatternResource(p1, RDFPatternComponent.Type.Relation1);
-				RDFPatternResource p2Attr = new RDFPatternResource(p2, RDFPatternComponent.Type.Relation2);
+				RDFPatternResource i1Attr = new RDFPatternResource(i1, RDFPatternComponent.Type.NODE1);
+				RDFPatternResource i2Attr = new RDFPatternResource(i2, RDFPatternComponent.Type.NODE2);
+				RDFPatternResource i3Attr = new RDFPatternResource(i3, RDFPatternComponent.Type.NODE3);
+				RDFPatternResource p1Attr = new RDFPatternResource(p1, RDFPatternComponent.Type.RELATION1);
+				RDFPatternResource p2Attr = new RDFPatternResource(p2, RDFPatternComponent.Type.RELATION2);
 
-				index.add(i1Attr);
+				_index.add(i1Attr);
 				line.add(i1Attr);
 
-				index.add(i2Attr);
+				_index.add(i2Attr);
 				line.add(i2Attr);
 
-				index.add(i3Attr);
+				_index.add(i3Attr);
 				line.add(i3Attr);
 
-				index.add(p1Attr);
+				_index.add(p1Attr);
 				line.add(p1Attr);
 
-				index.add(p2Attr);
+				_index.add(p2Attr);
 				line.add(p2Attr);
 				
 				if(i1c != null) { 
-					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.Node1Type);
+					RDFPatternResource i1cAttr = new RDFPatternResource(i1c, RDFPatternComponent.Type.NODE1TYPE);
 
-					index.add(i1cAttr);
+					_index.add(i1cAttr);
 					line.add(i1cAttr);
 				}
 				if(i2c != null) { 
-					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.Node2Type);
+					RDFPatternResource i2cAttr = new RDFPatternResource(i2c, RDFPatternComponent.Type.NODE2TYPE);
 
-					index.add(i2cAttr);
+					_index.add(i2cAttr);
 					line.add(i2cAttr);
 				}
 				if(i3c != null) {
-					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.Node3Type);
+					RDFPatternResource i3cAttr = new RDFPatternResource(i3c, RDFPatternComponent.Type.NODE3TYPE);
 
-					index.add(i3cAttr);
+					_index.add(i3cAttr);
 					line.add(i3cAttr);
 				}
 								
@@ -578,7 +615,7 @@ public class TransactionsExtractor {
 		Iterator<RDFPatternComponent> itItems = is.iterator();
 		while(itItems.hasNext()) {
 			RDFPatternComponent item = itItems.next();
-			if(item.getType() != Type.Type) {
+			if(item.getType() != Type.TYPE) {
 				if(! variables.containsKey( item )) {
 					String tmpVar = "?var" + varNum++;
 					variables.put(item, tmpVar);
@@ -590,20 +627,20 @@ public class TransactionsExtractor {
 			String patternString = "";
 			if(item instanceof RDFPatternResource) {
 				Resource patternRes = ((RDFPatternResource) item).getResource();
-				if(item.getType() == Type.Type) {
+				if(item.getType() == Type.TYPE) {
 					patternString = patternCenterVar + " <" + RDF.type + "> <" + patternRes.getURI() + "> . ";
-				} else if(item.getType() == Type.Out) {
+				} else if(item.getType() == Type.OUT_PROPERTY) {
 					patternString = patternCenterVar + " <" + patternRes.getURI() + "> " + varName +" . ";
-				} else if(item.getType() == Type.In) {
+				} else if(item.getType() == Type.IN_PROPERTY) {
 					patternString = varName + " <" + patternRes.getURI() + "> " + patternCenterVar +" . ";
 				}
 			} else 
 				if(item instanceof RDFPatternPathFragment) {
 				Resource patternFirst = ((RDFPatternPathFragment) item).getPathFragment().getFirst();
 				Resource patternSecond = ((RDFPatternPathFragment) item).getPathFragment().getSecond();
-				if(item.getType() == Type.OutNeighbourType) {
+				if(item.getType() == Type.OUT_NEIGHBOUR_TYPE) {
 					patternString = patternCenterVar + " <" + patternFirst.getURI() + "> " + varName +" . " + varName + " <" + RDF.type + "> <" + patternSecond.getURI() + "> . ";
-				} else if(item.getType() == Type.InNeighbourType) {
+				} else if(item.getType() == Type.IN_NEIGHBOUR_TYPE) {
 					patternString = varName + " <" + patternSecond.getURI() + "> " + patternCenterVar + " . " + varName + " <" + RDF.type + "> <" + patternFirst.getURI() + "> . ";
 				}
 			}
@@ -618,20 +655,47 @@ public class TransactionsExtractor {
 	}
 
 	
-	private LabeledTransaction extractInPropertyAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+	private LabeledTransaction extractInPropertyAttributesForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 
 		LabeledTransaction indivResult = new LabeledTransaction();
 		
-		String inTripQueryString = "SELECT DISTINCT ?p WHERE { ?s ?p <" + currIndiv + "> }";
+		String inTripQueryString = "SELECT DISTINCT ?p "; 
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+			inTripQueryString += " ?st " ;
+		}
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndObject) {
+			inTripQueryString += " ?s " ;
+		}
+		inTripQueryString += " WHERE { ?s ?p <" + currIndiv + "> . ";
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+			inTripQueryString += " OPTIONAL { ?s a ?st . } ";
+		}
+		inTripQueryString += " }";
 		QueryResultIterator itInResult = new QueryResultIterator(inTripQueryString, baseRDF);
 		try {
 			while(itInResult.hasNext()) {
 				CustomQuerySolution queryResultLine = itInResult.nextAnswerSet();
 				Resource prop = queryResultLine.getResource("p");
-				RDFPatternResource attribute = new RDFPatternResource(prop, RDFPatternResource.Type.In );
-
 				if(! onto.isOntologyPropertyVocabulary(prop)) {
-					index.add(attribute);
+					RDFPatternComponent attribute = null;
+					switch(this.getNeighborLevel()) {
+					case PropertyAndObject:
+						Resource subj = queryResultLine.getResource("s");
+						attribute = new RDFPatternPathFragment(prop, subj, RDFPatternResource.Type.IN_NEIGHBOUR );
+						break;
+					case PropertyAndObjectType:
+						Resource sType = queryResultLine.getResource("st");
+						if(sType != null) {
+							attribute = new RDFPatternPathFragment(prop, sType, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );
+						}
+					default: // case Property:
+						attribute = new RDFPatternResource(prop, RDFPatternResource.Type.IN_PROPERTY );
+						break;
+					}
+					
+					if(! _index.contains(attribute)) {
+						_index.add(attribute);
+					}
 					indivResult.add(attribute);
 				}
 			}
@@ -645,110 +709,102 @@ public class TransactionsExtractor {
 	}
 	
 
-	private LabeledTransaction extractPathFragmentAttributesForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
-
-		LabeledTransaction indivResult = new LabeledTransaction();
-		
-		if(! this.noOutTriples()) {
-			String outTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { <" + currIndiv + "> ?p ?o . ?o a ?oc }";
-			QueryResultIterator itOutResult = new QueryResultIterator(outTripQueryString, baseRDF);
-			try {
-				while(itOutResult.hasNext()) {
-					CustomQuerySolution queryResultLine = itOutResult.nextAnswerSet();
-					Resource prop = queryResultLine.getResource("p");
-					Resource objType = queryResultLine.getResource("oc");
-					if(!onto.isOntologyPropertyVocabulary(prop)) {
-						if(objType != null && prop != null) {
-							RDFPatternPathFragment attribute = new RDFPatternPathFragment(prop, objType, RDFPatternResource.Type.OutNeighbourType );
-							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
-								index.add(attribute);
-								indivResult.add(attribute);
-							}
-						}
-					}
-				}
-			} catch(HttpException e) {
+//	private LabeledTransaction extractPathFragmentAttributesForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+//
+//		LabeledTransaction indivResult = new LabeledTransaction();
+//		
+//		if(! this.noOutTriples()) {
+//			String outTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { <" + currIndiv + "> ?p ?o . ?o a ?oc }";
+//			QueryResultIterator itOutResult = new QueryResultIterator(outTripQueryString, baseRDF);
+//			try {
+//				while(itOutResult.hasNext()) {
+//					CustomQuerySolution queryResultLine = itOutResult.nextAnswerSet();
+//					Resource prop = queryResultLine.getResource("p");
+//					Resource objType = queryResultLine.getResource("oc");
+//					if(!onto.isOntologyPropertyVocabulary(prop)) {
+//						if(objType != null && prop != null) {
+//							RDFPatternPathFragment attribute = new RDFPatternPathFragment(prop, objType, RDFPatternResource.Type.OUT_NEIGHBOUR_TYPE );
+//							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
+//								_index.add(attribute);
+//								indivResult.add(attribute);
+//							}
+//						}
+//					}
+//				}
+//			} catch(HttpException e) {
+//	
+//			} finally {
+//				itOutResult.close();
+//			}
+//		}
+//		
+//		if(! this.noInTriples()) {
+//			String inTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { ?o ?p <" + currIndiv + "> . ?o a ?oc }";
+//			QueryResultIterator itInResult = new QueryResultIterator(inTripQueryString, baseRDF);
+//			try {
+//				while(itInResult.hasNext()) {
+//					CustomQuerySolution queryResultLine = itInResult.nextAnswerSet();
+//					Resource prop = queryResultLine.getResource("p");
+//					Resource objType = queryResultLine.getResource("oc");
+////					logger.debug("Extracting InNeighbour attributes " + prop + " " +  );
+//					if(!onto.isOntologyPropertyVocabulary(prop)) {
+//						if(objType != null && prop != null) {
+//							RDFPatternPathFragment attribute = new RDFPatternPathFragment(objType, prop, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );
+//							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
+//								_index.add(attribute);
+//								indivResult.add(attribute);
+//							}
+//						}
+//					}
+//				}
+//			} catch(HttpException e) {
+//	
+//			} finally {
+//				itInResult.close();
+//			}
+//		}
+//		
+//		return indivResult;
+//	}
 	
-			} finally {
-				itOutResult.close();
-			}
-		}
-		
-		if(! this.noInTriples()) {
-			String inTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { ?o ?p <" + currIndiv + "> . ?o a ?oc }";
-			QueryResultIterator itInResult = new QueryResultIterator(inTripQueryString, baseRDF);
-			try {
-				while(itInResult.hasNext()) {
-					CustomQuerySolution queryResultLine = itInResult.nextAnswerSet();
-					Resource prop = queryResultLine.getResource("p");
-					Resource objType = queryResultLine.getResource("oc");
-//					logger.debug("Extracting InNeighbour attributes " + prop + " " +  );
-					if(!onto.isOntologyPropertyVocabulary(prop)) {
-						if(objType != null && prop != null) {
-							RDFPatternPathFragment attribute = new RDFPatternPathFragment(objType, prop, RDFPatternResource.Type.InNeighbourType );
-							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
-								index.add(attribute);
-								indivResult.add(attribute);
-							}
-						}
-					}
-				}
-			} catch(HttpException e) {
-	
-			} finally {
-				itInResult.close();
-			}
-		}
-		
-		return indivResult;
+	public void setNeighborLevel(Neighborhood level) {
+		this._neighborLevel = level;
 	}
 	
-	public boolean isRankOne() {
-		return rankOne;
-	}
-
-	public void setRankOne(boolean rankOne) {
-		this.rankOne = rankOne;
-	}
-
-	public boolean isRandZero() {
-		return randZero;
-	}
-
-	public void setRandZero(boolean randZero) {
-		this.randZero = randZero;
+	public Neighborhood getNeighborLevel() {
+		return this._neighborLevel;
 	}
 
 	public boolean noTypeTriples() {
-		return noTypeBool;
+		return _noTypeBool;
 	}
 
 	public void setNoTypeTriples(boolean noTypeBool) {
-		this.noTypeBool = noTypeBool;
+		this._noTypeBool = noTypeBool;
 	}
 
 	public boolean noInTriples() {
-		return noInBool;
+		return _noInBool;
 	}
 
 	public void noInTriples(boolean noInBool) {
-		this.noInBool = noInBool;
+		this._noInBool = noInBool;
 	}
 
 	public boolean noOutTriples() {
-		return noOutBool;
+		return _noOutBool;
 	}
 
 	public void setNoOutTriples(boolean noOutBool) {
-		this.noOutBool = noOutBool;
+		this._noOutBool = noOutBool;
 	}
 
 	public int getPathsLength() {
-		return pathsLength;
+		return _pathsLength;
 	}
 
 	public void setPathsLength(int pathsLength) {
-		this.pathsLength = pathsLength;
+		this._pathsLength = pathsLength;
 	}
 	
 }
