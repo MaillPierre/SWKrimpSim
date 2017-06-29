@@ -1,25 +1,10 @@
 package com.irisa.krimp;
 
 import java.io.IOException;
-import java.util.Iterator;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
-import com.irisa.swpatterns.Global;
-import com.irisa.swpatterns.data.AttributeIndex;
-import com.irisa.swpatterns.data.LabeledTransaction;
-import com.irisa.swpatterns.data.RDFPatternComponent;
-import com.irisa.swpatterns.data.RDFPatternPathFragment;
-import com.irisa.swpatterns.data.RDFPatternResource;
-import com.irisa.swpatterns.data.LabeledTransactions;
-import com.irisa.swpatterns.data.RDFPatternComponent.Type;
-
 import ca.pfv.spmf.algorithms.frequentpatterns.fin_prepost.FIN;
 import ca.pfv.spmf.algorithms.frequentpatterns.fin_prepost.PrePost;
 import ca.pfv.spmf.algorithms.frequentpatterns.fpgrowth.AlgoFPClose;
@@ -59,10 +44,6 @@ public class FrequentItemSetExtractor {
 
 	public static int getPatternNumber() {
 		return countPattern++;
-	}
-
-	public Itemsets computeItemsets(LabeledTransactions transactions, AttributeIndex index) {
-		return computeItemsets(index.convertToTransactions(transactions));
 	}
 
 

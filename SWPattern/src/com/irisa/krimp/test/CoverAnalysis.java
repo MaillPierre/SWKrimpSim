@@ -30,6 +30,7 @@ import com.irisa.krimp.FrequentItemSetExtractor;
 import com.irisa.krimp.KrimpAlgorithm;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
+import com.irisa.swpatterns.SWFrequentItemsetExtractor;
 import com.irisa.swpatterns.TransactionsExtractor;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.LabeledTransactions;
@@ -82,7 +83,7 @@ public class CoverAnalysis {
 				formatter.printHelp( "RDFtoTransactionConverter", options );
 			} else {
 				TransactionsExtractor converter = new TransactionsExtractor();
-				FrequentItemSetExtractor fsExtractor = new FrequentItemSetExtractor();
+				SWFrequentItemsetExtractor fsExtractor = new SWFrequentItemsetExtractor();
 				ItemsetSet realtransactions ;
 				Itemsets codes = null;
 				

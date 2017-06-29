@@ -13,7 +13,7 @@ import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
 import com.irisa.krimp.data.ItemsetSet;
-import com.irisa.swpatterns.data.AttributeIndex;
+import com.irisa.krimp.data.Utils;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
@@ -128,7 +128,7 @@ public class CodeTable {
 			@Override
 			public void accept(Itemset code) {
 				if(_itemsetCode.get(code) == null) {
-					_itemsetCode.put(code, AttributeIndex.getAttributeNumber());
+					_itemsetCode.put(code, Utils.getAttributeNumber());
 				}
 				if(_itemsetUsage.get(code) == null) {
 					_itemsetUsage.put(code, 0);
@@ -507,7 +507,7 @@ public class CodeTable {
 	 * @param code
 	 */
 	public void addCode(Itemset code) {
-		this.addCode(code, AttributeIndex.getAttributeNumber());
+		this.addCode(code, Utils.getAttributeNumber());
 	}
 	
 	/**

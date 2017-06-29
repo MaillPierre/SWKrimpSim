@@ -16,6 +16,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 
 import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.Utils;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
@@ -26,12 +27,6 @@ public class AttributeIndex {
 	private HashMap<RDFPatternComponent, Integer> attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
 	private HashMap<Integer, RDFPatternComponent> itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
 	private HashMap<RDFPatternComponent, Integer> attributeCount = new HashMap<RDFPatternComponent, Integer>();
-	
-	private static int counterAttribute = 0;
-	
-	public static int getAttributeNumber() {
-		return counterAttribute++;
-	}
 	
 	public Iterator<RDFPatternComponent> patternComponentIterator() {
 		return attributeItemIndex.keySet().iterator();
@@ -57,7 +52,7 @@ public class AttributeIndex {
 		if(! contains(attribute)) {
 			attributes.add(attribute);
 			if(! attributeItemIndex.containsKey(attribute)) {
-				attributeItemIndex.put(attribute, getAttributeNumber());
+				attributeItemIndex.put(attribute, Utils.getAttributeNumber());
 				itemAttributeIndex.put(attributeItemIndex.get(attribute), attribute );
 				attributeCount.put(attribute, 0);
 			}

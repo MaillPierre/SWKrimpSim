@@ -70,7 +70,7 @@ public class SWPatterns {
 				formatter.printHelp( "RDFtoTransactionConverter", options );
 			} else {
 				TransactionsExtractor converter = new TransactionsExtractor();
-				FrequentItemSetExtractor fsExtractor = new FrequentItemSetExtractor();
+				SWFrequentItemsetExtractor fsExtractor = new SWFrequentItemsetExtractor();
 				ItemsetSet realtransactions ;
 				Itemsets codes = null;
 				

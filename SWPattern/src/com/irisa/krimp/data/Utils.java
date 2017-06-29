@@ -17,9 +17,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.log4j.Logger;
 
-import com.irisa.swpatterns.data.LabeledTransaction;
-import com.irisa.swpatterns.data.RDFPatternComponent;
-
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
@@ -171,6 +168,8 @@ public class Utils {
 			}
 	}
 
+	private static int counterAttribute = 0;
+
 	/**
 	 * Print the transaction in the format expected by SPMF (int separated by spaces).
 	 * @param transactions
@@ -199,6 +198,10 @@ public class Utils {
 		} catch (IOException e1) {
 			logger.error(e1);
 		}
+	}
+
+	public static int getAttributeNumber() {
+		return counterAttribute++;
 	}
 	
 }

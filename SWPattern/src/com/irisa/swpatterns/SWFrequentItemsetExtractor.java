@@ -31,6 +31,10 @@ public class SWFrequentItemsetExtractor extends FrequentItemSetExtractor {
 		// TODO Auto-generated constructor stub
 	}
 
+	public Itemsets computeItemsets(LabeledTransactions transactions, AttributeIndex index) {
+		return computeItemsets(index.convertToTransactions(transactions));
+	}
+
 
 	public Itemsets computeItemSet_FPGrowth(LabeledTransactions transactions, AttributeIndex index) {
 		try {
