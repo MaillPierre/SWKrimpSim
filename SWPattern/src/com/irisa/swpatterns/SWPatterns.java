@@ -40,8 +40,8 @@ public class SWPatterns {
 		options.addOption("otherFile", true, "Other RDF file");
 		options.addOption("endpoint", true, "Endpoint adress");
 		options.addOption("output", true, "Output csv file");
-		options.addOption("limit", true, "Limit to the number of individuals extracted");
-		options.addOption("resultWindow", true, "Size of the result window used to query servers.");
+		options.addOption("limit", true, "Limit to the number of individuals extracted from each class");
+		options.addOption("resultWindow", true, "Size of the result window used to query RDF data.");
 		options.addOption("classPattern", true, "Substring contained by the class uris.");
 		options.addOption("noOut", false, "Not taking OUT properties into account.");
 		options.addOption("noIn", false, "Not taking IN properties into account.");
