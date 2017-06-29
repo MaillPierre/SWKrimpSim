@@ -49,6 +49,8 @@ public class SWPatterns {
 		options.addOption("FPClose", false, "Use FPClose algorithm. (default)");
 		options.addOption("FPMax", false, "Use FPMax algorithm.");
 		options.addOption("FIN", false, "Use FIN algorithm.");
+		options.addOption("PrePost", false, "Use PrePost algorithm.");
+		options.addOption("FPGrowth", false, "Use FPGrowth algorithm.");
 		options.addOption("Relim", false, "Use Relim algorithm.");
 		options.addOption("class", true, "Class of the studied individuals.");
 		options.addOption("rank1", false, "Extract informations up to rank 1 (types, out-going and in-going properties and object types), default is only types, out-going and in-going properties.");
@@ -90,7 +92,10 @@ public class SWPatterns {
 				converter.setNoOutTriples(cmd.hasOption("noOut") || converter.noOutTriples());
 				
 				activatePruning = cmd.hasOption("pruning"); 
-				
+
+				if(cmd.hasOption("FPGrowth")) {
+					fsExtractor.setAlgoFPGrowth();
+				}
 				if(cmd.hasOption("FPClose")) {
 					fsExtractor.setAlgoFPClose();
 				}
@@ -102,6 +107,9 @@ public class SWPatterns {
 				}
 				if(cmd.hasOption("Relim")) {
 					fsExtractor.setAlgoRelim();
+				}
+				if(cmd.hasOption("PrePost")) {
+					fsExtractor.setAlgoPrePost();
 				}
 				converter.setRankOne(cmd.hasOption("rank1") || converter.isRankOne());
 				logger.debug("output: " + output + " limit:" + limitString + " resultWindow:" + resultWindow + " classpattern:" + classRegex + " noType:" + converter.noTypeTriples() + " noOut:" + converter.noOutTriples() + " noIn:"+ converter.noInTriples());
