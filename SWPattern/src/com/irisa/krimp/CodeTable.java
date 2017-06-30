@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
+import com.irisa.krimp.data.DataAnalysis;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
 
@@ -26,12 +27,13 @@ public class CodeTable {
 	private static Logger logger = Logger.getLogger(CodeTable.class);
 
 //	private AttributeIndex _index = null;
-	private HashMap<Integer, Integer> _singletonSupports = new HashMap<Integer, Integer>(); // Numerical supports for singletons
+//	private HashMap<Integer, Integer> _singletonSupports = new HashMap<Integer, Integer>(); // Numerical supports for singletons
 	private ItemsetSet _transactions = null;
 	private ItemsetSet _codes = null;
 	private HashMap<Itemset, Integer> _itemsetUsage = new HashMap<Itemset, Integer>();
 	private HashMap<Itemset, Integer> _itemsetCode = new HashMap<Itemset, Integer>();
-	private HashMap<Itemset, BitSet> _codeSupport = new HashMap<Itemset, BitSet>(); // bitset supports for all codes
+//	private HashMap<Itemset, BitSet> _codeSupport = new HashMap<Itemset, BitSet>(); // bitset supports for all codes
+	private DataAnalysis _analysis = null;
 	private long _usageTotal = 0;
 
 	// 	private HashMap<Itemset, BitSet> _codeSupportVector = new HashMap<Itemset, BitSet>();
@@ -45,11 +47,11 @@ public class CodeTable {
 	 * @param transactions
 	 * @param codes
 	 */
-	public CodeTable(ItemsetSet transactions, ItemsetSet codes) {
-		this(transactions, codes, false);
+	public CodeTable(ItemsetSet transactions, ItemsetSet codes, DataAnalysis analysis) {
+		this(transactions, codes, analysis, false);
 	}
 	
-	protected CodeTable(ItemsetSet transactions, ItemsetSet codes, boolean standardFlag) {
+	protected CodeTable(ItemsetSet transactions, ItemsetSet codes, DataAnalysis analysis, boolean standardFlag) {
 		_transactions = transactions;
 		if(codes == null) {
 			_codes = new ItemsetSet();
@@ -59,36 +61,42 @@ public class CodeTable {
 		_standardFlag = standardFlag;
 		
 		if(codes != null) {
-			_standardCT = CodeTable.createStandardCodeTable(/*index,*/ transactions);
+			_standardCT = CodeTable.createStandardCodeTable(transactions, analysis);
 		} else { // this is a standard codetable
 			_standardCT = null;
 			_codes = new ItemsetSet();
 		}
+		_analysis = analysis;
 		init();	
 	}
 	
 	private void init() {
 		initSupports();
-		initializeSingletons();
+//		initializeSingletons();
 		initCodes();
 		orderCodesStandardCoverageOrder();
 		countUsages();		
 	}
 	
+	public static CodeTable createStandardCodeTable(ItemsetSet transactions, DataAnalysis analysis) {
+		return new CodeTable(transactions, null, analysis, true);
+	}
+	
 	public static CodeTable createStandardCodeTable(ItemsetSet transactions) {
-		return new CodeTable(transactions, null, true);
+		return new CodeTable(transactions, null, new DataAnalysis(transactions), true);
 	}
 	
 	public CodeTable(CodeTable ct) {
 //		_index = ct._index;
-		_singletonSupports = new HashMap<Integer, Integer>(ct._singletonSupports);
-		_transactions = new ItemsetSet(ct._transactions);
+//		_singletonSupports = new HashMap<Integer, Integer>(ct._singletonSupports);
+		_transactions = ct._transactions;
 		_codes = new ItemsetSet(ct._codes);
 		_itemsetUsage = new HashMap<Itemset, Integer>(ct._itemsetUsage);
 		_itemsetCode = new HashMap<Itemset, Integer>(ct._itemsetCode);
-		_codeSupport = new HashMap<Itemset, BitSet>(ct._codeSupport);
+//		_codeSupport = new HashMap<Itemset, BitSet>(ct._codeSupport);
 		_usageTotal = ct._usageTotal;
 		_standardFlag = ct._standardFlag;
+		_analysis = ct._analysis; // only depend on transactions and unmutable, no copy needed
 				
 		_standardCT = ct._standardCT;
 		
@@ -106,6 +114,7 @@ public class CodeTable {
 	 */
 	public void setTransactions(ItemsetSet transactions) {
 		this._transactions = transactions;
+		this._analysis = new DataAnalysis(transactions);
 		init();
 	}
 
@@ -139,44 +148,54 @@ public class CodeTable {
 	
 	private void initSupports() {
 		logger.debug("initSupport");
-		for(int iTrans = 0; iTrans < this._transactions.size(); iTrans++) {
-			Itemset trans = this._transactions.get(iTrans);
-			// Init singletons supports and support vectors
-			for(int i = 0; i < trans.size() ; i++) {
-				int item = trans.get(i);
-				Itemset single = createCodeSingleton(item);
-				if(_singletonSupports.get(item) == null) {
-					_singletonSupports.put(item, 0);
-				}
-				_codeSupport.putIfAbsent(single, new BitSet(this._transactions.size()));
-				_singletonSupports.replace(item, _singletonSupports.get(item) + 1);
-				_codeSupport.get(single).set(iTrans);
-			}
+//		for(int iTrans = 0; iTrans < this._transactions.size(); iTrans++) {
+//			Itemset trans = this._transactions.get(iTrans);
+//			// Init singletons supports and support vectors
+//			for(int i = 0; i < trans.size() ; i++) {
+//				int item = trans.get(i);
+//				Itemset single = createCodeSingleton(item);
+////				if(_singletonSupports.get(item) == null) {
+////					_singletonSupports.put(item, 0);
+////				}
+//				_codeSupport.putIfAbsent(single, new BitSet(this._transactions.size()));
+////				_singletonSupports.replace(item, _singletonSupports.get(item) + 1);
+//				_codeSupport.get(single).set(iTrans);
+//			}
+//		}
+		Iterator<Integer> itItem = _analysis.itemIterator();
+		while(itItem.hasNext()) {
+			int item = itItem.next();
+			Itemset single = Utils.createCodeSingleton(item);
+			single.setAbsoluteSupport(_analysis.getItemSupport(item));
+			_codes.add(single);
+//			_codeSupport.put(single, _analysis.getItemTransactionVector(item));
+			_itemsetUsage.put(single, _analysis.getItemSupport(item));
+			_itemsetCode.put(single, item);
 		}
 		
-		// init other codes supports vectors
-		Iterator<Itemset> itCode = this._codes.iterator();
-		while(itCode.hasNext()) {
-			Itemset code = itCode.next();
-			if(code.size() > 1 ) { // singletons were already initialized above, so we rely on them
-				initCodeSupport(code);
-			}
-		}
+//		// init other codes supports vectors
+//		Iterator<Itemset> itCode = this._codes.iterator();
+//		while(itCode.hasNext()) {
+//			Itemset code = itCode.next();
+//			if(code.size() > 1 ) { // singletons were already initialized above, so we rely on them
+//				initCodeSupport(code);
+//			}
+//		}
 	}
 	
-	/**
-	 * init the support vector of a code by doing a AND operation of all of its consituting singletons support vectors
-	 * @param code
-	 */
-	private void initCodeSupport(Itemset code) {
-		BitSet candidateSupport = new BitSet(this._transactions.size());
-		candidateSupport.set(0, candidateSupport.size()-1);
-		for(int iItem = 0; iItem < code.size(); iItem++) {
-			Itemset single = createCodeSingleton(code.get(iItem));
-			candidateSupport.and(this._codeSupport.get(single));
-		}
-		this._codeSupport.put(code, candidateSupport);		
-	}
+//	/**
+//	 * init the support vector of a code by doing a AND operation of all of its constituting singletons support vectors
+//	 * @param code
+//	 */
+//	private void initCodeSupport(Itemset code) {
+//		BitSet candidateSupport = new BitSet(this._transactions.size());
+//		candidateSupport.set(0, candidateSupport.size()-1);
+//		for(int iItem = 0; iItem < code.size(); iItem++) {
+//			int item = code.get(iItem);
+//			candidateSupport.and(this._analysis.getItemTransactionVector(item));
+//		}
+//		this._codeSupport.put(code, candidateSupport);		
+//	}
 	
 	public int getUsage(Itemset is) {
 		if(this._itemsetUsage.get(is) == null) {
@@ -303,32 +322,33 @@ public class CodeTable {
 		return ctL + teL;
 	}
 
-	/**
-	 * Add the singletons of all items to the code table 
-	 */
-	private void initializeSingletons() {
-		Iterator<Integer> itItems = _singletonSupports.keySet().iterator();
-		while(itItems.hasNext()) {
-			Integer item = itItems.next();
-			
-			Itemset single = new Itemset(item);
-			single.setAbsoluteSupport(_singletonSupports.get(item));
-			if(this._codes.contains(single)) {
-				this._codes.removeFirstOccurrence(single);
-				_itemsetUsage.remove(single);
-				_itemsetCode.remove(single);
-			}
-			_itemsetUsage.put(single, single.getAbsoluteSupport());
-			_itemsetCode.put(single, item);
-			this._codes.addItemset(single);
-		}
-	}
+//	/**
+//	 * Add the singletons of all items to the code table 
+//	 */
+//	private void initializeSingletons() {
+//		Iterator<Integer> itItems = _singletonSupports.keySet().iterator();
+//		while(itItems.hasNext()) {
+//			Integer item = itItems.next();
+//			
+//			Itemset single = new Itemset(item);
+//			single.setAbsoluteSupport(_singletonSupports.get(item));
+//			if(this._codes.contains(single)) {
+//				this._codes.removeFirstOccurrence(single);
+//				_itemsetUsage.remove(single);
+//				_itemsetCode.remove(single);
+//			}
+//			_itemsetUsage.put(single, single.getAbsoluteSupport());
+//			_itemsetCode.put(single, item);
+//			this._codes.addItemset(single);
+//		}
+//	}
 	
 	/**
 	 * Initialize the usage of each code according to the cover
 	 * PRE: the codeTable must be in standardCoverTable order
 	 */
 	protected void countUsages() {
+//		logger.debug("countUsages");
 		this._usageTotal = 0;
 		Iterator<Itemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
@@ -336,17 +356,18 @@ public class CodeTable {
 			
 			_itemsetUsage.replace(code, 0);
 			
-			int itrans = this._codeSupport.get(code).nextSetBit(0);
+			int itrans = this._analysis.getCodeTransactionVector(code).nextSetBit(0);
 			while(itrans >= 0) {
 				Itemset trans = this._transactions.get(itrans);
 				if(isCover(trans, code)) {
 					_itemsetUsage.replace(code, _itemsetUsage.get(code) +1);
 				}
-				itrans = this._codeSupport.get(code).nextSetBit(itrans+1);
+				itrans = this._analysis.getCodeTransactionVector(code).nextSetBit(itrans+1);
 			}
 			
 			this._usageTotal += _itemsetUsage.get(code);
 		}
+//		logger.debug("usages: " + this._itemsetUsage);
 	}
 	
 	/**
@@ -492,7 +513,6 @@ public class CodeTable {
 		this._codes.remove(code);
 		this._itemsetCode.remove(code);
 		this._itemsetUsage.remove(code);
-		this._codeSupport.remove(code);
 		// CB: removing from an ordered list must not alter the order
 		countUsages(); // Have to maintain the thing up to date ? 
 		
@@ -520,7 +540,6 @@ public class CodeTable {
 			this._codes.add(code);
 			this._itemsetCode.put(code, indice);
 			this._itemsetUsage.put(code, this.getUsage(code));
-			initCodeSupport(code);
 			// after adding it we have to reorder 
 			orderCodesStandardCoverageOrder();
 			this.countUsages(); // maintain the usage index uptodate ?
@@ -554,10 +573,6 @@ public class CodeTable {
 		tmpBaseSet.removeAll(tmpSubstractedSet);
 		
 		return new Itemset(new ArrayList<Integer>(tmpBaseSet), iSet.getAbsoluteSupport());
-	}
-	
-	public static Itemset createCodeSingleton(int codeNum) {
-		return new Itemset(codeNum);
 	}
 	
 	public String toString() {

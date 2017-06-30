@@ -200,6 +200,10 @@ public class Utils {
 		}
 	}
 
+	public static Itemset createCodeSingleton(int codeNum) {
+		return new Itemset(codeNum);
+	}
+
 	public static int getAttributeNumber() {
 		return counterAttribute++;
 	}

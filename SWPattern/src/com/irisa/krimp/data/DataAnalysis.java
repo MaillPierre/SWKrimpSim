@@ -3,15 +3,25 @@ package com.irisa.krimp.data;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.function.Consumer;
+
+import org.apache.log4j.Logger;
+
+import com.irisa.exception.LogicException;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
 public class DataAnalysis {
+	
+	private static Logger logger = Logger.getLogger(DataAnalysis.class);
 
 	private ItemsetSet _transactions = null;
 	private HashSet<Integer> _items = new HashSet<Integer>();
 	private HashMap<Integer, BitSet> _itemTransactionVectors = new HashMap<Integer, BitSet>();
 	private HashMap<Itemset, BitSet> _transactionItemVectors = new HashMap<Itemset, BitSet>();
+	private HashMap<Itemset, BitSet> _codeItemVectors = new HashMap<Itemset, BitSet>();
+	private HashMap<Itemset, BitSet> _codeTransactionVectors = new HashMap<Itemset, BitSet>();
 	
 	private int _highestItemIndice = 0;
 	
@@ -29,7 +39,15 @@ public class DataAnalysis {
 			}
 			for(int iItem = 0; iItem < trans.size(); iItem++) {
 				int item = trans.get(iItem);
-				if(this._items.contains(item)) {
+				Itemset single = Utils.createCodeSingleton(item);
+				if(this._codeItemVectors.get(single) == null) {
+					this._codeItemVectors.put(single, new BitSet());
+					this._codeItemVectors.get(single).set(item);
+				}
+				if(this._codeTransactionVectors.get(single) == null) {
+					this._codeTransactionVectors.put(single, new BitSet());
+				}
+				if(! this._items.contains(item)) {
 					this._items.add(item);
 				}
 				if(_highestItemIndice < item) {
@@ -40,28 +58,74 @@ public class DataAnalysis {
 				}
 				this._itemTransactionVectors.get(item).set(iTrans);
 				this._transactionItemVectors.get(trans).set(item);
+				this._codeTransactionVectors.get(single).set(iTrans);
 			}
 		}
 	}
 	
-	public long getNumberOfTransactions() {
+	private void computeCodeTransactionVector(Itemset code) {
+//		logger.debug("computeCodeTransactionVector " + code);
+		BitSet transVector = new BitSet();
+		transVector.or(this._itemTransactionVectors.get(code.get(0)));
+		
+		for(int iItem = 1; iItem < code.size(); iItem++) {
+			int item = code.get(iItem);
+//			logger.debug("computeCodeTransactionVector then " + item + ": " + this._itemTransactionVectors.get(item));
+			
+			transVector.and(this._itemTransactionVectors.get(item));
+		}
+		this._codeTransactionVectors.put(code, transVector);
+//		logger.debug("code: " + code + " (" + code.getAbsoluteSupport() + ") " + this._codeTransactionVectors.get(code));
+		
+	}
+	
+	private void computeCodeItemVector(Itemset code) {
+		BitSet itemVector = new BitSet();
+		
+		for(int iItem = 0; iItem < code.size(); iItem++) {
+			int item = code.get(iItem);
+			
+			itemVector.set(item);
+		}
+		this._codeItemVectors.put(code, itemVector);
+	}
+	
+	public int getNumberOfTransactions() {
 		return this._transactions.size();
 	}
 	
-	public long getNumberOfItems() {
+	public int getNumberOfItems() {
 		return this._items.size();
 	}
 	
-	public long getSupportOfItem(int item) {
+	public int getItemSupport(int item) {
 		return this._itemTransactionVectors.get(item).cardinality();
 	}
 	
-	public BitSet getItemVectorOfTransaction(Itemset trans) {
+	public int getCodeSupport(Itemset code) {
+		return this._codeTransactionVectors.get(code).cardinality();
+	}
+	
+	public BitSet getTransactionItemVector(Itemset trans) {
 		return this._transactionItemVectors.get(trans);
 	}
 	
-	public BitSet getTransactionVectorOfItem(int item) {
+	public BitSet getItemTransactionVector(int item) {
 		return this._itemTransactionVectors.get(item);
+	}
+	
+	public BitSet getCodeTransactionVector(Itemset code) {
+		if(this._codeItemVectors.get(code) == null) {
+			computeCodeItemVector(code);
+		}
+		if(this._codeTransactionVectors.get(code) == null) {
+			computeCodeTransactionVector(code);
+		}
+		return this._codeTransactionVectors.get(code);
+	}
+	
+	public Iterator<Integer> itemIterator() {
+		return this._items.iterator();
 	}
 
 }

@@ -1,6 +1,6 @@
 package com.irisa.exception;
 
-public class LogicException extends Exception {
+public class LogicException extends RuntimeException {
 
 	public LogicException() {
 		// TODO Auto-generated constructor stub
