@@ -132,7 +132,7 @@ public class TransactionsExtractor {
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
 			outTripQueryString += " ?o a ?ot . ";
 		}
-		outTripQueryString += " FILTER( isIri(?o) ) }";
+		outTripQueryString += " }";
 		QueryResultIterator itOutResult = new QueryResultIterator(outTripQueryString, baseRDF);
 		try {
 			while(itOutResult.hasNext()) {
@@ -149,17 +149,20 @@ public class TransactionsExtractor {
 						if(! onto.isOntologyClassVocabulary(oType)) {
 							attribute = new RDFPatternPathFragment(prop, oType, RDFPatternResource.Type.OUT_NEIGHBOUR_TYPE );
 						}
-					} else /* if(this.getNeighborLevel() == Neighborhood.Property) */ {
-						attribute = new RDFPatternResource(prop, RDFPatternResource.Type.OUT_PROPERTY );
-//					} else {
-//						continue;
 					}
-					
-					if(! _index.contains(attribute)) {
-						_index.add(attribute);
+						
+					RDFPatternComponent propAttribute = new RDFPatternResource(prop, RDFPatternResource.Type.OUT_PROPERTY );
+
+					if(! _index.contains(propAttribute)) {
+						_index.add(propAttribute);
 					}
-//					logger.debug("Attribute: " + attribute);
-					indivResult.add(attribute);
+					indivResult.add(propAttribute);
+					if(attribute != null) {
+						if(! _index.contains(attribute)) {
+							_index.add(attribute);
+						}
+						indivResult.add(attribute);
+					}
 				}
 			}
 		} catch(HttpException e) {
@@ -679,28 +682,27 @@ public class TransactionsExtractor {
 				Resource prop = queryResultLine.getResource("p");
 				if(! onto.isOntologyPropertyVocabulary(prop)) {
 					RDFPatternComponent attribute = null;
-					switch(this.getNeighborLevel()) {
-					case PropertyAndObject:
+					if(this.getNeighborLevel()== Neighborhood.PropertyAndObject) {
 						Resource subj = queryResultLine.getResource("s");
 						attribute = new RDFPatternPathFragment(prop, subj, RDFPatternResource.Type.IN_NEIGHBOUR );
-						break;
-					case PropertyAndObjectType:
+					} else if (this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
 						Resource sType = queryResultLine.getResource("st");
 						if(sType != null) {
 							attribute = new RDFPatternPathFragment(prop, sType, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );
-//						} else {
-//							continue;
 						}
-//						break;
-					default: // case Property:
-						attribute = new RDFPatternResource(prop, RDFPatternResource.Type.IN_PROPERTY );
-						break;
 					}
 					
-					if(! _index.contains(attribute)) {
-						_index.add(attribute);
+					RDFPatternComponent propAttribute = new RDFPatternResource(prop, RDFPatternResource.Type.IN_PROPERTY );
+	
+					if(! _index.contains(propAttribute)) {
+						_index.add(propAttribute);
 					}
-					indivResult.add(attribute);
+					if(attribute != null) {
+						if(! _index.contains(attribute)) {
+							_index.add(attribute);
+						}
+						indivResult.add(attribute);
+					}
 				}
 			}
 		} catch(HttpException e) {
