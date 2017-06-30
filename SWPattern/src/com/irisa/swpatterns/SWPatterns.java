@@ -17,7 +17,7 @@ import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.KrimpAlgorithm;
-import com.irisa.krimp.data.DataAnalysis;
+import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
@@ -119,10 +119,10 @@ public class SWPatterns {
 					converter.setNeighborLevel(Neighborhood.Property);
 				}
 				if(cmd.hasOption("nPropertiesAndTypes")) {
-					converter.setNeighborLevel(Neighborhood.PropertyAndObjectType);
+					converter.setNeighborLevel(Neighborhood.PropertyAndType);
 				}
 				if(cmd.hasOption("nPropertiesAndOthers")) {
-					converter.setNeighborLevel(Neighborhood.PropertyAndObject);
+					converter.setNeighborLevel(Neighborhood.PropertyAndOther);
 				}
 
 				logger.debug("output: " + output + " limit:" + limitString + " resultWindow:" + resultWindow + " classpattern:" + classRegex + " noType:" + converter.noTypeTriples() + " noOut:" + converter.noOutTriples() + " noIn:"+ converter.noInTriples());
@@ -200,7 +200,7 @@ public class SWPatterns {
 				ItemsetSet realcodes = new ItemsetSet(codes);
 	
 				try {
-					DataAnalysis analysis = new DataAnalysis(realtransactions);
+					DataIndexes analysis = new DataIndexes(realtransactions);
 					CodeTable standardCT = CodeTable.createStandardCodeTable(realtransactions, analysis );
 	
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes);
@@ -239,7 +239,7 @@ public class SWPatterns {
 						}
 	
 						logger.debug("Equals ? " + realtransactions.equals(otherRealTransactions));
-						DataAnalysis otherAnalysis = new DataAnalysis(otherRealTransactions);
+						DataIndexes otherAnalysis = new DataIndexes(otherRealTransactions);
 	
 						standardCT = CodeTable.createStandardCodeTable(otherRealTransactions, otherAnalysis );
 						CodeTable otherResult = new CodeTable( otherRealTransactions, krimpCT.getCodes(), otherAnalysis);

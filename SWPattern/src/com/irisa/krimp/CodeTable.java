@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
-import com.irisa.krimp.data.DataAnalysis;
+import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
 
@@ -33,7 +33,7 @@ public class CodeTable {
 	private HashMap<Itemset, Integer> _itemsetUsage = new HashMap<Itemset, Integer>();
 	private HashMap<Itemset, Integer> _itemsetCode = new HashMap<Itemset, Integer>();
 //	private HashMap<Itemset, BitSet> _codeSupport = new HashMap<Itemset, BitSet>(); // bitset supports for all codes
-	private DataAnalysis _analysis = null;
+	private DataIndexes _analysis = null;
 	private long _usageTotal = 0;
 
 	// 	private HashMap<Itemset, BitSet> _codeSupportVector = new HashMap<Itemset, BitSet>();
@@ -47,11 +47,11 @@ public class CodeTable {
 	 * @param transactions
 	 * @param codes
 	 */
-	public CodeTable(ItemsetSet transactions, ItemsetSet codes, DataAnalysis analysis) {
+	public CodeTable(ItemsetSet transactions, ItemsetSet codes, DataIndexes analysis) {
 		this(transactions, codes, analysis, false);
 	}
 	
-	protected CodeTable(ItemsetSet transactions, ItemsetSet codes, DataAnalysis analysis, boolean standardFlag) {
+	protected CodeTable(ItemsetSet transactions, ItemsetSet codes, DataIndexes analysis, boolean standardFlag) {
 		_transactions = transactions;
 		if(codes == null) {
 			_codes = new ItemsetSet();
@@ -78,12 +78,12 @@ public class CodeTable {
 		countUsages();		
 	}
 	
-	public static CodeTable createStandardCodeTable(ItemsetSet transactions, DataAnalysis analysis) {
+	public static CodeTable createStandardCodeTable(ItemsetSet transactions, DataIndexes analysis) {
 		return new CodeTable(transactions, null, analysis, true);
 	}
 	
 	public static CodeTable createStandardCodeTable(ItemsetSet transactions) {
-		return new CodeTable(transactions, null, new DataAnalysis(transactions), true);
+		return new CodeTable(transactions, null, new DataIndexes(transactions), true);
 	}
 	
 	public CodeTable(CodeTable ct) {
@@ -114,7 +114,7 @@ public class CodeTable {
 	 */
 	public void setTransactions(ItemsetSet transactions) {
 		this._transactions = transactions;
-		this._analysis = new DataAnalysis(transactions);
+		this._analysis = new DataIndexes(transactions);
 		init();
 	}
 

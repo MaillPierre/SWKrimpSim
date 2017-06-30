@@ -42,10 +42,10 @@ public class TransactionsExtractor {
 
 	public enum Neighborhood {
 		Property,
-		PropertyAndObjectType,
-		PropertyAndObject
+		PropertyAndType,
+		PropertyAndOther
 	}
-	private Neighborhood _neighborLevel = Neighborhood.PropertyAndObjectType;
+	private Neighborhood _neighborLevel = Neighborhood.PropertyAndType;
 	
 	private int _pathsLength = 0;
 	
@@ -122,14 +122,14 @@ public class TransactionsExtractor {
 		LabeledTransaction indivResult = new LabeledTransaction();
 		
 		String outTripQueryString = "SELECT DISTINCT ?p "; 
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			outTripQueryString += " ?ot " ;
 		}
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndObject) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
 			outTripQueryString += " ?o " ;
 		}
 		outTripQueryString += " WHERE { <" + currIndiv + "> ?p ?o . ";
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			outTripQueryString += " ?o a ?ot . ";
 		}
 		outTripQueryString += " }";
@@ -140,12 +140,12 @@ public class TransactionsExtractor {
 				Resource prop = queryResultLine.getResource("p");
 				if(prop != null && ! onto.isOntologyPropertyVocabulary(prop)) {
 					RDFPatternComponent attribute = null;
-					if(this.getNeighborLevel()== Neighborhood.PropertyAndObject && queryResultLine.getResource("o") != null){
+					if(this.getNeighborLevel()== Neighborhood.PropertyAndOther && queryResultLine.getResource("o") != null){
 						Resource obj = queryResultLine.getResource("o");
 						if(! onto.isOntologyClassVocabulary(obj)) {
 							attribute = new RDFPatternPathFragment(prop, obj, RDFPatternResource.Type.OUT_NEIGHBOUR );
 						}
-					} else if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType  
+					} else if(this.getNeighborLevel() == Neighborhood.PropertyAndType  
 							&& queryResultLine.getResource("ot") != null ) {
 						Resource oType = queryResultLine.getResource("ot");
 						if(! onto.isOntologyClassVocabulary(oType)) {
@@ -666,14 +666,14 @@ public class TransactionsExtractor {
 		LabeledTransaction indivResult = new LabeledTransaction();
 		
 		String inTripQueryString = "SELECT DISTINCT ?p "; 
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			inTripQueryString += " ?st " ;
 		}
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndObject) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
 			inTripQueryString += " ?s " ;
 		}
 		inTripQueryString += " WHERE { ?s ?p <" + currIndiv + "> . ";
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			inTripQueryString += " OPTIONAL { ?s a ?st . } ";
 		}
 		inTripQueryString += " }";
@@ -684,12 +684,12 @@ public class TransactionsExtractor {
 				Resource prop = queryResultLine.getResource("p");
 				if(! onto.isOntologyPropertyVocabulary(prop)) {
 					RDFPatternComponent attribute = null;
-					if(this.getNeighborLevel()== Neighborhood.PropertyAndObject) {
+					if(this.getNeighborLevel()== Neighborhood.PropertyAndOther) {
 						Resource subj = queryResultLine.getResource("s");
 						if(! onto.isOntologyClassVocabulary(subj)) {
 							attribute = new RDFPatternPathFragment(prop, subj, RDFPatternResource.Type.IN_NEIGHBOUR );
 						}
-					} else if (this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+					} else if (this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 						Resource sType = queryResultLine.getResource("st");
 						if(sType != null) {
 							attribute = new RDFPatternPathFragment(prop, sType, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );

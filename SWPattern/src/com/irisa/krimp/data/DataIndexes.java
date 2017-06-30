@@ -12,9 +12,9 @@ import com.irisa.exception.LogicException;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
-public class DataAnalysis {
+public class DataIndexes {
 	
-	private static Logger logger = Logger.getLogger(DataAnalysis.class);
+	private static Logger logger = Logger.getLogger(DataIndexes.class);
 
 	private ItemsetSet _transactions = null;
 	private HashSet<Integer> _items = new HashSet<Integer>();
@@ -25,7 +25,7 @@ public class DataAnalysis {
 	
 	private int _highestItemIndice = 0;
 	
-	public DataAnalysis(ItemsetSet transactions) {
+	public DataIndexes(ItemsetSet transactions) {
 		this._transactions = transactions;
 		
 		analyze();

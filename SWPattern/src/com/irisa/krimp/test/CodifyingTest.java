@@ -122,7 +122,7 @@ public class CodifyingTest {
 //				if(cmd.hasOption("Relim")) {
 //					fsExtractor.setAlgoRelim();
 //				}
-				converter.setNeighborLevel(Neighborhood.PropertyAndObjectType);
+				converter.setNeighborLevel(Neighborhood.PropertyAndType);
 //				logger.debug("output: " + output + " limit:" + limitString + " resultWindow:" + resultWindow + " classpattern:" + classRegex + " noType:" + converter.noTypeTriples() + " noOut:" + converter.noOutTriples() + " noIn:"+ converter.noInTriples());
 				logger.debug("Pruning activated: "+activatePruning);
 			
