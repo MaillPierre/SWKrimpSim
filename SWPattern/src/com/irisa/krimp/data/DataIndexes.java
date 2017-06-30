@@ -72,7 +72,7 @@ public class DataIndexes {
 			int item = code.get(iItem);
 //			logger.debug("computeCodeTransactionVector then " + item + ": " + this._itemTransactionVectors.get(item));
 			
-			transVector.and(this._itemTransactionVectors.get(item));
+			transVector.and(this.getItemTransactionVector(item));
 		}
 		this._codeTransactionVectors.put(code, transVector);
 //		logger.debug("code: " + code + " (" + code.getAbsoluteSupport() + ") " + this._codeTransactionVectors.get(code));
@@ -103,7 +103,7 @@ public class DataIndexes {
 	}
 	
 	public int getCodeSupport(Itemset code) {
-		return this._codeTransactionVectors.get(code).cardinality();
+		return getCodeTransactionVector(code).cardinality();
 	}
 	
 	public BitSet getTransactionItemVector(Itemset trans) {
@@ -111,6 +111,16 @@ public class DataIndexes {
 	}
 	
 	public BitSet getItemTransactionVector(int item) {
+		if(! this._itemTransactionVectors.containsKey(item)) {
+			this._itemTransactionVectors.put(item, new BitSet());
+			for(int iTrans = 0; iTrans < this._transactions.size(); iTrans++ ) {
+				Itemset trans = this._transactions.get(iTrans);
+				if(trans.contains(item)) {
+					this._itemTransactionVectors.get(item).set(iTrans);
+					this._transactionItemVectors.get(trans).set(item);
+				}
+			}
+		}
 		return this._itemTransactionVectors.get(item);
 	}
 	
