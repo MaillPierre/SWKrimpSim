@@ -142,7 +142,9 @@ public class TransactionsExtractor {
 					RDFPatternComponent attribute = null;
 					if(this.getNeighborLevel()== Neighborhood.PropertyAndObject && queryResultLine.getResource("o") != null){
 						Resource obj = queryResultLine.getResource("o");
-						attribute = new RDFPatternPathFragment(prop, obj, RDFPatternResource.Type.OUT_NEIGHBOUR );
+						if(! onto.isOntologyClassVocabulary(obj)) {
+							attribute = new RDFPatternPathFragment(prop, obj, RDFPatternResource.Type.OUT_NEIGHBOUR );
+						}
 					} else if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType  
 							&& queryResultLine.getResource("ot") != null ) {
 						Resource oType = queryResultLine.getResource("ot");
@@ -684,7 +686,9 @@ public class TransactionsExtractor {
 					RDFPatternComponent attribute = null;
 					if(this.getNeighborLevel()== Neighborhood.PropertyAndObject) {
 						Resource subj = queryResultLine.getResource("s");
-						attribute = new RDFPatternPathFragment(prop, subj, RDFPatternResource.Type.IN_NEIGHBOUR );
+						if(! onto.isOntologyClassVocabulary(subj)) {
+							attribute = new RDFPatternPathFragment(prop, subj, RDFPatternResource.Type.IN_NEIGHBOUR );
+						}
 					} else if (this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
 						Resource sType = queryResultLine.getResource("st");
 						if(sType != null) {
