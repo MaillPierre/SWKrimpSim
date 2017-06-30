@@ -252,7 +252,7 @@ public class SWPatterns {
 	
 //						logger.debug("-------- OTHER RESULT ---------");
 //						logger.debug(otherResult);
-
+						System.out.println((compressedSize / normalSize) + ";" + (otherCompressedSize / otherNormalSize));
 	
 					}
 	
