@@ -148,39 +148,18 @@ public class CodeTable {
 	
 	private void initSupports() {
 		logger.debug("initSupport");
-//		for(int iTrans = 0; iTrans < this._transactions.size(); iTrans++) {
-//			Itemset trans = this._transactions.get(iTrans);
-//			// Init singletons supports and support vectors
-//			for(int i = 0; i < trans.size() ; i++) {
-//				int item = trans.get(i);
-//				Itemset single = createCodeSingleton(item);
-////				if(_singletonSupports.get(item) == null) {
-////					_singletonSupports.put(item, 0);
-////				}
-//				_codeSupport.putIfAbsent(single, new BitSet(this._transactions.size()));
-////				_singletonSupports.replace(item, _singletonSupports.get(item) + 1);
-//				_codeSupport.get(single).set(iTrans);
-//			}
-//		}
+		
 		Iterator<Integer> itItem = _analysis.itemIterator();
 		while(itItem.hasNext()) {
 			int item = itItem.next();
 			Itemset single = Utils.createCodeSingleton(item);
 			single.setAbsoluteSupport(_analysis.getItemSupport(item));
-			_codes.add(single);
-//			_codeSupport.put(single, _analysis.getItemTransactionVector(item));
+			if(! this._codes.contains(single)) {
+				_codes.add(single);
+			}
 			_itemsetUsage.put(single, _analysis.getItemSupport(item));
 			_itemsetCode.put(single, item);
 		}
-		
-//		// init other codes supports vectors
-//		Iterator<Itemset> itCode = this._codes.iterator();
-//		while(itCode.hasNext()) {
-//			Itemset code = itCode.next();
-//			if(code.size() > 1 ) { // singletons were already initialized above, so we rely on them
-//				initCodeSupport(code);
-//			}
-//		}
 	}
 	
 //	/**
@@ -348,7 +327,7 @@ public class CodeTable {
 	 * PRE: the codeTable must be in standardCoverTable order
 	 */
 	protected void countUsages() {
-//		logger.debug("countUsages");
+//		logger.debug("countUsages : ");
 		this._usageTotal = 0;
 		Iterator<Itemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {

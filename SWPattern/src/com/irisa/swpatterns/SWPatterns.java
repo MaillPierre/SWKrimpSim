@@ -37,11 +37,11 @@ public class SWPatterns {
 		// Setting up options
 		CommandLineParser parser = new DefaultParser();
 		Options options = new Options();
-		options.addOption("file", true, "RDF file");
-		options.addOption("otherFile", true, "Other RDF file");
-		options.addOption("endpoint", true, "Endpoint adress");
-		options.addOption("output", true, "Output csv file");
-		options.addOption("limit", true, "Limit to the number of individuals extracted from each class");
+		options.addOption("file", true, "RDF file.");
+		options.addOption("otherFile", true, "Other RDF file.");
+		options.addOption("endpoint", true, "Endpoint adress.");
+		options.addOption("outputCodes", true, "Output file for first transaction file codes (works with transactionFile).");
+		options.addOption("limit", true, "Limit to the number of individuals extracted from each class.");
 		options.addOption("resultWindow", true, "Size of the result window used to query RDF data.");
 		options.addOption("classPattern", true, "Substring contained by the class uris.");
 		options.addOption("noOut", false, "Not taking OUT properties into account.");
@@ -57,10 +57,11 @@ public class SWPatterns {
 		options.addOption("nProperties", false, "Extract items representing only properties (central individual types, out-going and in-going properties).");
 		options.addOption("nPropertiesAndTypes", false, "Extract items representing only properties and connected ressources types.");
 		options.addOption("nPropertiesAndOthers", false, "Extract items representing properties and connected ressources.");
-		options.addOption("transactionFile", false, "Only create a .dat transaction for each given file.");
+		options.addOption("transactionFile", false, "Create a .dat transaction for each given file.");
 		options.addOption("path", true, "Extract paths of length N.");
 		options.addOption("help", false, "Display this help.");
 		options.addOption("inputTransaction", true, "Transaction file (RDF data will be ignored).");
+//		options.addOption("inputCodes", true, "Code file (Frequent itemsets won't be extracted).");
 		options.addOption("otherInputTransaction", true, "Other transaction file (RDF data will be ignored).");
 		// added for pruning 
 		options.addOption("pruning", false, "Activate post-acceptance pruning"); 
@@ -85,7 +86,7 @@ public class SWPatterns {
 				String filename = cmd.getOptionValue("file");
 				String otherFilename = cmd.getOptionValue("otherFile");
 				String endpoint = cmd.getOptionValue("endpoint"); 
-				String output = cmd.getOptionValue("output"); 
+//				String output = cmd.getOptionValue("output"); 
 				String limitString = cmd.getOptionValue("limit");
 				String resultWindow = cmd.getOptionValue("resultWindow");
 				String classRegex = cmd.getOptionValue("classPattern");
@@ -125,7 +126,7 @@ public class SWPatterns {
 					converter.setNeighborLevel(Neighborhood.PropertyAndOther);
 				}
 
-				logger.debug("output: " + output + " limit:" + limitString + " resultWindow:" + resultWindow + " classpattern:" + classRegex + " noType:" + converter.noTypeTriples() + " noOut:" + converter.noOutTriples() + " noIn:"+ converter.noInTriples());
+				logger.debug(cmd.getArgList());
 				logger.debug("Pruning activated: "+activatePruning);
 			
 				
@@ -182,11 +183,18 @@ public class SWPatterns {
 					}
 	
 					realtransactions = index.convertToTransactions(transactions);
-					codes = fsExtractor.computeItemsets(transactions, index);
+					if(! cmd.hasOption("inputCodes")) {
+						codes = fsExtractor.computeItemsets(transactions, index);
+					} else {
+						codes = Utils.readItemsetFile(cmd.getOptionValue("inputCodes"));
+					}
 					logger.debug("Nb Lines: " + realtransactions.size());
 	
 					if(cmd.hasOption("transactionFile")) {
-						index.printTransactionsItems(transactions, filename + ".dat");
+						index.printTransactionsItems(transactions, filename + "." + converter.getNeighborLevel() + ".dat");
+						if(cmd.hasOption("outputCodes")) {
+							Utils.printItemsets(codes, cmd.getOptionValue("outputCodes"));
+						}
 					}
 					logger.debug("Nb items: " + converter.getIndex().size());
 	
@@ -194,7 +202,11 @@ public class SWPatterns {
 	
 				} else {
 					realtransactions = new ItemsetSet(Utils.readTransactionFile(cmd.getOptionValue("inputTransaction")));
-					codes = fsExtractor.computeItemsets(realtransactions);
+					if(cmd.hasOption("inputCodes")) {
+						codes = fsExtractor.computeItemsets(realtransactions);
+					} else {
+						codes = Utils.readItemsetFile(cmd.getOptionValue("inputCodes"));
+					}
 					logger.debug("Nb Lines: " + realtransactions.size());
 				}
 				ItemsetSet realcodes = new ItemsetSet(codes);
@@ -250,8 +262,8 @@ public class SWPatterns {
 						logger.debug("Second CompressedLength: " + otherCompressedSize);
 						logger.debug("Second Compression: " + (otherCompressedSize / otherNormalSize));
 	
-//						logger.debug("-------- OTHER RESULT ---------");
-//						logger.debug(otherResult);
+						logger.debug("-------- OTHER RESULT ---------");
+						logger.debug(otherResult);
 						System.out.println((compressedSize / normalSize) + ";" + (otherCompressedSize / otherNormalSize));
 	
 					}

@@ -66,7 +66,7 @@ public class DataIndexes {
 	private void computeCodeTransactionVector(Itemset code) {
 //		logger.debug("computeCodeTransactionVector " + code);
 		BitSet transVector = new BitSet();
-		transVector.or(this._itemTransactionVectors.get(code.get(0)));
+		transVector.or(this.getItemTransactionVector(code.get(0)));
 		
 		for(int iItem = 1; iItem < code.size(); iItem++) {
 			int item = code.get(iItem);
@@ -99,7 +99,7 @@ public class DataIndexes {
 	}
 	
 	public int getItemSupport(int item) {
-		return this._itemTransactionVectors.get(item).cardinality();
+		return this.getItemTransactionVector(item).cardinality();
 	}
 	
 	public int getCodeSupport(Itemset code) {

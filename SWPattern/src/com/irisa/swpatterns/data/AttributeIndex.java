@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.log4j.Logger;
 
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
@@ -23,6 +24,8 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 public class AttributeIndex {
+	
+	private Logger logger = Logger.getLogger(AttributeIndex.class);
 
 	private LabeledTransaction attributes = new LabeledTransaction();
 	private HashMap<RDFPatternComponent, Integer> attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
@@ -199,8 +202,7 @@ public class AttributeIndex {
 			attributePrinter.close();
 
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			logger.fatal(e1);
 		}
 	}
 

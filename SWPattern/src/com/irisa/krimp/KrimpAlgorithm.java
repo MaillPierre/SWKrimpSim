@@ -43,14 +43,14 @@ public class KrimpAlgorithm {
 		Iterator<Itemset> itCandidates = this._candidateCodes.iterator();
 		while(itCandidates.hasNext()) {
 			Itemset candidate = itCandidates.next();
-			logger.debug("Trying to add: "+candidate);
+//			logger.debug("Trying to add: "+candidate);
 			CodeTable tmpCT = new CodeTable(result);
 			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
 				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
 				double candidateSize = tmpCT.totalCompressedSize();
 //				logger.debug("candidateSize: "+candidateSize +" resultSize: "+resultSize); 
 				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
-					logger.debug("--> Added:"+candidate);
+//					logger.debug("--> Added:"+candidate);
 					if (!pruning) {
 						result = tmpCT;
 						resultSize = candidateSize;
@@ -62,7 +62,7 @@ public class KrimpAlgorithm {
 				}
 			}
 			else {
-				logger.debug(candidate+ " skipped");
+//				logger.debug(candidate+ " skipped");
 			}
 		}
 		logger.debug("KRIMP algorithm ended");
@@ -123,18 +123,6 @@ public class KrimpAlgorithm {
 	}
 	
 	private Itemset findLowestUsageCode (ItemsetSet pSet, CodeTable CT) {
-//		Itemset result = null;
-//		Itemset auxCode = null; 
-//		Iterator<Itemset> codes = pSet.iterator();
-//		if (codes.hasNext()) {
-//			result = codes.next(); 
-//		}
-//		while (codes.hasNext()) {
-//			auxCode = codes.next(); 
-//			if (CT.getUsage(auxCode) < CT.getUsage(result)) {
-//				result = auxCode; 
-//			}
-//		}
 		Collections.sort(pSet, new Comparator<Itemset>() {
 			@Override
 			public int compare(Itemset arg0, Itemset arg1) {
