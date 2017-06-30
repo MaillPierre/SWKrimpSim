@@ -19,12 +19,20 @@ FOR TEST: Launch with options "-file iswc-2013-complete.nt -otherFile iswc-2013-
 
 TODO :
 
+- How do we make it independent of the size of the databases? How to handle the newly appearing singletons? Many questions ... , but we are tired, we leave it for monday :) 
+
+IMPORTANT FEATURES: 
+ - Reuse an item conversion from one KB to another (RDF2ItemSet conversion)
+ - Copy one CT to another without touching the support: We need an immutable code table, Factory pattern? 
+
+
 TESTS :
 - Comparison with official KRIMP
 - Comparison with different codifications 
 - Comparison with different scales of data
 - Comparison of partitions of the same base, of different sizes (10% 90%, etc.)
 - Domain-based comparison
+
 
 DONE : 
 - Hide the passage through files of SMPF to passe only transactions, transactions indexes and Itemsets between classes (14/06/17)
