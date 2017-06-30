@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -181,7 +182,14 @@ public class AttributeIndex {
 			printer.close();
 
 			// Writing attributes
-			Iterator<RDFPatternComponent> itAttr = patternComponentIterator();
+			LinkedList<RDFPatternComponent> compos = new LinkedList<RDFPatternComponent>(attributeItemIndex.keySet());
+			Collections.sort(compos, new Comparator<RDFPatternComponent>() {
+				@Override
+				public int compare(RDFPatternComponent c1, RDFPatternComponent c2) {
+					return Integer.compare(getItem(c1), getItem(c2));
+				}
+			});
+			Iterator<RDFPatternComponent> itAttr = compos.iterator();
 			while(itAttr.hasNext()) {
 				RDFPatternComponent attr = itAttr.next();
 				attributePrinter.print(attr);

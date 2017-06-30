@@ -148,7 +148,7 @@ public class TransactionsExtractor {
 					} else if(this.getNeighborLevel() == Neighborhood.PropertyAndType  
 							&& queryResultLine.getResource("ot") != null ) {
 						Resource oType = queryResultLine.getResource("ot");
-						if(! onto.isOntologyClassVocabulary(oType)) {
+						if(! onto.isOntologyClassVocabulary(oType) && onto.isClass(oType)) {
 							attribute = new RDFPatternPathFragment(prop, oType, RDFPatternResource.Type.OUT_NEIGHBOUR_TYPE );
 						}
 					}
@@ -691,7 +691,7 @@ public class TransactionsExtractor {
 						}
 					} else if (this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 						Resource sType = queryResultLine.getResource("st");
-						if(sType != null) {
+						if(sType != null && ! onto.isOntologyClassVocabulary(sType) && onto.isClass(sType)) {
 							attribute = new RDFPatternPathFragment(prop, sType, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );
 						}
 					}
