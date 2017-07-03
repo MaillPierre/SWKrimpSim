@@ -48,5 +48,6 @@ DONE :
 	- instance type, property and other resource
 
 Idea :
-- Apply pattern sampling to the maximal frequent patterns ?
+- PM: Apply pattern sampling to the maximal frequent patterns ?
 	- Loosing the support information -> use weighting technique of pattern sampling -> need to retrieve number of apparition of each element of the maximal itemsets
+		- -> Is it actually different from using the frequent Itemsets directly ? -_-

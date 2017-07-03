@@ -1,9 +1,11 @@
 package com.irisa.swpatterns.data;
 
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -15,8 +17,10 @@ import java.util.function.Consumer;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.log4j.Logger;
 
+import com.irisa.exception.LogicException;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
 
@@ -30,7 +34,7 @@ public class AttributeIndex {
 	private LabeledTransaction attributes = new LabeledTransaction();
 	private HashMap<RDFPatternComponent, Integer> attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
 	private HashMap<Integer, RDFPatternComponent> itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
-	private HashMap<RDFPatternComponent, Integer> attributeCount = new HashMap<RDFPatternComponent, Integer>();
+//	private HashMap<RDFPatternComponent, Integer> attributeCount = new HashMap<RDFPatternComponent, Integer>();
 	
 	public Iterator<RDFPatternComponent> patternComponentIterator() {
 		return attributeItemIndex.keySet().iterator();
@@ -58,39 +62,8 @@ public class AttributeIndex {
 			if(! attributeItemIndex.containsKey(attribute)) {
 				attributeItemIndex.put(attribute, Utils.getAttributeNumber());
 				itemAttributeIndex.put(attributeItemIndex.get(attribute), attribute );
-				attributeCount.put(attribute, 0);
 			}
 		}
-		attributeCount.replace(attribute, attributeCount.get(attribute) + 1);
-	}
-	
-	public int getAttributeCount(RDFPatternComponent compo) {
-		return this.attributeCount.get(compo);
-	}
-	
-	public int getAttributeCount(int item) {
-		return this.attributeCount.get(this.getComponent(item));
-	}
-	
-	public void recount(ItemsetSet transactions) {
-		this.attributes.forEach(new Consumer<RDFPatternComponent>(){
-			@Override
-			public void accept(RDFPatternComponent t) {
-				attributeCount.replace(t, 0);
-			}
-		});
-		
-		transactions.forEach(new Consumer<Itemset>(){
-			@Override
-			public void accept(Itemset line) {
-				for(int i = 0; i < line.size(); i ++) {
-					int itemKey = line.get(i);
-					RDFPatternComponent key = getComponent(itemKey);
-
-					attributeCount.replace(key, attributeCount.get(key) + 1);
-				}
-			}
-		});
 	}
 
 	public LabeledTransaction labelItemSet(Itemset iSet) {
@@ -164,7 +137,6 @@ public class AttributeIndex {
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
 			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' '));
-			CSVPrinter attributePrinter = new CSVPrinter(new PrintWriter(new BufferedWriter(new FileWriter(output+".attr"))), CSVFormat.TDF);
 
 			// Writing lines
 			Iterator<LabeledTransaction> itResult = transactions.iterator();
@@ -181,29 +153,69 @@ public class AttributeIndex {
 				
 				printer.println();
 			}
+			printRDFToItemConversionTable(output + ".attr");
 
 			printer.close();
-
-			// Writing attributes
-			LinkedList<RDFPatternComponent> compos = new LinkedList<RDFPatternComponent>(attributeItemIndex.keySet());
-			Collections.sort(compos, new Comparator<RDFPatternComponent>() {
-				@Override
-				public int compare(RDFPatternComponent c1, RDFPatternComponent c2) {
-					return Integer.compare(getItem(c1), getItem(c2));
-				}
-			});
-			Iterator<RDFPatternComponent> itAttr = compos.iterator();
-			while(itAttr.hasNext()) {
-				RDFPatternComponent attr = itAttr.next();
-				attributePrinter.print(attr);
-				attributePrinter.print(getItem(attr));
-				attributePrinter.println();
-			}
-			attributePrinter.close();
 
 		} catch (IOException e1) {
 			logger.fatal(e1);
 		}
+	}
+	
+	public void printRDFToItemConversionTable(String filename) {
+		try {
+		CSVPrinter attributePrinter = new CSVPrinter(new PrintWriter(new BufferedWriter(new FileWriter(filename))), CSVFormat.TDF);
+		
+		// Writing attributes
+		LinkedList<RDFPatternComponent> compos = new LinkedList<RDFPatternComponent>(attributeItemIndex.keySet());
+		Collections.sort(compos, new Comparator<RDFPatternComponent>() {
+			@Override
+			public int compare(RDFPatternComponent c1, RDFPatternComponent c2) {
+				return Integer.compare(getItem(c1), getItem(c2));
+			}
+		});
+		
+		Iterator<RDFPatternComponent> itAttr = compos.iterator();
+		while(itAttr.hasNext()) {
+			RDFPatternComponent attr = itAttr.next();
+			attributePrinter.print(attr);
+			attributePrinter.print(getItem(attr));
+			attributePrinter.println();
+		}
+
+		attributePrinter.close();
+		} catch (IOException e) {
+			logger.error(e);
+		}
+	}
+	
+	public void readRDFToItemConversionTable(String filename) {
+		try {
+			Reader in = new FileReader(filename);
+			Iterable<CSVRecord> records = CSVFormat.TDF.parse(in);
+			for (CSVRecord record : records) {
+				String itemS = record.get(record.size()-1);
+				int item = Integer.parseInt(itemS);
+				RDFPatternComponent compo;
+				switch(record.size()) {
+				case 3:
+					compo = RDFPatternComponent.parse(record.get(0), record.get(1));
+					break;
+				case 4:
+					compo = RDFPatternComponent.parse(record.get(0), record.get(1), record.get(2));
+					break;
+				default:
+					throw new LogicException("Couldn't parse line " + record.getRecordNumber() + " : " + record);
+				}
+				
+				this.attributeItemIndex.put(compo, item);
+				this.itemAttributeIndex.put(item, compo);
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 }

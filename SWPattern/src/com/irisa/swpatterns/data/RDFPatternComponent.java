@@ -2,6 +2,12 @@ package com.irisa.swpatterns.data;
 
 import java.util.Comparator;
 
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Resource;
+
+import com.irisa.exception.LogicException;
+
 /**
  * Elements of a pattern, based on design pattern Composite
  * @author pmaillot
@@ -52,7 +58,43 @@ public abstract class RDFPatternComponent {
 
 	@Override
 	public String toString() {
-		return this.getElement().toString() + " (" + this.getType() + ")";
+		return this.getElement().toString() + " " + this.getType() ;
+	}
+	
+	public static RDFPatternComponent parse(String element) {
+		String[] splitElem = element.split("\t");
+		
+		switch(splitElem.length) {
+		case 2:
+			return parse(splitElem[0], splitElem[1]);
+		case 3:
+			return parse(splitElem[0], splitElem[1], splitElem[2]);
+		default:
+			throw new LogicException("Coudn't parse " + element + " to RDFPatternComponent");
+		}
+	}
+	
+	public static RDFPatternComponent parse(String element1, String element2) {
+		Model parserModel = ModelFactory.createDefaultModel();
+		RDFPatternComponent result;
+		
+		Resource res = parserModel.getResource(element1);
+		Type type = Type.valueOf(element2);
+		result = new RDFPatternResource(res, type);
+		parserModel.close();
+		return result;
+	}
+	
+	public static RDFPatternComponent parse(String element1, String element2, String element3) {
+		Model parserModel = ModelFactory.createDefaultModel();
+		RDFPatternComponent result;
+		Resource res1 = parserModel.getResource(element1);
+		Resource res2 = parserModel.getResource(element2);
+		Type typePath = Type.valueOf(element3);
+		result = new RDFPatternPathFragment(res1, res2, typePath);
+		parserModel.close();
+		
+		return result;
 	}
 
 	@Override
