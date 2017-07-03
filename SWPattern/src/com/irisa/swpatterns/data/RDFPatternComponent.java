@@ -1,7 +1,10 @@
 package com.irisa.swpatterns.data;
 
 import java.util.Comparator;
+import java.util.List;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
@@ -60,6 +63,8 @@ public abstract class RDFPatternComponent {
 	public String toString() {
 		return this.getElement().toString() + " " + this.getType() ;
 	}
+	
+	public abstract List<Object> toList();
 	
 	public static RDFPatternComponent parse(String element) {
 		String[] splitElem = element.split("\t");

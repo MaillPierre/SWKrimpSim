@@ -34,7 +34,6 @@ public class AttributeIndex {
 	private LabeledTransaction attributes = new LabeledTransaction();
 	private HashMap<RDFPatternComponent, Integer> attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
 	private HashMap<Integer, RDFPatternComponent> itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
-//	private HashMap<RDFPatternComponent, Integer> attributeCount = new HashMap<RDFPatternComponent, Integer>();
 	
 	public Iterator<RDFPatternComponent> patternComponentIterator() {
 		return attributeItemIndex.keySet().iterator();
@@ -178,8 +177,9 @@ public class AttributeIndex {
 		Iterator<RDFPatternComponent> itAttr = compos.iterator();
 		while(itAttr.hasNext()) {
 			RDFPatternComponent attr = itAttr.next();
-			attributePrinter.print(attr);
-			attributePrinter.print(getItem(attr));
+			List<Object> recordList = attr.toList();
+			recordList.add(getItem(attr));
+			attributePrinter.printRecord(recordList);
 			attributePrinter.println();
 		}
 
@@ -210,12 +210,29 @@ public class AttributeIndex {
 				
 				this.attributeItemIndex.put(compo, item);
 				this.itemAttributeIndex.put(item, compo);
+				this.attributes.add(compo);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e);
 		}
-
 	}
-
+	
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		
+		Iterator<Integer> itItem = this.itemIterator();
+		while(itItem.hasNext()) {
+			int item = itItem.next();
+			
+			builder.append(item);
+			builder.append(' ');
+			builder.append("=>");
+			builder.append(' ');
+			builder.append(this.itemAttributeIndex.get(item).toString());
+			builder.append('\n');
+		}
+		
+		return builder.toString();
+	}
 }
