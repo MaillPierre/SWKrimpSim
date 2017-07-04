@@ -720,64 +720,64 @@ public class TransactionsExtractor {
 	}
 	
 
-	private LabeledTransaction extractPathFragmentAttributesForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
-
-		LabeledTransaction indivResult = new LabeledTransaction();
-		
-		if(! this.noOutTriples()) {
-			String outTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { <" + currIndiv + "> ?p ?o . ?o a ?oc }";
-			QueryResultIterator itOutResult = new QueryResultIterator(outTripQueryString, baseRDF);
-			try {
-				while(itOutResult.hasNext()) {
-					CustomQuerySolution queryResultLine = itOutResult.nextAnswerSet();
-					Resource prop = queryResultLine.getResource("p");
-					Resource objType = queryResultLine.getResource("oc");
-					if(!onto.isOntologyPropertyVocabulary(prop)) {
-						if(objType != null && prop != null) {
-							RDFPatternPathFragment attribute = new RDFPatternPathFragment(prop, objType, RDFPatternResource.Type.OUT_NEIGHBOUR_TYPE );
-							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
-								_index.add(attribute);
-								indivResult.add(attribute);
-							}
-						}
-					}
-				}
-			} catch(HttpException e) {
-	
-			} finally {
-				itOutResult.close();
-			}
-		}
-		
-		if(! this.noInTriples()) {
-			String inTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { ?o ?p <" + currIndiv + "> . ?o a ?oc }";
-			QueryResultIterator itInResult = new QueryResultIterator(inTripQueryString, baseRDF);
-			try {
-				while(itInResult.hasNext()) {
-					CustomQuerySolution queryResultLine = itInResult.nextAnswerSet();
-					Resource prop = queryResultLine.getResource("p");
-					Resource objType = queryResultLine.getResource("oc");
-//					logger.debug("Extracting InNeighbour attributes " + prop + " " +  );
-					if(!onto.isOntologyPropertyVocabulary(prop)) {
-						if(objType != null && prop != null) {
-							RDFPatternPathFragment attribute = new RDFPatternPathFragment(objType, prop, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );
-							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
-								_index.add(attribute);
-								indivResult.add(attribute);
-							}
-						}
-					}
-				}
-			} catch(HttpException e) {
-	
-			} finally {
-				itInResult.close();
-			}
-		}
-		
-		return indivResult;
-	}
-	
+//	private LabeledTransaction extractPathFragmentAttributesForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
+//
+//		LabeledTransaction indivResult = new LabeledTransaction();
+//		
+//		if(! this.noOutTriples()) {
+//			String outTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { <" + currIndiv + "> ?p ?o . ?o a ?oc }";
+//			QueryResultIterator itOutResult = new QueryResultIterator(outTripQueryString, baseRDF);
+//			try {
+//				while(itOutResult.hasNext()) {
+//					CustomQuerySolution queryResultLine = itOutResult.nextAnswerSet();
+//					Resource prop = queryResultLine.getResource("p");
+//					Resource objType = queryResultLine.getResource("oc");
+//					if(!onto.isOntologyPropertyVocabulary(prop)) {
+//						if(objType != null && prop != null) {
+//							RDFPatternPathFragment attribute = new RDFPatternPathFragment(prop, objType, RDFPatternResource.Type.OUT_NEIGHBOUR_TYPE );
+//							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
+//								_index.add(attribute);
+//								indivResult.add(attribute);
+//							}
+//						}
+//					}
+//				}
+//			} catch(HttpException e) {
+//	
+//			} finally {
+//				itOutResult.close();
+//			}
+//		}
+//		
+//		if(! this.noInTriples()) {
+//			String inTripQueryString = "SELECT DISTINCT ?p ?oc WHERE { ?o ?p <" + currIndiv + "> . ?o a ?oc }";
+//			QueryResultIterator itInResult = new QueryResultIterator(inTripQueryString, baseRDF);
+//			try {
+//				while(itInResult.hasNext()) {
+//					CustomQuerySolution queryResultLine = itInResult.nextAnswerSet();
+//					Resource prop = queryResultLine.getResource("p");
+//					Resource objType = queryResultLine.getResource("oc");
+////					logger.debug("Extracting InNeighbour attributes " + prop + " " +  );
+//					if(!onto.isOntologyPropertyVocabulary(prop)) {
+//						if(objType != null && prop != null) {
+//							RDFPatternPathFragment attribute = new RDFPatternPathFragment(objType, prop, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );
+//							if(! onto.isOntologyClassVocabulary(objType) && onto.isClass(objType)) {
+//								_index.add(attribute);
+//								indivResult.add(attribute);
+//							}
+//						}
+//					}
+//				}
+//			} catch(HttpException e) {
+//	
+//			} finally {
+//				itInResult.close();
+//			}
+//		}
+//		
+//		return indivResult;
+//	}
+//	
 	public void setNeighborLevel(Neighborhood level) {
 		this._neighborLevel = level;
 	}

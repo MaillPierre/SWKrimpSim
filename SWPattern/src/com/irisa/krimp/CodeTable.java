@@ -1,7 +1,6 @@
 package com.irisa.krimp;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,14 +25,11 @@ public class CodeTable {
 	
 	private static Logger logger = Logger.getLogger(CodeTable.class);
 
-//	private AttributeIndex _index = null;
-//	private HashMap<Integer, Integer> _singletonSupports = new HashMap<Integer, Integer>(); // Numerical supports for singletons
 	private ItemsetSet _transactions = null;
 	private ItemsetSet _codes = null;
 	private HashMap<Itemset, Integer> _itemsetUsage = new HashMap<Itemset, Integer>();
 	private HashMap<Itemset, Integer> _itemsetCode = new HashMap<Itemset, Integer>();
-//	private HashMap<Itemset, BitSet> _codeSupport = new HashMap<Itemset, BitSet>(); // bitset supports for all codes
-	private DataIndexes _analysis = null;
+	private DataIndexes _index = null;
 	private long _usageTotal = 0;
 
 	// 	private HashMap<Itemset, BitSet> _codeSupportVector = new HashMap<Itemset, BitSet>();
@@ -66,13 +62,12 @@ public class CodeTable {
 			_standardCT = null;
 			_codes = new ItemsetSet();
 		}
-		_analysis = analysis;
+		_index = analysis;
 		init();	
 	}
 	
 	private void init() {
-		initSupports();
-//		initializeSingletons();
+		initSingletonSupports();
 		initCodes();
 		orderCodesStandardCoverageOrder();
 		countUsages();		
@@ -87,16 +82,13 @@ public class CodeTable {
 	}
 	
 	public CodeTable(CodeTable ct) {
-//		_index = ct._index;
-//		_singletonSupports = new HashMap<Integer, Integer>(ct._singletonSupports);
 		_transactions = ct._transactions;
 		_codes = new ItemsetSet(ct._codes);
 		_itemsetUsage = new HashMap<Itemset, Integer>(ct._itemsetUsage);
 		_itemsetCode = new HashMap<Itemset, Integer>(ct._itemsetCode);
-//		_codeSupport = new HashMap<Itemset, BitSet>(ct._codeSupport);
 		_usageTotal = ct._usageTotal;
 		_standardFlag = ct._standardFlag;
-		_analysis = ct._analysis; // only depend on transactions and unmutable, no copy needed
+		_index = ct._index; // only depend on transactions and unmutable, no copy needed
 				
 		_standardCT = ct._standardCT;
 		
@@ -114,7 +106,7 @@ public class CodeTable {
 	 */
 	public void setTransactions(ItemsetSet transactions) {
 		this._transactions = transactions;
-		this._analysis = new DataIndexes(transactions);
+		this._index = new DataIndexes(transactions);
 		init();
 	}
 
@@ -146,18 +138,18 @@ public class CodeTable {
 		});
 	}
 	
-	private void initSupports() {
+	private void initSingletonSupports() {
 		logger.debug("initSupport");
 		
-		Iterator<Integer> itItem = _analysis.itemIterator();
+		Iterator<Integer> itItem = _index.itemIterator();
 		while(itItem.hasNext()) {
 			int item = itItem.next();
 			Itemset single = Utils.createCodeSingleton(item);
-			single.setAbsoluteSupport(_analysis.getItemSupport(item));
+			single.setAbsoluteSupport(_index.getItemSupport(item));
 			if(! this._codes.contains(single)) {
 				_codes.add(single);
 			}
-			_itemsetUsage.put(single, _analysis.getItemSupport(item));
+			_itemsetUsage.put(single, _index.getItemSupport(item));
 			_itemsetCode.put(single, item);
 		}
 	}
@@ -327,7 +319,6 @@ public class CodeTable {
 	 * PRE: the codeTable must be in standardCoverTable order
 	 */
 	protected void countUsages() {
-//		logger.debug("countUsages : ");
 		this._usageTotal = 0;
 		Iterator<Itemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
@@ -335,18 +326,17 @@ public class CodeTable {
 			
 			_itemsetUsage.replace(code, 0);
 			
-			int itrans = this._analysis.getCodeTransactionVector(code).nextSetBit(0);
+			int itrans = this._index.getCodeTransactionVector(code).nextSetBit(0);
 			while(itrans >= 0) {
 				Itemset trans = this._transactions.get(itrans);
 				if(isCover(trans, code)) {
 					_itemsetUsage.replace(code, _itemsetUsage.get(code) +1);
 				}
-				itrans = this._analysis.getCodeTransactionVector(code).nextSetBit(itrans+1);
+				itrans = this._index.getCodeTransactionVector(code).nextSetBit(itrans+1);
 			}
 			
 			this._usageTotal += _itemsetUsage.get(code);
 		}
-//		logger.debug("usages: " + this._itemsetUsage);
 	}
 	
 	/**

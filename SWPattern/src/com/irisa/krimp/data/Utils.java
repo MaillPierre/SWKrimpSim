@@ -24,6 +24,12 @@ public class Utils {
 
 	private static Logger logger = Logger.getLogger(Utils.class);
 
+	private static int counterAttribute = 0;
+
+	public static ItemsetSet readItemsetSetFile(String filename) {
+		return new ItemsetSet(Utils.readItemsetFile(filename));
+	}
+	
 	public static Itemsets readItemsetFile(String filename) {
 		Itemsets result = new Itemsets(filename);
 		
@@ -168,14 +174,12 @@ public class Utils {
 			}
 	}
 
-	private static int counterAttribute = 0;
-
 	/**
 	 * Print the transaction in the format expected by SPMF (int separated by spaces).
 	 * @param transactions
 	 * @param output
 	 */
-	public void printItemsetSet(ItemsetSet transactions, String output) {
+	public static void printItemsetSet(ItemsetSet transactions, String output) {
 
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
