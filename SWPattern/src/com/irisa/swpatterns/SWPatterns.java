@@ -107,6 +107,7 @@ public class SWPatterns {
 				boolean inputTransaction = cmd.hasOption(inputTransactionOption);
 				boolean inputOtherRDFFile = cmd.hasOption(inputOtherRDFOption);
 				boolean inputOtherTransaction = cmd.hasOption(inputOtherTransactionOption);
+				boolean otherInput = inputOtherRDFFile || inputOtherTransaction;
 				boolean outputTransaction = cmd.hasOption(outputTransactionOption);
 				boolean inputCandidatesCodes = cmd.hasOption(inputCandidatesOption);
 				boolean inputOtherCandidatesCodes = cmd.hasOption(inputOtherCandidatesOption);
@@ -305,7 +306,7 @@ public class SWPatterns {
 					logger.debug("First Compression: " + (compressedSize / normalSize));
 	
 	
-					if(cmd.hasOption("otherFile")) {
+					if(otherInput) {
 	
 						ItemsetSet otherRealTransactions;
 						BaseRDF otherBase = new BaseRDF(otherRDFFile, MODE.LOCAL);
