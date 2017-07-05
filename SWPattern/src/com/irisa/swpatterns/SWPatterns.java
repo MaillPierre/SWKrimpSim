@@ -362,7 +362,9 @@ public class SWPatterns {
 						CodeTable otherComparisonResult = new CodeTable( otherRealTransactions, krimpCT.getCodes(), otherAnalysis);
 						double otherNormalSize = standardCT.totalCompressedSize();
 						double otherCompressedSize = otherKrimpCT.totalCompressedSize();
+						double otherCompressedSizeWithoutCT = otherKrimpCT.encodedTransactionSetCodeLength();
 						double othercomparisonSize = otherComparisonResult.totalCompressedSize();
+						double othercomparisonSizeWithoutCT = otherKrimpCT.encodedTransactionSetCodeLength();
 						//	logger.debug("First Code table: " + krimpCT);
 						logger.debug("Other NormalLength: " + otherNormalSize);
 						logger.debug("Other CompressedLength: " + otherCompressedSize);
@@ -375,7 +377,7 @@ public class SWPatterns {
 						if(outputCodeTableCodes) {
 							Utils.printItemsetSet(otherKrimpCT.getCodes(), otherOutputKRIMPFile);
 						}
-						System.out.println(otherCompressedSize+";"+othercomparisonSize);
+						System.out.println(otherCompressedSize+";"+othercomparisonSize+";"+otherCompressedSizeWithoutCT+";"+othercomparisonSizeWithoutCT);
 	
 					}
 	
