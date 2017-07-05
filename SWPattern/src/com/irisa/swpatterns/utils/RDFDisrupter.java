@@ -17,14 +17,11 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Consumer;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
@@ -37,7 +34,6 @@ import org.apache.log4j.PropertyConfigurator;
 
 import com.irisa.jenautils.BaseRDF;
 import com.irisa.jenautils.UtilOntology;
-import com.irisa.swpatterns.SWPatterns;
 
 import scala.Array;
 
@@ -88,7 +84,7 @@ public class RDFDisrupter {
 					outputFile = cmd.getOptionValue(outputRDFOption); 
 				}
 				else{
-					outputFile = RDFFile+"-modified.rdf"; 
+					outputFile = RDFFile+"-modified.nt"; 
 				}
 				if (cmd.hasOption(deletingProbabilityOption)) {
 					deletingProbability = Double.valueOf(cmd.getOptionValue(deletingProbabilityOption)); 
@@ -115,7 +111,6 @@ public class RDFDisrupter {
 				int auxIdx = -1; 
 				
 				List<Statement> triples = new ArrayList<>();
-				List<Statement> candidateTriples = new ArrayList<>(); 
 				List<Resource> instances = new ArrayList<>(); 
 				RDFModel.listSubjects().forEachRemaining(instances::add);
 				
@@ -140,43 +135,55 @@ public class RDFDisrupter {
 				}
 				numberOfTriples = (long) Math.floor(modifiedPercentage * triples.size());
 				logger.debug("Messing with "+numberOfTriples+" triples ... ");
+				ArrayList<Statement> stmtToBeAdded = new ArrayList<>(); 
+				ArrayList<Statement> stmtToBeRemoved = new ArrayList<>(); 
+				
 				for (int j=0; j<numberOfTriples; j++) {
 					auxIdx = rand.nextInt(triples.size()) ;
 					
 					if (rand.nextFloat()<=deletingProbability) {
 						numberOfDeletions++;
-						RDFModel.remove(triples.get(auxIdx));					
+						stmtToBeRemoved.add(triples.get(auxIdx));				
 					}
 					else if (rand.nextFloat() <= flippingProbability) {
 						if (triples.get(auxIdx).getObject().isLiteral()) {
 							numberOfDeletions++; 
-							RDFModel.remove(triples.get(auxIdx)); 
+							stmtToBeRemoved.add(triples.get(auxIdx)); 
 						}
 						else{
 							numberOfFlippings++; 
 							stmt = triples.get(auxIdx); 
-							RDFModel.add(RDFModel.createStatement(stmt.getObject().asResource(), stmt.getPredicate(), stmt.getSubject())); 
-							RDFModel.remove(stmt); 
+							stmtToBeAdded.add(RDFModel.createStatement(stmt.getObject().asResource(), stmt.getPredicate(), stmt.getSubject()));						
+							stmtToBeRemoved.add(stmt); 
 						}
 					}
 					else {
 						// we mess with the object of the statement 
 						numberOfModifications++; 
 						stmt = triples.get(auxIdx); 
-						RDFModel.add(RDFModel.createStatement(stmt.getSubject(), 
-																stmt.getPredicate(), 
-																instances.get(rand.nextInt(instances.size()))));
-						RDFModel.remove(stmt); 
+						stmtToBeAdded.add(RDFModel.createStatement(stmt.getSubject(), 
+											stmt.getPredicate(), 
+											instances.get(rand.nextInt(instances.size())))); 						
+						stmtToBeRemoved.add(stmt); 
 						
 					}
+					triples.remove(auxIdx); 
 				}
+				logger.debug("RDFModel size: "+RDFModel.size());
+				logger.debug("Stmt to be removed: "+stmtToBeRemoved.size());
+				RDFModel.remove(stmtToBeRemoved); 				
+				logger.debug("RDFModel after removal size: "+RDFModel.size());
+				logger.debug("Stmt to be added: "+stmtToBeAdded.size());
+				RDFModel.add(stmtToBeAdded);
+				logger.debug("RDFModel after addition size: "+RDFModel.size());
 				
 				logger.debug("-- Number of deletions: "+numberOfDeletions);
 				logger.debug("-- Number of flippings: "+numberOfFlippings); 
 				logger.debug("-- Number of modifications: "+numberOfModifications); 
 				
 				FileOutputStream out = new FileOutputStream(new File(outputFile));
-				RDFModel.write(out); 
+				RDFModel.write(out, "N-TRIPLE");
+				RDFModel.close(); 
 				out.flush(); 
 				out.close(); 
 				
