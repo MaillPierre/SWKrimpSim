@@ -39,6 +39,14 @@ public class BaseRDF {
 		LOCAL, DISTANT;
 	}
 	
+	// CB: added a method to create the BaseRDF from an existing Jena model  
+	
+	public BaseRDF (Model model) {
+		this._model = model; 
+		this._mode = MODE.LOCAL; 
+	}
+	
+	
 	public BaseRDF(String adresse, MODE mode) {
 		this._mode = mode;
 		if(mode == MODE.DISTANT)
@@ -160,6 +168,15 @@ public class BaseRDF {
 	public String toString() {
 		return this._mode + " : " + this._server + " : " + this.size();
 	}
-
+	
+	// CB: Added a method to access the model when in LOCAL mode 
+	
+	public Model getModel () {
+		Model result = null; 
+		if (this._mode == MODE.LOCAL) {
+			result = this._model; 
+		}
+		return result; 
+	}
 	
 }
