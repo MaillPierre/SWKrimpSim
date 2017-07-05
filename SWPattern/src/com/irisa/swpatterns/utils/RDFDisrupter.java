@@ -2,12 +2,17 @@
 // File: RDFDisrupter.java 
 // Author: Carlos Bobed
 // Date: July 2017
-// Comments: Utility to get an RDF model and randomly messy 
-// 		IMPORTANT: The results might be inconsistent as the modifications 
-// 		are done randomly, without taking into account semantic aspects
-// 		It is just a tool to prove that the more different the different 
-// 		RDF graphs are, the more different the compression rates are 
+// Comments: Utility to get an RDF model simulating different modeling 
+// 		differences 
 // Modifications: 
+// 		July 2017: 
+// 			* the completely random version previously used lead to 
+// 			huge closed frequent itemset sets which were non-informative (the 
+// 			randomness did not respect ranges and domains of the properties, 
+//	 		which are more than likely to be respected)
+// 			* Added two different styles of modifying the RDFGraph: 
+// 				- instance-centered modification
+// 				- property-centered modification
 ///////////////////////////////////////////////////////////////////////////////
 
 package com.irisa.swpatterns.utils;
@@ -24,7 +29,10 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Selector;
+import org.apache.jena.rdf.model.SimpleSelector;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.vocabulary.RDF;
@@ -39,12 +47,16 @@ import scala.Array;
 
 public class RDFDisrupter {
 
+	public enum MODIFICATION_TYPE {
+		INSTANCE_CENTERED, 
+		PROPERTY_CENTERED
+	}; 
+	
 	private static Logger logger = Logger.getLogger(RDFDisrupter.class);
 	
 	public static double deletingProbability = 0.2; 
-	public static double flippingProbability = 0.2; 
 	public static double modifiedPercentage = 0.1; 
-	public static boolean touchIsA = false; 
+	public static ArrayList<MODIFICATION_TYPE> activeModifications = new ArrayList<>(); 
 	
 	public static void main(String[] args) {
 		// code adapted from Pierre's one ... thanks ;) 
@@ -55,9 +67,9 @@ public class RDFDisrupter {
 		String inputRDFOption = "inputRDF";
 		String deletingProbabilityOption= "deletingProbability"; 
 		String modifiedPercentageOption = "modifiedPercentage";
-		String flippingProbabilityOption = "flippingProbability"; 
-		String touchIsAOption = "touchIsA"; 
 		String outputRDFOption = "outputRDF"; 
+		String instanceCenteredOption = "instanceCentered"; 
+		String propertyCenteredOption = "propertyCentered"; 
 		
 		// Setting up options
 		CommandLineParser parser = new DefaultParser();
@@ -67,11 +79,11 @@ public class RDFDisrupter {
 		options.addOption(outputRDFOption, true, "Output RDF file"); 
 		options.addOption(deletingProbabilityOption, true, "Probability of deleting instead of modifying a triple"); 
 		options.addOption(modifiedPercentageOption, true, "Percentage of the KB that has to be modified");
-		options.addOption(flippingProbabilityOption, true, "Probability of flipping the orientation of a triple");
-		options.addOption(touchIsAOption, false, "Mess with the isA triples"); 
+		options.addOption(instanceCenteredOption, false, "Activate the instanceCentered (default true if no option is given)"); 
+		options.addOption(propertyCenteredOption, false, "Activate the propertyCentered (default false)"); 
 		
 		try {
-			CommandLine cmd = parser.parse( options, args);
+			CommandLine cmd = parser.parse(options, args);
 		
 			boolean helpAsked = cmd.hasOption("help");
 			if(helpAsked) {
@@ -93,6 +105,17 @@ public class RDFDisrupter {
 					modifiedPercentage = Double.valueOf(cmd.getOptionValue(modifiedPercentageOption)); 
 				}
 				
+				if (cmd.hasOption(instanceCenteredOption) || 
+						cmd.hasOption(propertyCenteredOption) ) {
+					if (cmd.hasOption(instanceCenteredOption)) {
+						activeModifications.add(MODIFICATION_TYPE.INSTANCE_CENTERED); 
+					}
+					
+					if (cmd.hasOption(propertyCenteredOption)) {
+						activeModifications.add(MODIFICATION_TYPE.PROPERTY_CENTERED); 
+					}
+				}
+				
 				logger.debug("Reading the RDF file ...");
 				BaseRDF RDFWrapper = new BaseRDF(RDFFile);
 				logger.debug("Done");
@@ -101,8 +124,8 @@ public class RDFDisrupter {
 				UtilOntology ontology = new UtilOntology();
 				ontology.init(RDFWrapper);
 				logger.debug("Done");
-				long numberOfTriples = -1; 
-				long numberOfModifications = 0; 
+				long totalNumberModifiedTriples = -1; 
+				long currentNumberModifiedTriples = 0; 
 				long numberOfDeletions = 0; 
 				long numberOfFlippings = 0; 
 				StmtIterator it = null; 
@@ -125,50 +148,96 @@ public class RDFDisrupter {
 						// we add it to the candidate list 
 						triples.add(stmt); 
 					}
-					else {
-						// this is not done in a safe way 
-						// it is only for data equivalence purposes 
-						if (touchIsA && stmt.getPredicate().equals(RDF.type)) {
-							triples.add(stmt); 
-						}								
-					}
 				}
-				numberOfTriples = (long) Math.floor(modifiedPercentage * triples.size());
-				logger.debug("Messing with "+numberOfTriples+" triples ... ");
+				totalNumberModifiedTriples = (long) Math.floor(modifiedPercentage * triples.size());
+				logger.debug("Messing with "+totalNumberModifiedTriples+" triples ... ");
 				ArrayList<Statement> stmtToBeAdded = new ArrayList<>(); 
 				ArrayList<Statement> stmtToBeRemoved = new ArrayList<>(); 
 				
-				for (int j=0; j<numberOfTriples; j++) {
-					auxIdx = rand.nextInt(triples.size()) ;
-					
-					if (rand.nextFloat()<=deletingProbability) {
-						numberOfDeletions++;
-						stmtToBeRemoved.add(triples.get(auxIdx));				
+				while (currentNumberModifiedTriples < totalNumberModifiedTriples) {
+					switch (nextModification(rand, activeModifications)) {
+						case INSTANCE_CENTERED: 
+							
+							if (instances.isEmpty()){
+								// we initialize the candidates 
+								RDFModel.listSubjects().forEachRemaining(instances::add);
+							}
+							
+							// we select a resource that is not part of the TBox
+							auxIdx = rand.nextInt(instances.size());
+							Resource instance = instances.get(auxIdx); 
+							while (!instances.isEmpty() && 
+									(ontology.isClass(instance) || ontology.isProperty(instance)) )  {
+								// we choose another one
+								instances.remove(auxIdx);
+								if (instances.size () != 0) {
+									auxIdx = rand.nextInt(instances.size());
+									instance = instances.get(auxIdx);
+								}
+							}
+							if (instances.isEmpty()) 
+							{
+								// we break the loop 
+								continue; 
+							}
+							
+							List<Statement> instanceTriples = new ArrayList<Statement> (); 
+							RDFModel.listStatements(new SimpleSelector(instance, null, (RDFNode)null)).forEachRemaining(instanceTriples::add); 
+							while (currentNumberModifiedTriples <totalNumberModifiedTriples 
+									&& !instanceTriples.isEmpty()) {
+								auxIdx = rand.nextInt(instanceTriples.size()) ;
+								if (rand.nextDouble()<deletingProbability) {
+									stmtToBeRemoved.add(instanceTriples.get(auxIdx)); 
+									instanceTriples.remove(auxIdx); 
+									currentNumberModifiedTriples++; 
+								}
+							}
+							
+							break; 
+							
+							
+						case PROPERTY_CENTERED: 
+							break; 
 					}
-					else if (rand.nextFloat() <= flippingProbability) {
-						if (triples.get(auxIdx).getObject().isLiteral()) {
-							numberOfDeletions++; 
-							stmtToBeRemoved.add(triples.get(auxIdx)); 
-						}
-						else{
-							numberOfFlippings++; 
-							stmt = triples.get(auxIdx); 
-							stmtToBeAdded.add(RDFModel.createStatement(stmt.getObject().asResource(), stmt.getPredicate(), stmt.getSubject()));						
-							stmtToBeRemoved.add(stmt); 
-						}
-					}
-					else {
-						// we mess with the object of the statement 
-						numberOfModifications++; 
-						stmt = triples.get(auxIdx); 
-						stmtToBeAdded.add(RDFModel.createStatement(stmt.getSubject(), 
-											stmt.getPredicate(), 
-											instances.get(rand.nextInt(instances.size())))); 						
-						stmtToBeRemoved.add(stmt); 
-						
-					}
-					triples.remove(auxIdx); 
 				}
+			
+				
+// 				COMPLETE RANDOM MODIFICATION CODE
+// 				
+//				for (int j=0; j<totalNumberModifiedTriples; j++) {
+//					auxIdx = rand.nextInt(triples.size()) ;
+//					
+//					if (rand.nextFloat()<=deletingProbability) {
+//						numberOfDeletions++;
+//						stmtToBeRemoved.add(triples.get(auxIdx));				
+//					}
+//					else if (rand.nextFloat() <= flippingProbability) {
+//						if (triples.get(auxIdx).getObject().isLiteral()) {
+//							numberOfDeletions++; 
+//							stmtToBeRemoved.add(triples.get(auxIdx)); 
+//						}
+//						else{
+//							numberOfFlippings++; 
+//							stmt = triples.get(auxIdx); 
+//							stmtToBeAdded.add(RDFModel.createStatement(stmt.getObject().asResource(), stmt.getPredicate(), stmt.getSubject()));						
+//							stmtToBeRemoved.add(stmt); 
+//						}
+//					}
+//					else {
+//						// we mess with the object of the statement 
+//						numberOfModifications++; 
+//						stmt = triples.get(auxIdx); 
+//						stmtToBeAdded.add(RDFModel.createStatement(stmt.getSubject(), 
+//											stmt.getPredicate(), 
+//											instances.get(rand.nextInt(instances.size())))); 						
+//						stmtToBeRemoved.add(stmt); 
+//						
+//					}
+//					triples.remove(auxIdx); 
+//				}
+				
+				
+				
 				logger.debug("RDFModel size: "+RDFModel.size());
 				logger.debug("Stmt to be removed: "+stmtToBeRemoved.size());
 				RDFModel.remove(stmtToBeRemoved); 				
@@ -194,6 +263,8 @@ public class RDFDisrupter {
 		}
 	}
 	
-	
+	private static MODIFICATION_TYPE nextModification (Random r, ArrayList<MODIFICATION_TYPE> activeMods) {
+		return activeMods.get(r.nextInt(activeMods.size())); 
+	}
 	
 }
