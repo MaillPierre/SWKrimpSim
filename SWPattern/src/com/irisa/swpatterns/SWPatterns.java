@@ -232,14 +232,15 @@ public class SWPatterns {
 //					logger.debug("initOnto");
 					onto.init(baseRDF);
 	
-					logger.debug("Extracting transactions from RDF file");
+					logger.debug("Extracting transactions from RDF file with conversion " + converter.getNeighborLevel());
+
 					
-					
+					AttributeIndex index = converter.getIndex();
 					
 					// Extracting transactions
 					LabeledTransactions transactions;
 					if(inputConversionIndex) {
-						converter.getIndex().readRDFToItemConversionTable(inputConversionIndexFile);
+						index.readRDFToItemConversionTable(inputConversionIndexFile);
 					}
 	
 					if(cmd.hasOption("class")) {
@@ -250,8 +251,11 @@ public class SWPatterns {
 					} else {
 						transactions = converter.extractTransactions(baseRDF, onto);
 					}
-	
-					AttributeIndex index = converter.getIndex();
+					
+					// Printing conversion index
+					if(outputConversionIndex) {
+						converter.getIndex().printRDFToItemConversionTable(outputConversionIndexFile);
+					}
 	
 					// Printing transactions for both files
 					if(outputTransaction) {
@@ -376,9 +380,6 @@ public class SWPatterns {
 					logger.fatal("RAAAH", e);
 				}
 				onto.close();
-				if(outputConversionIndex) {
-					converter.getIndex().printRDFToItemConversionTable(outputConversionIndexFile);
-				}
 			}
 		} catch (Exception e) {
 			logger.fatal("Failed on " + Arrays.toString(args), e);
