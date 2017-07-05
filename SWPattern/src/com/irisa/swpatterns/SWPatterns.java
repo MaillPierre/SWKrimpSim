@@ -283,10 +283,10 @@ public class SWPatterns {
 	
 				} else {
 					realtransactions = new ItemsetSet(Utils.readTransactionFile(cmd.getOptionValue(inputTransactionOption)));
-					if(inputCandidatesCodes) {
+					if(! inputCandidatesCodes) {
 						codes = new ItemsetSet(fsExtractor.computeItemsets(realtransactions));
 					} else {
-						codes = Utils.readItemsetSetFile(firstCandidatesFile);
+						codes = Utils.readItemsetSetFile(inputCandidatesOption);
 					}
 					logger.debug("Nb Lines: " + realtransactions.size());
 				}
@@ -316,12 +316,13 @@ public class SWPatterns {
 					logger.debug("First NormalLength: " + normalSize);
 					logger.debug("First CompressedLength: " + compressedSize);
 					logger.debug("First Compression: " + (compressedSize / normalSize));
-					System.out.println(compressedSize);
 	
 					if(otherInput) {
 	
 						ItemsetSet otherRealTransactions;
 						BaseRDF otherBase = new BaseRDF(otherRDFFile, MODE.LOCAL);
+						logger.debug("processing base of " + otherBase.size() + " triples.");
+						onto.init(otherBase);
 						if(! inputOtherTransaction) {
 							LabeledTransactions otherTransactions;
 							if(cmd.hasOption("class")) {
@@ -332,6 +333,7 @@ public class SWPatterns {
 							} else {
 								otherTransactions = converter.extractTransactions(otherBase,  onto);
 							}
+							logger.debug("Other RDF transactions: " + otherTransactions.size() + " transactions");
 		
 							otherRealTransactions = converter.getIndex().convertToTransactions(otherTransactions);
 							if(outputTransaction) {
@@ -340,6 +342,7 @@ public class SWPatterns {
 						} else {
 							otherRealTransactions = new ItemsetSet(Utils.readTransactionFile(otherTransactionFile));
 						}
+						logger.debug("Other final transactions: " + otherRealTransactions.size() + " transactions");
 						
 						ItemsetSet otherCandidates;
 						if(inputOtherCandidatesCodes) {
