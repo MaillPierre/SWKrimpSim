@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import org.apache.jena.atlas.web.HttpException;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
@@ -76,9 +75,9 @@ public class TransactionsExtractor {
 	 */
 	public LabeledTransactions extractTransactions(BaseRDF baseRDF, UtilOntology onto) {
 
-//		logger.debug(onto.classes().size() + " classes");
+		logger.debug("Transaction extraction");
 
-		// Accumulation de descriptions des propriétés d'individus
+		// Aggregation of the individual descriptions
 		LabeledTransactions results = new LabeledTransactions();
 		Iterator<Resource> itClass = onto.usedClassIterator();
 		while(itClass.hasNext()) 
@@ -87,7 +86,7 @@ public class TransactionsExtractor {
 			results.addAll(extractTransactionsForClass(baseRDF, onto, currentClass));
 		}
 
-//		logger.debug("End of extraction");
+		logger.debug("End of transaction extraction");
 		logger.debug(_index.size() + " attributes");
 //
 		logger.debug(results.size() + " lines");
