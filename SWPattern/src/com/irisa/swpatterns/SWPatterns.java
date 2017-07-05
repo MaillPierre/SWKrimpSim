@@ -50,6 +50,10 @@ public class SWPatterns {
 		String outputCodeTableOption = "outputCodeTable";
 		String inputConversionIndexOption = "inputConversionIndex";
 		String outputConversionIndexOption = "outputConversionIndex";
+		
+		String PropertiesConversionOption = "nProperties";
+		String PropertiesAndTypesConversionOption = "nPropertiesAndTypes";
+		String PropertiesAndOthersConversionOption = "nPropertiesAndOthers";
 	
 		OptionGroup algorithm = new OptionGroup();
 		algorithm.addOption(new Option("FPClose", false, "Use FPClose algorithm. (default)"));
@@ -59,9 +63,9 @@ public class SWPatterns {
 		algorithm.addOption(new Option("FPGrowth", false, "Use FPGrowth algorithm."));
 		algorithm.addOption(new Option("Relim", false, "Use Relim algorithm."));
 		OptionGroup conversion = new OptionGroup();
-		conversion.addOption(new Option("nProperties", false, "Extract items representing only properties (central individual types, out-going and in-going properties)."));
-		conversion.addOption(new Option("nPropertiesAndTypes", false, "Extract items representing only properties and connected ressources types."));
-		conversion.addOption(new Option("nPropertiesAndOthers", false, "Extract items representing properties and connected ressources."));
+		conversion.addOption(new Option(PropertiesConversionOption, false, "Extract items representing only properties (central individual types, out-going and in-going properties), encoding="+Neighborhood.Property+"."));
+		conversion.addOption(new Option(PropertiesAndTypesConversionOption, false, "Extract items representing only properties and connected ressources types, encoding="+Neighborhood.PropertyAndType+"."));
+		conversion.addOption(new Option(PropertiesAndOthersConversionOption, false, "Extract items representing properties and connected ressources, encoding="+Neighborhood.PropertyAndOther+"."));
 		
 		// Setting up options
 		CommandLineParser parser = new DefaultParser();
@@ -149,13 +153,13 @@ public class SWPatterns {
 					fsExtractor.setAlgoPrePost();
 				}
 				// Encoding options
-				if(cmd.hasOption("nProperty")) {
+				if(cmd.hasOption(PropertiesConversionOption)) {
 					converter.setNeighborLevel(Neighborhood.Property);
 				}
-				if(cmd.hasOption("nPropertyAndType")) {
+				if(cmd.hasOption(PropertiesAndTypesConversionOption)) {
 					converter.setNeighborLevel(Neighborhood.PropertyAndType);
 				}
-				if(cmd.hasOption("nPropertyAndOther")) {
+				if(cmd.hasOption(PropertiesAndOthersConversionOption)) {
 					converter.setNeighborLevel(Neighborhood.PropertyAndOther);
 				}
 				logger.debug("Pruning activated: "+activatePruning);
