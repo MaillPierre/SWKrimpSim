@@ -364,7 +364,7 @@ public class SWPatterns {
 						double otherCompressedSize = otherKrimpCT.totalCompressedSize();
 						double otherCompressedSizeWithoutCT = otherKrimpCT.encodedTransactionSetCodeLength();
 						double othercomparisonSize = otherComparisonResult.totalCompressedSize();
-						double othercomparisonSizeWithoutCT = otherKrimpCT.encodedTransactionSetCodeLength();
+						double othercomparisonSizeWithoutCT = otherComparisonResult.encodedTransactionSetCodeLength();
 						//	logger.debug("First Code table: " + krimpCT);
 						logger.debug("Other NormalLength: " + otherNormalSize);
 						logger.debug("Other CompressedLength: " + otherCompressedSize);
