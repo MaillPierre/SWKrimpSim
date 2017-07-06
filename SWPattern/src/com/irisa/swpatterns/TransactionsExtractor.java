@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.function.Consumer;
+
+import org.apache.commons.math3.stat.descriptive.AggregateSummaryStatistics;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
@@ -34,6 +38,8 @@ public class TransactionsExtractor {
 	private static int queryLimit = 0;
 	
 	private AttributeIndex _index = new AttributeIndex();
+	private HashMap<Resource, Integer> _inDegreeCount = new HashMap<Resource, Integer>();
+	private HashSet<Resource> _outliers = new HashSet<Resource>();
 
 	private boolean _noTypeBool = false;
 	private boolean _noInBool = false;
@@ -74,7 +80,11 @@ public class TransactionsExtractor {
 	 * @return
 	 */
 	public LabeledTransactions extractTransactions(BaseRDF baseRDF, UtilOntology onto) {
-
+		
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
+			initDegreeCount( baseRDF, onto);
+		}
+		
 		logger.debug("Transaction extraction");
 
 		// Aggregation of the individual descriptions
@@ -93,6 +103,49 @@ public class TransactionsExtractor {
 		return results;
 	}
 	
+	private void initDegreeCount(BaseRDF baseRDF, UtilOntology onto) {
+		HashSet<Resource> instances = new HashSet<Resource>();
+		Iterator<Resource> itClass = onto.usedClassIterator();
+		while(itClass.hasNext()) {
+			Resource currentClass = itClass.next();
+			QueryResultIterator itInstances = new QueryResultIterator("SELECT DISTINCT ?i WHERE { ?i a <"+ currentClass.getURI() +"> }", baseRDF);
+			itInstances.forEachRemaining(new Consumer<CustomQuerySolution>() {
+
+				@Override
+				public void accept(CustomQuerySolution sol) {
+					instances.add(sol.getResource("i"));
+				}
+			});
+		}
+
+		DescriptiveStatistics summary = new DescriptiveStatistics();
+		instances.forEach(new Consumer<Resource>() {
+			@Override
+			public void accept(Resource res) {
+				String inDegreeQuery = "SELECT DISTINCT (count(*) AS ?count) WHERE { ?subj ?prop <"+ res.getURI() +"> }";
+				QueryResultIterator inDegreeiterator = new QueryResultIterator(inDegreeQuery, baseRDF);
+				int degree = inDegreeiterator.next().get("count").asLiteral().getInt();
+				_inDegreeCount.put(res, degree);
+				summary.addValue(degree);
+			}
+		});
+		
+		double q1 = summary.getPercentile(25);
+		double q3 = summary.getPercentile(75);
+		double outlierThreshold = q3 + (1.5 * (q3 -q1));
+		logger.debug(summary.getN() +" values q1: " + q1 + " q3: " + q3 + " Outlier Threshold is: " + outlierThreshold);
+		
+		instances.forEach(new Consumer<Resource>() {
+			@Override
+			public void accept(Resource res) {
+				if((double)_inDegreeCount.get(res) > outlierThreshold) {
+					_outliers.add(res);
+				}
+			}
+		});
+		logger.debug(instances.size() + " instances et " + _outliers.size() + " outliers.");
+	}
+
 	private LabeledTransaction extractTypeAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 		LabeledTransaction indivResult = new LabeledTransaction();
 		String typeTripQueryString = "SELECT DISTINCT ?t WHERE { <" + currIndiv + "> a ?t }";
@@ -121,14 +174,14 @@ public class TransactionsExtractor {
 		LabeledTransaction indivResult = new LabeledTransaction();
 		
 		String outTripQueryString = "SELECT DISTINCT ?p "; 
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType || this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
 			outTripQueryString += " ?ot " ;
 		}
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
 			outTripQueryString += " ?o " ;
 		}
 		outTripQueryString += " WHERE { <" + currIndiv + "> ?p ?o . ";
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType || this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
 			outTripQueryString += " OPTIONAL { ?o a ?ot . } ";
 		}
 		outTripQueryString += " }";
@@ -145,24 +198,29 @@ public class TransactionsExtractor {
 					}
 					indivResult.add(propAttribute);
 				
-					RDFPatternComponent attribute = null;
-					if(this.getNeighborLevel()== Neighborhood.PropertyAndOther && queryResultLine.getResource("o") != null){
+					if(this.getNeighborLevel()== Neighborhood.PropertyAndOther 
+							&& queryResultLine.getResource("o") != null) {
 						Resource obj = queryResultLine.getResource("o");
-						if(! onto.isOntologyClassVocabulary(obj)) {
-							attribute = new RDFPatternPathFragment(prop, obj, RDFPatternResource.Type.OUT_NEIGHBOUR );
+						if(! onto.isOntologyClassVocabulary(obj) && this._outliers.contains(obj)) {
+							RDFPatternComponent attributeOther = new RDFPatternResource(prop, RDFPatternResource.Type.OUT_NEIGHBOUR );
+							if(! _index.contains(attributeOther)) {
+								_index.add(attributeOther);
+							}
+							indivResult.add(attributeOther);
 						}
-					} else if(this.getNeighborLevel() == Neighborhood.PropertyAndType  
+					} 
+					if((this.getNeighborLevel() == Neighborhood.PropertyAndType 
+							|| this.getNeighborLevel() == Neighborhood.PropertyAndOther)
 							&& queryResultLine.getResource("ot") != null ) {
 						Resource oType = queryResultLine.getResource("ot");
-						if(! onto.isOntologyClassVocabulary(oType) && onto.isClass(oType)) {
-							attribute = new RDFPatternPathFragment(prop, oType, RDFPatternResource.Type.OUT_NEIGHBOUR_TYPE );
+						if(! onto.isOntologyClassVocabulary(oType) 
+								&& onto.isClass(oType)) {
+							RDFPatternComponent attributeType = new RDFPatternPathFragment(prop, oType, RDFPatternResource.Type.OUT_NEIGHBOUR_TYPE );
+							if(! _index.contains(attributeType)) {
+								_index.add(attributeType);
+							}
+							indivResult.add(attributeType);
 						}
-					}
-					if(attribute != null) {
-						if(! _index.contains(attribute)) {
-							_index.add(attribute);
-						}
-						indivResult.add(attribute);
 					}
 				}
 			}
@@ -232,11 +290,13 @@ public class TransactionsExtractor {
 		}
 		return results;
 	}
-	
+
+	@Deprecated
 	public LabeledTransactions extractPathAttributes(BaseRDF baseRDF, UtilOntology onto){
 		return extractPathAttributes(baseRDF, onto, this.getPathsLength());
 	}
 	
+	@Deprecated
 	private LabeledTransactions extractPathAttributes(BaseRDF baseRDF, UtilOntology onto, int rank) {
 		LabeledTransactions result = new LabeledTransactions();
 		
@@ -261,6 +321,7 @@ public class TransactionsExtractor {
 		return result;
 	}
 
+	@Deprecated
 	private Collection<? extends LabeledTransaction> extractPathAttributesRankFour(BaseRDF baseRDF, UtilOntology onto) {
 		LinkedList<LabeledTransaction> result = new LinkedList<LabeledTransaction>();
 		
@@ -403,6 +464,7 @@ public class TransactionsExtractor {
 		return result;
 	}
 
+	@Deprecated
 	private Collection<? extends LabeledTransaction> extractPathAttributesRankThree(BaseRDF baseRDF, UtilOntology onto) {
 		LinkedList<LabeledTransaction> result = new LinkedList<LabeledTransaction>();
 		
@@ -515,6 +577,7 @@ public class TransactionsExtractor {
 		return result;
 	}
 
+	@Deprecated
 	private Collection<? extends LabeledTransaction> extractPathAttributesRankTwo(BaseRDF baseRDF, UtilOntology onto) {
 		LinkedList<LabeledTransaction> result = new LinkedList<LabeledTransaction>();
 		
@@ -601,6 +664,7 @@ public class TransactionsExtractor {
 		return result;
 	}
 
+	@Deprecated
 	private Collection<? extends LabeledTransaction> extractPathAttributesRankOne(BaseRDF baseRDF, UtilOntology onto) {
 		// TODO Auto-generated method stub
 		return null;
@@ -665,14 +729,16 @@ public class TransactionsExtractor {
 		LabeledTransaction indivResult = new LabeledTransaction();
 		
 		String inTripQueryString = "SELECT DISTINCT ?p "; 
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType 
+				|| this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
 			inTripQueryString += " ?st " ;
 		}
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
 			inTripQueryString += " ?s " ;
 		}
 		inTripQueryString += " WHERE { ?s ?p <" + currIndiv + "> . ";
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType 
+				|| this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
 			inTripQueryString += " OPTIONAL { ?s a ?st . } ";
 		}
 		inTripQueryString += " }";
@@ -689,23 +755,27 @@ public class TransactionsExtractor {
 					}
 					indivResult.add(propAttribute);
 					
-					RDFPatternComponent attribute = null;
 					if(this.getNeighborLevel()== Neighborhood.PropertyAndOther) {
+						RDFPatternComponent attributeOther = null;
 						Resource subj = queryResultLine.getResource("s");
-						if(! onto.isOntologyClassVocabulary(subj)) {
-							attribute = new RDFPatternPathFragment(prop, subj, RDFPatternResource.Type.IN_NEIGHBOUR );
+						if(! onto.isOntologyClassVocabulary(subj) && _outliers.contains(subj)) {
+							attributeOther = new RDFPatternResource(prop, RDFPatternResource.Type.IN_NEIGHBOUR );
+							if(! _index.contains(attributeOther)) {
+								_index.add(attributeOther);
+							}
+							indivResult.add(attributeOther);
 						}
-					} else if (this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+					} 
+					if (this.getNeighborLevel() == Neighborhood.PropertyAndType || this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
+						RDFPatternComponent attributeType = null;
 						Resource sType = queryResultLine.getResource("st");
 						if(sType != null && ! onto.isOntologyClassVocabulary(sType) && onto.isClass(sType)) {
-							attribute = new RDFPatternPathFragment(prop, sType, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );
+							attributeType = new RDFPatternPathFragment(prop, sType, RDFPatternResource.Type.IN_NEIGHBOUR_TYPE );
+							if(! _index.contains(attributeType)) {
+								_index.add(attributeType);
+							}
+							indivResult.add(attributeType);
 						}
-					}
-					if(attribute != null) {
-						if(! _index.contains(attribute)) {
-							_index.add(attribute);
-						}
-						indivResult.add(attribute);
 					}
 				}
 			}
