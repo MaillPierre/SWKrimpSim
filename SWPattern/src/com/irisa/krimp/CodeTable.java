@@ -70,7 +70,7 @@ public class CodeTable {
 		initSingletonSupports();
 		initCodes();
 		orderCodesStandardCoverageOrder();
-		countUsages();		
+		updateUsages();		
 	}
 	
 	public static CodeTable createStandardCodeTable(ItemsetSet transactions, DataIndexes analysis) {
@@ -104,10 +104,20 @@ public class CodeTable {
 	 * Trigger reinitialization of the indexes
 	 * @param transactions
 	 */
-	public void setTransactions(ItemsetSet transactions) {
+	public void setTransactionsReinitializing(ItemsetSet transactions) {
 		this._transactions = transactions;
 		this._index = new DataIndexes(transactions);
 		init();
+	}
+	
+	/**
+	 * Substitute the transactions we want this code table act on without reinitializing the 
+	 *	supports (needed to calculate the new compression rates) 
+	 * @param transactions
+	 */
+	public void setTransactions(ItemsetSet transactions) {
+		this._transactions = transactions;
+		this._index = new DataIndexes(transactions);
 	}
 
 	/**
@@ -318,7 +328,7 @@ public class CodeTable {
 	 * Initialize the usage of each code according to the cover
 	 * PRE: the codeTable must be in standardCoverTable order
 	 */
-	protected void countUsages() {
+	public void updateUsages() {
 		this._usageTotal = 0;
 		Iterator<Itemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
@@ -483,7 +493,7 @@ public class CodeTable {
 		this._itemsetCode.remove(code);
 		this._itemsetUsage.remove(code);
 		// CB: removing from an ordered list must not alter the order
-		countUsages(); // Have to maintain the thing up to date ? 
+		updateUsages(); // Have to maintain the thing up to date ? 
 		
 	}
 	
@@ -511,7 +521,7 @@ public class CodeTable {
 			this._itemsetUsage.put(code, this.getUsage(code));
 			// after adding it we have to reorder 
 			orderCodesStandardCoverageOrder();
-			this.countUsages(); // maintain the usage index uptodate ?
+			this.updateUsages(); // maintain the usage index uptodate ?
 			
 		}
 	}
