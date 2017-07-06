@@ -314,7 +314,7 @@ public class SWPatterns {
 					double normalSize = standardCT.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
 					logger.debug("-------- FIRST RESULT ---------");
-					logger.debug(krimpCT);
+//					logger.debug(krimpCT);
 					//					logger.debug("First Code table: " + krimpCT);
 					logger.debug("First NormalLength: " + normalSize);
 					logger.debug("First CompressedLength: " + compressedSize);
@@ -374,13 +374,24 @@ public class SWPatterns {
 						double othercomparisonSize = otherComparisonResult.totalCompressedSize();
 						double othercomparisonSizeWithoutCT = otherComparisonResult.encodedTransactionSetCodeLength();
 						//	logger.debug("First Code table: " + krimpCT);
+						logger.debug("-------- OTHER RESULT ---------");
 						logger.debug("Other NormalLength: " + otherNormalSize);
 						logger.debug("Other CompressedLength: " + otherCompressedSize);
 						logger.debug("Other Compression: " + (otherCompressedSize / otherNormalSize));
 						logger.debug("Second Compression with first CT: " + (othercomparisonSize / otherNormalSize));
-	
-						logger.debug("-------- OTHER RESULT ---------");
-						logger.debug(otherKrimpCT);
+						logger.debug("Compression ratio: "+(othercomparisonSize/otherCompressedSize));
+						logger.debug("-------- NEW FORMULATION --------");
+						double evalKrimpSize = otherKrimpCT.codificationLength(otherRealTransactions); 
+						krimpCT.setTransactions(otherRealTransactions);
+						krimpCT.updateUsages();
+						double refKrimpSize = krimpCT.codificationLength(otherRealTransactions); 
+						
+						logger.debug("Size of eval database using its Krimp CT: "+evalKrimpSize);
+						logger.debug("Size of eval database using the Reference Krimp CT: "+refKrimpSize);
+						logger.debug("Compression ratio: "+(refKrimpSize/evalKrimpSize));
+						
+//						logger.debug("-------- OTHER RESULT ---------");
+//						logger.debug(otherKrimpCT);
 						
 						if(outputCodeTableCodes) {
 							Utils.printItemsetSet(otherKrimpCT.getCodes(), otherOutputKRIMPFile);
