@@ -792,29 +792,28 @@ public class UtilOntology {
 			functionalPropertyOWLResult.close();
 		}
 
-//		logger.trace("init Onto: actual used properties");
-//		// Propriété symétrique déclarée en OWL
-//		String usedPropertiesSelectString = "SELECT DISTINCT ?p WHERE { ?s ?p ?o . }";
-//		Query usedPropertiesSelect = QueryFactory.create(usedPropertiesSelectString);
-//		QueryExecution usedPropertiesSelectExec = tbase.executionQuery(usedPropertiesSelect);
-//		try 
-//		{
-//			QueryResultIterator usedPropertiesResult = new QueryResultIterator(usedPropertiesSelectExec);
-//			while(usedPropertiesResult.hasNext())
-//			{
-//				CustomQuerySolution sol = usedPropertiesResult.next();
-//				Resource nProp = sol.getResource("p");
-//				if(nProp != null && ! this.isOntologyPropertyVocabulary(nProp))
-//				{
-//					logger.trace("Property used " + nProp);
-//					this.addProperty(nProp);
-//				}
-//			}
-//		} 
-//		finally
-//		{
-//			functionalPropertyOWLSelectExec.close();
-//		}
+		logger.trace("init Onto: actual used properties");
+		// Propriété symétrique déclarée en OWL
+		String usedPropertiesSelectString = "SELECT DISTINCT ?p WHERE { ?s ?p ?o . }";
+		Query usedPropertiesSelect = QueryFactory.create(usedPropertiesSelectString);
+		QueryResultIterator usedPropertiesResult = furnisher.retrieve(usedPropertiesSelect);
+		try 
+		{
+			while(usedPropertiesResult.hasNext())
+			{
+				CustomQuerySolution sol = usedPropertiesResult.next();
+				Resource nProp = sol.getResource("p");
+				if(nProp != null && ! this.isOntologyPropertyVocabulary(nProp))
+				{
+					logger.trace("Property used " + nProp);
+					this.addProperty(nProp);
+				}
+			}
+		} 
+		finally
+		{
+			usedPropertiesResult.close();
+		}
 		
 	}
 	
