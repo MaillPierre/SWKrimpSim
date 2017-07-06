@@ -29,6 +29,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Selector;
@@ -54,6 +55,8 @@ public class RDFDisrupter {
 	
 	private static Logger logger = Logger.getLogger(RDFDisrupter.class);
 	
+	public static double modifyingProbability = 0.5; 
+	public static double orientationModificationProbability = 0.5; 
 	public static double deletingProbability = 0.2; 
 	public static double modifiedPercentage = 0.1; 
 	public static ArrayList<MODIFICATION_TYPE> activeModifications = new ArrayList<>(); 
@@ -65,7 +68,9 @@ public class RDFDisrupter {
 		
 		// In/out options name to facilitate further references
 		String inputRDFOption = "inputRDF";
-		String deletingProbabilityOption= "deletingProbability"; 
+		String deletingProbabilityOption= "deletingProbability";
+		String modifyingProbabilityOption = "modifyingProbabilty"; 
+		String orientationModificationProbabilityOption = "orientationProbability"; 
 		String modifiedPercentageOption = "modifiedPercentage";
 		String outputRDFOption = "outputRDF"; 
 		String instanceCenteredOption = "instanceCentered"; 
@@ -77,7 +82,10 @@ public class RDFDisrupter {
 		// In/Out
 		options.addOption(inputRDFOption, true, "Input RDF file");
 		options.addOption(outputRDFOption, true, "Output RDF file"); 
-		options.addOption(deletingProbabilityOption, true, "Probability of deleting instead of modifying a triple"); 
+		options.addOption(deletingProbabilityOption, true, "Probability of deleting a triple");
+		options.addOption(modifyingProbabilityOption, true, "Probability of modifying a triple - it is conditioned to not to be deleted previously");
+		options.addOption(orientationModificationProbabilityOption, true, "Probability of the orientation of the modification being "+
+																" changing the object (1-value will be the probability of changing the subject)"); 
 		options.addOption(modifiedPercentageOption, true, "Percentage of the KB that has to be modified");
 		options.addOption(instanceCenteredOption, false, "Activate the instanceCentered (default true if no option is given)"); 
 		options.addOption(propertyCenteredOption, false, "Activate the propertyCentered (default false)"); 
@@ -101,6 +109,12 @@ public class RDFDisrupter {
 				if (cmd.hasOption(deletingProbabilityOption)) {
 					deletingProbability = Double.valueOf(cmd.getOptionValue(deletingProbabilityOption)); 
 				}
+				if (cmd.hasOption(orientationModificationProbabilityOption)) {
+					orientationModificationProbability = Double.valueOf(cmd.getOptionValue(orientationModificationProbabilityOption)); 
+				}
+				if (cmd.hasOption(modifyingProbabilityOption)) {
+					modifyingProbability = Double.valueOf(cmd.getOptionValue(modifyingProbabilityOption)); 
+				}
 				if (cmd.hasOption(modifiedPercentageOption)) {
 					modifiedPercentage = Double.valueOf(cmd.getOptionValue(modifiedPercentageOption)); 
 				}
@@ -115,6 +129,10 @@ public class RDFDisrupter {
 						activeModifications.add(MODIFICATION_TYPE.PROPERTY_CENTERED); 
 					}
 				}
+				else {
+					// by default, we apply the instance centered approach
+					activeModifications.add(MODIFICATION_TYPE.INSTANCE_CENTERED); 
+				}
 				
 				logger.debug("Reading the RDF file ...");
 				BaseRDF RDFWrapper = new BaseRDF(RDFFile);
@@ -127,7 +145,12 @@ public class RDFDisrupter {
 				long totalNumberModifiedTriples = -1; 
 				long currentNumberModifiedTriples = 0; 
 				long numberOfDeletions = 0; 
-				long numberOfFlippings = 0; 
+				long numberOfSubjectModifications = 0; 
+				long numberOfObjectModifications = 0;
+				long numberOfModifiedInstances = 0; 
+				long numberOfModifiedProperties = 0; 
+				long numberOfInstanceCenteredModifications = 0; 
+				long numberOfPropertyCenteredModifications = 0; 
 				StmtIterator it = null; 
 				Statement stmt = null; 
 				Random rand = new Random(); 
@@ -135,7 +158,10 @@ public class RDFDisrupter {
 				
 				List<Statement> triples = new ArrayList<>();
 				List<Resource> instances = new ArrayList<>(); 
+				List<Resource> properties = new ArrayList<>(); 
 				RDFModel.listSubjects().forEachRemaining(instances::add);
+				ontology.properties().iterator().forEachRemaining(properties::add);
+				
 				
 				// this could be done far more elegantly using lambda expressions 
 				// e.j.: RDFModel.listStatements().forEachRemaining(triples::add); 
@@ -157,7 +183,7 @@ public class RDFDisrupter {
 				while (currentNumberModifiedTriples < totalNumberModifiedTriples) {
 					switch (nextModification(rand, activeModifications)) {
 						case INSTANCE_CENTERED: 
-							
+							numberOfModifiedInstances++; 
 							if (instances.isEmpty()){
 								// we initialize the candidates 
 								RDFModel.listSubjects().forEachRemaining(instances::add);
@@ -183,20 +209,87 @@ public class RDFDisrupter {
 							
 							List<Statement> instanceTriples = new ArrayList<Statement> (); 
 							RDFModel.listStatements(new SimpleSelector(instance, null, (RDFNode)null)).forEachRemaining(instanceTriples::add); 
-							while (currentNumberModifiedTriples <totalNumberModifiedTriples 
+							while ( (currentNumberModifiedTriples <totalNumberModifiedTriples) 
 									&& !instanceTriples.isEmpty()) {
 								auxIdx = rand.nextInt(instanceTriples.size()) ;
-								if (rand.nextDouble()<deletingProbability) {
-									stmtToBeRemoved.add(instanceTriples.get(auxIdx)); 
+								if (rand.nextDouble()<deletingProbability) {					
+									logger.debug(instanceTriples.get(auxIdx));
+									logger.debug(!ontology.isOntologyPropertyVocabulary(instanceTriples.get(auxIdx).getPredicate()));									
+									if (!ontology.isOntologyPropertyVocabulary(instanceTriples.get(auxIdx).getPredicate()) )  {
+										stmtToBeRemoved.add(instanceTriples.get(auxIdx)); 										
+										currentNumberModifiedTriples++; 
+										numberOfDeletions++; 
+										numberOfInstanceCenteredModifications++;
+									}			
 									instanceTriples.remove(auxIdx); 
-									currentNumberModifiedTriples++; 
 								}
 							}
 							
 							break; 
+						case PROPERTY_CENTERED:
+							numberOfModifiedProperties++; 
+							if (properties.isEmpty()) {
+								// we initialize again the candidates 
+								ontology.properties().iterator().forEachRemaining(properties::add);
+							}
 							
+							// here we are assured that they are part of the vocabulary
+							auxIdx = rand.nextInt(properties.size()); 
+							Resource property = properties.get(auxIdx); 
+							List<Statement> propertyTriples = new ArrayList<>(); 
+							RDFModel.listStatements(new SimpleSelector(null, property.as(Property.class), (RDFNode) null)).forEachRemaining(propertyTriples::add);
 							
-						case PROPERTY_CENTERED: 
+							while ( (currentNumberModifiedTriples < totalNumberModifiedTriples)
+									&& !propertyTriples.isEmpty() ) {
+								auxIdx = rand.nextInt(propertyTriples.size());
+								stmt = propertyTriples.get(auxIdx); 
+								if (rand.nextDouble()<deletingProbability) {
+									stmtToBeRemoved.add(stmt); 
+									propertyTriples.remove(auxIdx); 
+									currentNumberModifiedTriples++;
+									// stats stuff
+									numberOfDeletions++; 
+									numberOfPropertyCenteredModifications++; 
+								}
+								else {
+									// we have to take into account that the probability of modifiying a 
+									// triple is then conditioned to not to be deleted
+									
+									if (rand.nextDouble()<modifyingProbability) {
+										// we now select the orientation of the modification 
+										List<Statement> candidateTriples = new ArrayList<>();
+										Statement newStmt = null; 										
+										RDFModel.listStatements(new SimpleSelector(null, stmt.getPredicate(), (RDFNode)null)).forEachRemaining(candidateTriples::add);
+										
+										if (rand.nextDouble() < orientationModificationProbability) {
+											// we modify the object of the property											
+											newStmt = RDFModel.createStatement(stmt.getSubject(), stmt.getPredicate(), 
+													candidateTriples.get(rand.nextInt(candidateTriples.size())).getObject());
+											// stats stuff
+											numberOfObjectModifications++; 
+										}
+										else{
+											// we modify the subject of the property
+											newStmt = RDFModel.createStatement(candidateTriples.get(rand.nextInt(candidateTriples.size())).getSubject(),
+														stmt.getPredicate(),stmt.getObject());
+											// stats stuff
+											numberOfSubjectModifications++; 
+										}
+										propertyTriples.remove(auxIdx); 
+										stmtToBeRemoved.add(stmt);
+										stmtToBeAdded.add(newStmt);
+										currentNumberModifiedTriples++;
+										// stats stuff
+										numberOfPropertyCenteredModifications++; 
+									}
+									else{
+										// we remove it from the potential triples to be modified (it has just survived as it is)
+										propertyTriples.remove(auxIdx); 
+									}
+								}
+							}							
+							break; 
+						default: 
 							break; 
 					}
 				}
@@ -236,8 +329,6 @@ public class RDFDisrupter {
 //					triples.remove(auxIdx); 
 //				}
 				
-				
-				
 				logger.debug("RDFModel size: "+RDFModel.size());
 				logger.debug("Stmt to be removed: "+stmtToBeRemoved.size());
 				RDFModel.remove(stmtToBeRemoved); 				
@@ -246,9 +337,14 @@ public class RDFDisrupter {
 				RDFModel.add(stmtToBeAdded);
 				logger.debug("RDFModel after addition size: "+RDFModel.size());
 				
+				logger.debug("STATS:"); 
+				logger.debug("-- InstanceCentered modifications: "+numberOfInstanceCenteredModifications);
+				logger.debug("---- Number of modified instances: "+numberOfModifiedInstances);
+				logger.debug("-- PropertyCentered modifications: "+numberOfPropertyCenteredModifications);
+				logger.debug("---- Number of modified properties: "+numberOfModifiedProperties);
+				logger.debug("------ Object modifications: "+numberOfObjectModifications );
+				logger.debug("------ Subject modifications: "+numberOfSubjectModifications);
 				logger.debug("-- Number of deletions: "+numberOfDeletions);
-				logger.debug("-- Number of flippings: "+numberOfFlippings); 
-				logger.debug("-- Number of modifications: "+numberOfModifications); 
 				
 				FileOutputStream out = new FileOutputStream(new File(outputFile));
 				RDFModel.write(out, "N-TRIPLE");
