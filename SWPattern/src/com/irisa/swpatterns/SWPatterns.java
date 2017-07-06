@@ -84,6 +84,7 @@ public class SWPatterns {
 		options.addOption(inputOtherCandidatesOption, true, "File containing the candidate codes extracted for the first file.");
 		options.addOption(outputCandidatesOption, false, "Create file containing the candidate codes extracted for the first file <filename>.<encoding>.candidates.dat.");
 		options.addOption(inputCodeTableOption, true, "Itemset file containing the KRIMP codetable for the first file.");
+		options.addOption(inputOtherCodeTableOption, true, "Itemset file containing the KRIMP codetable for the other file.");
 		options.addOption(outputCodeTableOption, false, "Create an Itemset file containing the  KRIMP codetable for each file <filename>.<encoding>.krimp.dat.");
 		options.addOption(inputConversionIndexOption, true, "Set the index used for RDF to transaction conversion, new items will be added.");
 		options.addOption(outputConversionIndexOption, true, "Create a file containing the index used for RDF to transaction conversion, new items will be added.");
@@ -115,7 +116,8 @@ public class SWPatterns {
 				boolean inputTransaction = cmd.hasOption(inputTransactionOption);
 				boolean inputOtherRDFFile = cmd.hasOption(inputOtherRDFOption);
 				boolean inputOtherTransaction = cmd.hasOption(inputOtherTransactionOption);
-				boolean otherInput = inputOtherRDFFile || inputOtherTransaction;
+				boolean inputOtherCodeTable = cmd.hasOption(inputOtherCodeTableOption);
+				boolean otherInput = inputOtherRDFFile || inputOtherTransaction || inputOtherCodeTable;
 				boolean outputTransaction = cmd.hasOption(outputTransactionOption);
 				boolean inputCandidatesCodes = cmd.hasOption(inputCandidatesOption);
 				boolean inputOtherCandidatesCodes = cmd.hasOption(inputOtherCandidatesOption);
@@ -177,6 +179,7 @@ public class SWPatterns {
 				String firstCandidatesFile = cmd.getOptionValue(inputCandidatesOption);
 				String otherCandidatesFile = cmd.getOptionValue(inputOtherCandidatesOption);
 				String firstKRIMPFile = cmd.getOptionValue(inputCodeTableOption);
+				String otherKRIMPFile = cmd.getOptionValue(inputOtherCodeTableOption);
 				String firstOutputFile = "";
 				if(inputRDF) {
 					firstOutputFile = firstRDFFile;
@@ -344,21 +347,26 @@ public class SWPatterns {
 						}
 						logger.debug("Other final transactions: " + otherRealTransactions.size() + " transactions");
 						
-						ItemsetSet otherCandidates;
-						if(inputOtherCandidatesCodes) {
-							otherCandidates = Utils.readItemsetSetFile(otherCandidatesFile);
+						DataIndexes otherAnalysis = new DataIndexes(otherRealTransactions);
+						standardCT = CodeTable.createStandardCodeTable(otherRealTransactions, otherAnalysis );
+						CodeTable otherKrimpCT ;
+						if(! inputOtherCodeTable) {
+							ItemsetSet otherCandidates;
+							if(inputOtherCandidatesCodes) {
+								otherCandidates = Utils.readItemsetSetFile(otherCandidatesFile);
+							} else {
+								otherCandidates = new ItemsetSet(fsExtractor.computeItemsets(otherRealTransactions));
+							}
+							if(outputCandidatesCodes) {
+								Utils.printItemsetSet(otherCandidates, otherOutputCandidateFile);
+							}
+							
+							KrimpAlgorithm otherKrimpAlgo = new KrimpAlgorithm(otherRealTransactions, otherCandidates);
+							otherKrimpCT = otherKrimpAlgo.runAlgorithm(activatePruning);
 						} else {
-							otherCandidates = new ItemsetSet(fsExtractor.computeItemsets(otherRealTransactions));
-						}
-						if(outputCandidatesCodes) {
-							Utils.printItemsetSet(otherCandidates, otherOutputCandidateFile);
+							otherKrimpCT = new CodeTable(otherRealTransactions, Utils.readItemsetSetFile(otherKRIMPFile), otherAnalysis);
 						}
 						
-						DataIndexes otherAnalysis = new DataIndexes(otherRealTransactions);
-	
-						standardCT = CodeTable.createStandardCodeTable(otherRealTransactions, otherAnalysis );
-						KrimpAlgorithm otherKrimpAlgo = new KrimpAlgorithm(otherRealTransactions, otherCandidates);
-						CodeTable otherKrimpCT = otherKrimpAlgo.runAlgorithm(activatePruning);
 						CodeTable otherComparisonResult = new CodeTable( otherRealTransactions, krimpCT.getCodes(), otherAnalysis);
 						double otherNormalSize = standardCT.totalCompressedSize();
 						double otherCompressedSize = otherKrimpCT.totalCompressedSize();
