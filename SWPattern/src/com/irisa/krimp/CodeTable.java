@@ -594,5 +594,20 @@ public class CodeTable {
 		
 	}
 	
-	
+	/** 
+	 * Length of the codification of a set of transactions using this code table
+	 * It uses exactly the same cover order (it does not update either the support or the usage of the elements in the table) 
+	 */
+	public double codificationLength (ItemsetSet database) {
+		double result = 0.0;
+		ItemsetSet codes = null; 
+		for (Itemset it: database) {
+			codes = this.codify(it); 
+			for (Itemset code: codes) {
+				result += this.codeLengthOfcode(code); 
+			}
+		}
+		return result; 
+	}
 }
+	
