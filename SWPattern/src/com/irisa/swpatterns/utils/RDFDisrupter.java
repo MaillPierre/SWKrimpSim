@@ -69,7 +69,7 @@ public class RDFDisrupter {
 		// In/out options name to facilitate further references
 		String inputRDFOption = "inputRDF";
 		String deletingProbabilityOption= "deletingProbability";
-		String modifyingProbabilityOption = "modifyingProbabilty"; 
+		String modifyingProbabilityOption = "modifyingProbability"; 
 		String orientationModificationProbabilityOption = "orientationProbability"; 
 		String modifiedPercentageOption = "modifiedPercentage";
 		String outputRDFOption = "outputRDF"; 
