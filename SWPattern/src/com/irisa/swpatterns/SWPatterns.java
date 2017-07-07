@@ -1,5 +1,8 @@
 package com.irisa.swpatterns;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.Arrays;
 
 import org.apache.commons.cli.CommandLine;
@@ -55,6 +58,9 @@ public class SWPatterns {
 		String inputConversionIndexOption = "inputConversionIndex";
 		String outputConversionIndexOption = "outputConversionIndex";
 		
+		// CB: added to gather the results in CSV file
+		String outputComparisonResultsFileOption = "outputComparisonResultsFile"; 
+		
 		String PropertiesConversionOption = "nProperties";
 		String PropertiesAndTypesConversionOption = "nPropertiesAndTypes";
 		String PropertiesAndOthersConversionOption = "nPropertiesAndOthers";
@@ -88,6 +94,9 @@ public class SWPatterns {
 		options.addOption(outputCodeTableOption, false, "Create an Itemset file containing the  KRIMP codetable for each file <filename>.<encoding>.krimp.dat.");
 		options.addOption(inputConversionIndexOption, true, "Set the index used for RDF to transaction conversion, new items will be added.");
 		options.addOption(outputConversionIndexOption, true, "Create a file containing the index used for RDF to transaction conversion, new items will be added.");
+		
+		// CB: 
+		options.addOption(outputComparisonResultsFileOption, true, "File to add the output of the comparison to in CSV format."); 
 		
 		options.addOption("limit", true, "Limit to the number of individuals extracted from each class.");
 		options.addOption("resultWindow", true, "Size of the result window used to query RDF data.");
@@ -181,6 +190,8 @@ public class SWPatterns {
 				String firstKRIMPFile = cmd.getOptionValue(inputCodeTableOption);
 				String otherKRIMPFile = cmd.getOptionValue(inputOtherCodeTableOption);
 				String firstOutputFile = "";
+				String outputComparisonResultsFile = cmd.getOptionValue(outputComparisonResultsFileOption); 
+				
 				if(inputRDF) {
 					firstOutputFile = firstRDFFile;
 				} else if(inputTransaction) {
@@ -396,7 +407,65 @@ public class SWPatterns {
 						if(outputCodeTableCodes) {
 							Utils.printItemsetSet(otherKrimpCT.getCodes(), otherOutputKRIMPFile);
 						}
-						System.out.println(otherCompressedSize+";"+othercomparisonSize+";"+otherCompressedSizeWithoutCT+";"+othercomparisonSizeWithoutCT);
+						
+						if (outputComparisonResultsFile == null){						
+							System.out.println(otherCompressedSize+";"+othercomparisonSize+";"+otherCompressedSizeWithoutCT+";"+othercomparisonSizeWithoutCT);
+						}
+						else{
+							
+							File outputFile = new File (outputComparisonResultsFile); 
+							
+							if (!outputFile.exists()) {
+								logger.debug("creating a new file ..."); 
+								outputFile.createNewFile(); 
+								try (FileWriter fw = new FileWriter(outputFile); 
+										PrintWriter out = new PrintWriter(fw)) {									
+									out.println("input;other;Conversion;refCompressionRatioOwnCT;evalCompressionRationOwnCT;relativeCompressionRatio(withCT);newRelativeCompressionRatio");
+									out.flush();
+								}
+								catch( Exception e) {
+									e.printStackTrace();
+								}
+							}
+							else {
+								logger.debug("the file existed before ..."); 
+							}
+							
+							try (FileWriter fw = new FileWriter(outputComparisonResultsFile, true); 
+									PrintWriter out = new PrintWriter(fw)) {
+															
+								StringBuilder line = new StringBuilder(); 
+								if (inputRDF) {
+									line.append(firstRDFFile); 									
+								}
+								else if (inputCodeTableCodes) {
+									line.append(firstKRIMPFile); 									
+								}
+								line.append(";"); 
+								if (inputOtherRDFFile) {
+									line.append(otherRDFFile); 
+								}
+								else if (inputOtherCodeTable) {
+									line.append(otherKRIMPFile); 
+								}
+								line.append(";");
+								line.append(converter.getNeighborLevel().toString());
+								line.append(";");
+								// refCompressionRationOwnCT
+								line.append(compressedSize / normalSize); 
+								line.append(";"); 
+								// evalCompressionRatioOwnCT
+								line.append(otherCompressedSize / otherNormalSize); 
+								line.append(";"); 
+								// the old relative ratio
+								line.append(othercomparisonSize/otherCompressedSize); 
+								line.append(";"); 
+								// the new relative ratio
+								line.append(refKrimpSize/evalKrimpSize);
+								out.println(line); 
+								out.flush();
+							}							
+						}
 	
 					}
 	
