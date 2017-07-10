@@ -31,36 +31,49 @@ public class AttributeIndex {
 	
 	private Logger logger = Logger.getLogger(AttributeIndex.class);
 
-	private LabeledTransaction attributes = new LabeledTransaction();
-	private HashMap<RDFPatternComponent, Integer> attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
-	private HashMap<Integer, RDFPatternComponent> itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
+	private LabeledTransaction _attributes = new LabeledTransaction();
+	private HashMap<RDFPatternComponent, Integer> _attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
+	private HashMap<Integer, RDFPatternComponent> _itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
 	
+	public AttributeIndex() {
+		
+	}
+	
+	public AttributeIndex(AttributeIndex index) {
+		this._attributes = new LabeledTransaction(index._attributes);
+		this._attributeItemIndex = new HashMap<RDFPatternComponent, Integer>(index._attributeItemIndex);
+		this._itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>(this._itemAttributeIndex);
+	}
+
 	public Iterator<RDFPatternComponent> patternComponentIterator() {
-		return attributeItemIndex.keySet().iterator();
+		return _attributeItemIndex.keySet().iterator();
 	}
 	
 	public Iterator<Integer> itemIterator() {
-		return itemAttributeIndex.keySet().iterator();
+		return _itemAttributeIndex.keySet().iterator();
 	}
 	
 	public boolean contains(RDFPatternComponent attr) {
-		return attributes.contains(attr);
+		return _attributes.contains(attr);
 	}
 	
 	public int getItem(RDFPatternComponent compo) {
-		return attributeItemIndex.get(compo);
+		if(! _attributeItemIndex.containsKey(compo)) {
+			add(compo);
+		}
+		return _attributeItemIndex.get(compo);
 	}
 	
 	public RDFPatternComponent getComponent(int item) {
-		return itemAttributeIndex.get(item);
+		return _itemAttributeIndex.get(item);
 	}
 	
 	public void add(RDFPatternComponent attribute) {
 		if(! contains(attribute)) {
-			attributes.add(attribute);
-			if(! attributeItemIndex.containsKey(attribute)) {
-				attributeItemIndex.put(attribute, Utils.getAttributeNumber());
-				itemAttributeIndex.put(attributeItemIndex.get(attribute), attribute );
+			_attributes.add(attribute);
+			if(! _attributeItemIndex.containsKey(attribute)) {
+				_attributeItemIndex.put(attribute, Utils.getAttributeNumber());
+				_itemAttributeIndex.put(_attributeItemIndex.get(attribute), attribute );
 			}
 		}
 	}
@@ -69,7 +82,7 @@ public class AttributeIndex {
 		LabeledTransaction result = new LabeledTransaction();
 
 		for(int i = 0; i < iSet.getItems().length; i++) {
-			result.add(itemAttributeIndex.get(iSet.get(i)));
+			result.add(_itemAttributeIndex.get(iSet.get(i)));
 		}
 		result.setSupport(iSet.getAbsoluteSupport());
 
@@ -120,12 +133,12 @@ public class AttributeIndex {
 	}
 	
 	public int size() {
-		return attributes.size();
+		return _attributes.size();
 	}
 
 	/**
 	 * Print the transaction in the format expected by SPMF (int separated by spaces). Will update the attribute/item indexes
-	 * @param attributes Set of all attributes appearing in the descriptions
+	 * @param _attributes Set of all attributes appearing in the descriptions
 	 * @param transactions
 	 * @param output
 	 * @return
@@ -166,7 +179,7 @@ public class AttributeIndex {
 		CSVPrinter attributePrinter = new CSVPrinter(new PrintWriter(new BufferedWriter(new FileWriter(filename))), CSVFormat.TDF);
 		
 		// Writing attributes
-		LinkedList<RDFPatternComponent> compos = new LinkedList<RDFPatternComponent>(attributeItemIndex.keySet());
+		LinkedList<RDFPatternComponent> compos = new LinkedList<RDFPatternComponent>(_attributeItemIndex.keySet());
 		Collections.sort(compos, new Comparator<RDFPatternComponent>() {
 			@Override
 			public int compare(RDFPatternComponent c1, RDFPatternComponent c2) {
@@ -208,9 +221,9 @@ public class AttributeIndex {
 					throw new LogicException("Couldn't parse line " + record.getRecordNumber() + " : " + record);
 				}
 				
-				this.attributeItemIndex.put(compo, item);
-				this.itemAttributeIndex.put(item, compo);
-				this.attributes.add(compo);
+				this._attributeItemIndex.put(compo, item);
+				this._itemAttributeIndex.put(item, compo);
+				this._attributes.add(compo);
 			}
 		} catch (IOException e) {
 			logger.error(e);
@@ -229,7 +242,7 @@ public class AttributeIndex {
 			builder.append(' ');
 			builder.append("=>");
 			builder.append(' ');
-			builder.append(this.itemAttributeIndex.get(item).toString());
+			builder.append(this._itemAttributeIndex.get(item).toString());
 			builder.append('\n');
 		}
 		

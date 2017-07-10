@@ -27,6 +27,11 @@ public class LabeledTransaction extends HashSet<RDFPatternComponent> {
 		setSupport(support);
 	}
 	
+	public LabeledTransaction(LabeledTransaction _attributes) {
+		super(_attributes);
+		setSupport(_attributes.getSupport());
+	}
+
 	public int getSupport() {
 		return _support;
 	}
