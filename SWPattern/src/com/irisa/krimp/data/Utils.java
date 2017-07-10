@@ -17,6 +17,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.QuoteMode;
 import org.apache.log4j.Logger;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
@@ -95,27 +96,35 @@ public class Utils {
 	public static Itemsets readItemsetFile(String filename) {
 		Itemsets result = new Itemsets(filename);
 		try {
+			BufferedReader reader = new BufferedReader(new FileReader(filename));
 
-		 CSVParser parser = CSVParser.parse(filename, CSVFormat.TDF.withDelimiter(' '));
+		 CSVParser parser = new CSVParser(reader, CSVFormat.TDF.withDelimiter(' '));
 		 for (CSVRecord line : parser) {
+			 	boolean withSupport = false;
 				LinkedList<Integer> itemsetLine = new LinkedList<Integer>();
-				int support = 0;
+				int support = 1;
 				if (line.get(0).equals('#') 
 						|| line.get(0).equals('%')
 						|| line.get(0).equals('@')) {
 					continue;
 				}
 				for(int i = 0; i < line.size(); i++) {
-					if( i == line.size()-1 && line.get(line.size()-2).equals("#SUP:")) {
+					if( i == line.size()-1 && withSupport) {
 						support = Integer.valueOf(line.get(i));
-					} else if(i == line.size()-2 && line.get(i).equals("#SUP:")) {
+					} else if(line.get(i).equals("#SUP:")) {
+						withSupport = true;
 						continue;
 					} else {
+						try {
 						itemsetLine.add(Integer.valueOf(line.get(i)));
+						} catch(NumberFormatException e) {
+							logger.fatal(filename + " " + line + " (" + i + "): " + line.get(i), e);
+						}
 					}
 				}
 				result.addItemset(new Itemset(itemsetLine, support), line.size());
 		 }
+		 parser.close();
 		} catch (IOException e) {
 			logger.fatal(e);
 		}
@@ -175,11 +184,14 @@ public class Utils {
 		
 		return result;
 	}
+	protected static void printItemsets(Itemsets is, String output) {
+		printItemsets(is, output, false);
+	}
 	
-	public static void printItemsets(Itemsets is, String output) {
+	protected static void printItemsets(Itemsets is, String output, boolean noSupport) {
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
-			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' '));
+			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' ').withQuote(null));
 
 			// Writing lines
 			is.getLevels().forEach(new Consumer<List<Itemset>>() {
@@ -192,8 +204,10 @@ public class Utils {
 								for(int i = 0; i < t.size(); i++) {
 										printer.print(t.get(i));
 								}
-								printer.print("#SUP:");
-								printer.print(t.getAbsoluteSupport());
+								if(! noSupport) {
+									printer.print((Object)"#SUP:");
+									printer.print(t.getAbsoluteSupport());
+								}
 								printer.println();
 							} catch (IOException e) {
 								logger.error(e);
@@ -208,6 +222,10 @@ public class Utils {
 				logger.error(e);
 			}
 	}
+	
+	public static void printTransactions(Itemsets is, String output) {
+		printItemsets(is, output, true);
+	}
 
 	/**
 	 * Print the transaction in the format expected by SPMF (int separated by spaces).
@@ -215,10 +233,19 @@ public class Utils {
 	 * @param output
 	 */
 	public static void printItemsetSet(ItemsetSet transactions, String output) {
+		printItemsetSet(transactions, output, false);
+	}
+
+	/**
+	 * Print the transaction in the format expected by SPMF (int separated by spaces).
+	 * @param transactions
+	 * @param output
+	 */
+	protected static void printItemsetSet(ItemsetSet transactions, String output, boolean noSupport) {
 
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
-			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' '));
+			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' ').withQuote(null).withIgnoreEmptyLines());
 
 			// Writing lines
 			Iterator<Itemset> itResult = transactions.iterator();
@@ -228,8 +255,10 @@ public class Utils {
 				for(int i = 0; i < resultLine.size(); i++) {
 					printer.print(resultLine.get(i));
 				}
-				printer.print("#SUP:");
-				printer.print(resultLine.support);
+				if(! noSupport) {
+					printer.print((Object)"#SUP:");
+					printer.print(resultLine.support);
+				}
 				printer.println();
 			}
 
@@ -238,6 +267,10 @@ public class Utils {
 		} catch (IOException e1) {
 			logger.error(e1);
 		}
+	}
+	
+	public static void printTransaction(ItemsetSet transactions, String output) {
+		printItemsetSet(transactions, output, true);
 	}
 
 	public static Itemset createCodeSingleton(int codeNum) {

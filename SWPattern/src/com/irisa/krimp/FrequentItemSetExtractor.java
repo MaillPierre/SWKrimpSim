@@ -126,7 +126,7 @@ public class FrequentItemSetExtractor {
 
 	public Itemsets computeItemSet_FPGrowth(Itemsets is) {
 		try {
-			Utils.printItemsets(is, tmpTransactionFilename);
+			Utils.printTransactions(is, tmpTransactionFilename);
 
 			return computeItemSet_FPGrowth(tmpTransactionFilename);
 		} catch (Exception e) {
@@ -154,7 +154,7 @@ public class FrequentItemSetExtractor {
 
 	public Itemsets computeItemSet_FPClose(Itemsets is) {
 		try {
-			Utils.printItemsets(is, tmpTransactionFilename);
+			Utils.printTransactions(is, tmpTransactionFilename);
 
 			return computeItemSet_FPClose(tmpTransactionFilename);
 		} catch (Exception e) {
@@ -182,7 +182,7 @@ public class FrequentItemSetExtractor {
 
 	public Itemsets computeItemSet_FPMax(Itemsets transactions) {
 		try {
-			Utils.printItemsets(transactions, tmpTransactionFilename);
+			Utils.printTransactions(transactions, tmpTransactionFilename);
 			return this.computeItemSet_FPMax(tmpTransactionFilename);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -206,7 +206,7 @@ public class FrequentItemSetExtractor {
 
 	public Itemsets computeItemSet_PrePost(Itemsets transactions) {
 		try {
-			Utils.printItemsets(transactions, tmpTransactionFilename);
+			Utils.printTransactions(transactions, tmpTransactionFilename);
 			return this.computeItemSet_PrePost(tmpTransactionFilename);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -248,7 +248,7 @@ public class FrequentItemSetExtractor {
 
 	public Itemsets computeItemSet_Relim(Itemsets input) {
 		try {
-			Utils.printItemsets(input, tmpTransactionFilename);
+			Utils.printTransactions(input, tmpTransactionFilename);
 			return this.computeItemSet_Relim(tmpTransactionFilename);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -258,7 +258,7 @@ public class FrequentItemSetExtractor {
 
 	public Itemsets computeItemSet_FIN(Itemsets input) {
 		try {
-			Utils.printItemsets(input, tmpTransactionFilename);
+			Utils.printTransactions(input, tmpTransactionFilename);
 			return this.computeItemSet_FIN(tmpTransactionFilename);
 		} catch (Exception e) {
 			e.printStackTrace();
