@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.log4j.Logger;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
@@ -30,61 +32,92 @@ public class Utils {
 		return new ItemsetSet(Utils.readItemsetFile(filename));
 	}
 	
+//	public static Itemsets readItemsetFile(String filename) {
+//		Itemsets result = new Itemsets(filename);
+//		
+//		// scan the database
+//		BufferedReader reader;
+//		try {
+//			reader = new BufferedReader(new FileReader(filename));
+//			String line;
+//			// for each line (transaction) until the end of file
+//			while (((line = reader.readLine()) != null)){ 
+//				LinkedList<Integer> itemsetLine = new LinkedList<Integer>();
+//				int lineSupport = 0;
+//				// if the line is  a comment, is  empty or is a
+//				// kind of metadata
+//				if (line.isEmpty() == true ||
+//						line.charAt(0) == '#' || line.charAt(0) == '%'
+//								|| line.charAt(0) == '@') {
+//					continue;
+//				}
+//				
+//				// split the transaction into items
+//				String[] lineSplited = line.split(" ");
+//				// for each item in the
+//				// transaction
+//				boolean nextIsSupport = false;
+//				for (String itemString : lineSplited) { 
+//					try {
+//						if(itemString.isEmpty()) {
+//							continue;
+//						} else if(itemString.equals("#SUP:")) {
+//						nextIsSupport = true;
+//					} else {
+//						// convert item to integer
+//							Integer item = Integer.parseInt(itemString);
+//						if(nextIsSupport) {
+//							lineSupport = item;
+//						} else {
+//							itemsetLine.add(item);
+//						}
+//					}
+//					} catch (NumberFormatException e) {
+//						logger.error(itemString, e);
+//					}
+//				}
+//				Collections.sort(itemsetLine);
+//				result.addItemset(new Itemset(itemsetLine, lineSupport), itemsetLine.size());
+//			}
+//			// close the input file
+//			reader.close();
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//		return result;
+//	}
+	
 	public static Itemsets readItemsetFile(String filename) {
 		Itemsets result = new Itemsets(filename);
-		
-		// scan the database
-		BufferedReader reader;
 		try {
-			reader = new BufferedReader(new FileReader(filename));
-			String line;
-			// for each line (transaction) until the end of file
-			while (((line = reader.readLine()) != null)){ 
+
+		 CSVParser parser = CSVParser.parse(filename, CSVFormat.TDF.withDelimiter(' '));
+		 for (CSVRecord line : parser) {
 				LinkedList<Integer> itemsetLine = new LinkedList<Integer>();
-				int lineSupport = 0;
-				// if the line is  a comment, is  empty or is a
-				// kind of metadata
-				if (line.isEmpty() == true ||
-						line.charAt(0) == '#' || line.charAt(0) == '%'
-								|| line.charAt(0) == '@') {
+				int support = 0;
+				if (line.get(0).equals('#') 
+						|| line.get(0).equals('%')
+						|| line.get(0).equals('@')) {
 					continue;
 				}
-				
-				// split the transaction into items
-				String[] lineSplited = line.split(" ");
-				// for each item in the
-				// transaction
-				boolean nextIsSupport = false;
-				for (String itemString : lineSplited) { 
-					try {
-						if(itemString.isEmpty()) {
-							continue;
-						} else if(itemString.equals("#SUP:")) {
-						nextIsSupport = true;
+				for(int i = 0; i < line.size(); i++) {
+					if( i == line.size()-1 && line.get(line.size()-2).equals("#SUP:")) {
+						support = Integer.valueOf(line.get(i));
+					} else if(i == line.size()-2 && line.get(i).equals("#SUP:")) {
+						continue;
 					} else {
-						// convert item to integer
-							Integer item = Integer.parseInt(itemString);
-						if(nextIsSupport) {
-							lineSupport = item;
-						} else {
-							itemsetLine.add(item);
-						}
-					}
-					} catch (NumberFormatException e) {
-						logger.error(itemString, e);
+						itemsetLine.add(Integer.valueOf(line.get(i)));
 					}
 				}
-				Collections.sort(itemsetLine);
-				result.addItemset(new Itemset(itemsetLine, lineSupport), itemsetLine.size());
-			}
-			// close the input file
-			reader.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+				result.addItemset(new Itemset(itemsetLine, support), line.size());
+		 }
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.fatal(e);
 		}
 		
 		return result;
@@ -159,6 +192,8 @@ public class Utils {
 								for(int i = 0; i < t.size(); i++) {
 										printer.print(t.get(i));
 								}
+								printer.print("#SUP:");
+								printer.print(t.getAbsoluteSupport());
 								printer.println();
 							} catch (IOException e) {
 								logger.error(e);
@@ -193,7 +228,8 @@ public class Utils {
 				for(int i = 0; i < resultLine.size(); i++) {
 					printer.print(resultLine.get(i));
 				}
-				
+				printer.print("#SUP:");
+				printer.print(resultLine.support);
 				printer.println();
 			}
 
