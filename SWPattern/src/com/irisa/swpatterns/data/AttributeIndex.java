@@ -235,6 +235,7 @@ public class AttributeIndex {
 					throw new LogicException("Couldn't parse line " + record.getRecordNumber() + " : " + record);
 				}
 				
+				Utils.addUsedItemNumber(item);
 				this._attributeItemIndex.put(compo, item);
 				this._itemAttributeIndex.put(item, compo);
 				this._attributes.add(compo);

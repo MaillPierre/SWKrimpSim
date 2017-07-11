@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +29,7 @@ public class Utils {
 	private static Logger logger = Logger.getLogger(Utils.class);
 
 	private static int counterAttribute = 0;
+	private static HashSet<Integer> itemNumberSet = new HashSet<Integer>();
 
 	public static ItemsetSet readItemsetSetFile(String filename) {
 		return new ItemsetSet(Utils.readItemsetFile(filename));
@@ -278,7 +280,16 @@ public class Utils {
 	}
 
 	public static int getAttributeNumber() {
-		return counterAttribute++;
+		int result = counterAttribute++;
+		if(itemNumberSet.contains(result)) {
+			result = getAttributeNumber();
+		}
+		itemNumberSet.add(result);
+		return result;
+	}
+	
+	public static void addUsedItemNumber(int item) {
+		itemNumberSet.add(item);
 	}
 	
 }
