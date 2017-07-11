@@ -37,7 +37,7 @@ public class TransactionsExtractor {
 
 	private static int queryLimit = 0;
 	
-	private AttributeIndex _index = new AttributeIndex();
+	private AttributeIndex _index = AttributeIndex.getInstance();
 	private HashMap<Resource, Integer> _inDegreeCount = new HashMap<Resource, Integer>();
 	private HashSet<Resource> _outliers = new HashSet<Resource>();
 

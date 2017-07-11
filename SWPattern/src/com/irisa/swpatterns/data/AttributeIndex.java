@@ -27,6 +27,11 @@ import com.irisa.krimp.data.Utils;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
+/**
+ * Singleton class containing the index for RDFComponent/Item number 
+ * @author pmaillot
+ *
+ */
 public class AttributeIndex {
 	
 	private Logger logger = Logger.getLogger(AttributeIndex.class);
@@ -35,11 +40,20 @@ public class AttributeIndex {
 	private HashMap<RDFPatternComponent, Integer> _attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
 	private HashMap<Integer, RDFPatternComponent> _itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
 	
-	public AttributeIndex() {
+	private static AttributeIndex _instance = null;
+	
+	public static AttributeIndex getInstance() {
+		if(_instance == null) {
+			_instance = new AttributeIndex();
+		}
+		return _instance;
+	}
+	
+	protected AttributeIndex() {
 		
 	}
 	
-	public AttributeIndex(AttributeIndex index) {
+	protected AttributeIndex(AttributeIndex index) {
 		this._attributes = new LabeledTransaction(index._attributes);
 		this._attributeItemIndex = new HashMap<RDFPatternComponent, Integer>(index._attributeItemIndex);
 		this._itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>(this._itemAttributeIndex);
@@ -165,7 +179,7 @@ public class AttributeIndex {
 				
 				printer.println();
 			}
-			printRDFToItemConversionTable(output + ".attr");
+			printAttributeIndex(output + ".attr");
 
 			printer.close();
 
@@ -174,7 +188,7 @@ public class AttributeIndex {
 		}
 	}
 	
-	public void printRDFToItemConversionTable(String filename) {
+	public void printAttributeIndex(String filename) {
 		try {
 		CSVPrinter attributePrinter = new CSVPrinter(new PrintWriter(new BufferedWriter(new FileWriter(filename))), CSVFormat.TDF);
 		
@@ -202,7 +216,7 @@ public class AttributeIndex {
 		}
 	}
 	
-	public void readRDFToItemConversionTable(String filename) {
+	public void readAttributeIndex(String filename) {
 		try {
 			Reader in = new FileReader(filename);
 			Iterable<CSVRecord> records = CSVFormat.TDF.parse(in);
