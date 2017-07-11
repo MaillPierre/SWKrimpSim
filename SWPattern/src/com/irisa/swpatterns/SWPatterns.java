@@ -12,7 +12,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -30,8 +29,6 @@ import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.LabeledTransactions;
-
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 public class SWPatterns {
 	
@@ -254,7 +251,7 @@ public class SWPatterns {
 					// Extracting transactions
 					LabeledTransactions transactions;
 					if(inputConversionIndex) {
-						index.readRDFToItemConversionTable(inputConversionIndexFile);
+						index.readAttributeIndex(inputConversionIndexFile);
 					}
 	
 					if(cmd.hasOption("class")) {
@@ -268,7 +265,7 @@ public class SWPatterns {
 					
 					// Printing conversion index
 					if(outputConversionIndex) {
-						converter.getIndex().printRDFToItemConversionTable(outputConversionIndexFile);
+						converter.getIndex().printAttributeIndex(outputConversionIndexFile);
 					}
 	
 					// Printing transactions for both files
