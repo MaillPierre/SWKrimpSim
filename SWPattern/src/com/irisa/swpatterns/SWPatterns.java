@@ -263,11 +263,6 @@ public class SWPatterns {
 						transactions = converter.extractTransactions(baseRDF, onto);
 					}
 					
-					// Printing conversion index
-					if(outputConversionIndex) {
-						converter.getIndex().printAttributeIndex(outputConversionIndexFile);
-					}
-	
 					// Printing transactions for both files
 					if(outputTransaction) {
 						index.printTransactionsItems(transactions, firstOutputTransactionFile);
@@ -466,6 +461,11 @@ public class SWPatterns {
 	
 					}
 	
+					// Printing conversion index
+					if(outputConversionIndex) {
+						converter.getIndex().printAttributeIndex(outputConversionIndexFile);
+					}
+					
 				} catch (Exception e) {
 					logger.fatal("RAAAH", e);
 				}
