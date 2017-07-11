@@ -39,6 +39,7 @@ public class TransactionsExtractor {
 	
 	private AttributeIndex _index = AttributeIndex.getInstance();
 	private HashMap<Resource, Integer> _inDegreeCount = new HashMap<Resource, Integer>();
+	private HashMap<Resource, Integer> _outDegreeCount = new HashMap<Resource, Integer>();
 	private HashSet<Resource> _outliers = new HashSet<Resource>();
 
 	private boolean _noTypeBool = false;
@@ -118,7 +119,7 @@ public class TransactionsExtractor {
 			});
 		}
 
-		DescriptiveStatistics summary = new DescriptiveStatistics();
+		DescriptiveStatistics summaryInDegree = new DescriptiveStatistics();
 		instances.forEach(new Consumer<Resource>() {
 			@Override
 			public void accept(Resource res) {
@@ -126,19 +127,45 @@ public class TransactionsExtractor {
 				QueryResultIterator inDegreeiterator = new QueryResultIterator(inDegreeQuery, baseRDF);
 				int degree = inDegreeiterator.next().get("count").asLiteral().getInt();
 				_inDegreeCount.put(res, degree);
-				summary.addValue(degree);
+				summaryInDegree.addValue(degree);
 			}
 		});
 		
-		double q1 = summary.getPercentile(25);
-		double q3 = summary.getPercentile(75);
-		double outlierThreshold = q3 + (1.5 * (q3 -q1));
-		logger.debug(summary.getN() +" values q1: " + q1 + " q3: " + q3 + " Outlier Threshold is: " + outlierThreshold);
+		double q1In = summaryInDegree.getPercentile(25);
+		double q3In = summaryInDegree.getPercentile(75);
+		double outlierInDegreeThreshold = q3In + (1.5 * (q3In -q1In));
+		logger.debug(summaryInDegree.getN() +" values q1: " + q1In + " q3: " + q3In + " In Outlier Threshold is: " + outlierInDegreeThreshold);
 		
 		instances.forEach(new Consumer<Resource>() {
 			@Override
 			public void accept(Resource res) {
-				if((double)_inDegreeCount.get(res) > outlierThreshold) {
+				if((double)_inDegreeCount.get(res) > outlierInDegreeThreshold) {
+					_outliers.add(res);
+				}
+			}
+		});
+
+		DescriptiveStatistics summaryOutDegree = new DescriptiveStatistics();
+		instances.forEach(new Consumer<Resource>() {
+			@Override
+			public void accept(Resource res) {
+				String outDegreeQuery = "SELECT DISTINCT (count(*) AS ?count) WHERE { <"+ res.getURI() +"> ?prop ?obj }";
+				QueryResultIterator outDegreeiterator = new QueryResultIterator(outDegreeQuery, baseRDF);
+				int degree = outDegreeiterator.next().get("count").asLiteral().getInt();
+				_outDegreeCount.put(res, degree);
+				summaryOutDegree.addValue(degree);
+			}
+		});
+		
+		double q1Out = summaryOutDegree.getPercentile(25);
+		double q3Out = summaryOutDegree.getPercentile(75);
+		double outlierOutDegreeThreshold = q3Out + (1.5 * (q3Out -q1Out));
+		logger.debug(summaryOutDegree.getN() +" values q1: " + q1Out + " q3: " + q3Out + " Out Outlier Threshold is: " + outlierOutDegreeThreshold);
+		
+		instances.forEach(new Consumer<Resource>() {
+			@Override
+			public void accept(Resource res) {
+				if((double)_outDegreeCount.get(res) > outlierOutDegreeThreshold) {
 					_outliers.add(res);
 				}
 			}
