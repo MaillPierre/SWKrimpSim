@@ -104,13 +104,13 @@ public abstract class RDFPatternComponent {
 
 	@Override
 	public int hashCode() {
-		return this.getElement().hashCode() + this.getType().hashCode();
+		return this.getElement().toString().hashCode() + this.getType().toString().hashCode();
 	}
 	
 	@Override
 	public boolean equals(Object o) {
 		if(o instanceof RDFPatternComponent) {
-			return ((RDFPatternComponent) o).getElement().equals(this.getElement()) && ((RDFPatternComponent) o).getType() == this.getType();
+			return ((RDFPatternComponent) o).getElement().toString().equals(this.getElement().toString()) && ((RDFPatternComponent) o).getType().toString().equals(this.getType().toString());
 		}
 		return false;
 	}

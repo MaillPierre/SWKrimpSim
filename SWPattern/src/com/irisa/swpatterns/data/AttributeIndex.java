@@ -193,15 +193,15 @@ public class AttributeIndex {
 		CSVPrinter attributePrinter = new CSVPrinter(new PrintWriter(new BufferedWriter(new FileWriter(filename))), CSVFormat.TDF);
 		
 		// Writing attributes
-		LinkedList<RDFPatternComponent> compos = new LinkedList<RDFPatternComponent>(_attributeItemIndex.keySet());
-		Collections.sort(compos, new Comparator<RDFPatternComponent>() {
-			@Override
-			public int compare(RDFPatternComponent c1, RDFPatternComponent c2) {
-				return Integer.compare(getItem(c1), getItem(c2));
-			}
-		});
+//		LinkedList<RDFPatternComponent> compos = new LinkedList<RDFPatternComponent>(_attributeItemIndex.keySet());
+//		Collections.sort(compos, new Comparator<RDFPatternComponent>() {
+//			@Override
+//			public int compare(RDFPatternComponent c1, RDFPatternComponent c2) {
+//				return Integer.compare(getItem(c1), getItem(c2));
+//			}
+//		});
 		
-		Iterator<RDFPatternComponent> itAttr = compos.iterator();
+		Iterator<RDFPatternComponent> itAttr = _attributeItemIndex.keySet().iterator();
 		while(itAttr.hasNext()) {
 			RDFPatternComponent attr = itAttr.next();
 			List<Object> recordList = attr.toList();
