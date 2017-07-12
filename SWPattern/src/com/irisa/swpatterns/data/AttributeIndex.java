@@ -207,7 +207,7 @@ public class AttributeIndex {
 			List<Object> recordList = attr.toList();
 			recordList.add(getItem(attr));
 			attributePrinter.printRecord(recordList);
-			attributePrinter.println();
+//			attributePrinter.println();
 		}
 
 		attributePrinter.close();
