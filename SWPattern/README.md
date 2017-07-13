@@ -15,22 +15,21 @@ Project to use the Krimp algorithm to extract a codetable form a RDF base and us
 Uses SMPF for the some of the frequent itemsets algorithms.
 Includes JenaUtils classes.
 
-FOR TEST: Launch with options "-file iswc-2013-complete.nt -otherFile iswc-2013-complete.nt -nPropertiesAndTypes"
+FOR TEST: 
+To get all option, launch with -help
+Launching with one RDF File: -inputRDF <file>
+with two RDF files to be compared:  -inputRDF <file1> -inputOtherRDFFile <file2>
+with one transactions file:  -inputTransaction <file1>
+with two transactions files to be compared:  -inputTransaction <file1> -inputOtherTransaction <file2>
+output the index: -outputConversionIndex <file>
+output the code table: -outputCodeTable
+
 
 TODO :
-
 - How do we make it independent of the size of the databases? How to handle the newly appearing singletons? Many questions ... , but we are tired, we leave it for monday :) 
 
-IMPORTANT FEATURES: 
- - Reuse an item conversion from one KB to another (RDF2ItemSet conversion)
- - Copy one CT to another without touching the support: We need an immutable code table, Factory pattern? 
-
-
 TESTS :
-- Comparison with official KRIMP
-- Comparison with different codifications 
 - Comparison with different scales of data
-- Comparison of partitions of the same base, of different sizes (10% 90%, etc.)
 - Domain-based comparison
 
 
@@ -45,9 +44,4 @@ DONE :
 - Conversion from RDF to transaction possible: instance-based, containing either:
 	- instance type and property
 	- instance type, property and other resource type if existing
-	- instance type, property and other resource
-
-Idea :
-- PM: Apply pattern sampling to the maximal frequent patterns ?
-	- Loosing the support information -> use weighting technique of pattern sampling -> need to retrieve number of apparition of each element of the maximal itemsets
-		- -> Is it actually different from using the frequent Itemsets directly ? -_-
+	- instance type, property and other resource that in an outlier in/out degree-wise
