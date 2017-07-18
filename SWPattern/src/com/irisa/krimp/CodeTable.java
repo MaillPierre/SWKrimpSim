@@ -333,23 +333,41 @@ public class CodeTable {
 	 */
 	public void updateUsages() {
 		this._usageTotal = 0;
+		
+//		Iterator<KItemset> itCodes = this.codeIterator();
+//		while(itCodes.hasNext()) {
+//			KItemset code = itCodes.next();
+//			
+//			_itemsetUsage.replace(code, 0);
+//			
+//			int itrans = this._index.getCodeTransactionVector(code).nextSetBit(0);
+//			while(itrans >= 0) {
+//				KItemset trans = this._transactions.get(itrans);
+//				if(isCover(trans, code)) {
+//					_itemsetUsage.replace(code, _itemsetUsage.get(code) +1);
+//				}
+//				itrans = this._index.getCodeTransactionVector(code).nextSetBit(itrans+1);
+//			}
+//			
+//			this._usageTotal += _itemsetUsage.get(code);
+//		}
+		
 		Iterator<KItemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
-			KItemset code = itCodes.next();
-			
-			_itemsetUsage.replace(code, 0);
-			
-			int itrans = this._index.getCodeTransactionVector(code).nextSetBit(0);
-			while(itrans >= 0) {
-				KItemset trans = this._transactions.get(itrans);
-				if(isCover(trans, code)) {
-					_itemsetUsage.replace(code, _itemsetUsage.get(code) +1);
-				}
-				itrans = this._index.getCodeTransactionVector(code).nextSetBit(itrans+1);
-			}
-			
-			this._usageTotal += _itemsetUsage.get(code);
+			_itemsetUsage.replace(itCodes.next(), 0); 
 		}
+		
+		for (KItemset t: this._transactions) {
+			ItemsetSet codes = this.codify(t); 
+			for (KItemset aux: codes) {
+				_itemsetUsage.replace(aux, _itemsetUsage.get(aux)+1); 
+			}
+			this._usageTotal+=codes.size(); 
+		}
+		
+		
+		
+		
 	}
 	
 	/**
