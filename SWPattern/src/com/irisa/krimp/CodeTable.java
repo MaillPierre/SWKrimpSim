@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 import com.irisa.exception.LogicException;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.KItemset;
 import com.irisa.krimp.data.Utils;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
@@ -27,8 +28,8 @@ public class CodeTable {
 
 	private ItemsetSet _transactions = null;
 	private ItemsetSet _codes = null;
-	private HashMap<Itemset, Integer> _itemsetUsage = new HashMap<Itemset, Integer>();
-	private HashMap<Itemset, Integer> _itemsetCode = new HashMap<Itemset, Integer>();
+	private HashMap<KItemset, Integer> _itemsetUsage = new HashMap<KItemset, Integer>();
+	private HashMap<KItemset, Integer> _itemsetCode = new HashMap<KItemset, Integer>();
 	private DataIndexes _index = null;
 	private long _usageTotal = 0;
 
@@ -84,8 +85,8 @@ public class CodeTable {
 	public CodeTable(CodeTable ct) {
 		_transactions = ct._transactions;
 		_codes = new ItemsetSet(ct._codes);
-		_itemsetUsage = new HashMap<Itemset, Integer>(ct._itemsetUsage);
-		_itemsetCode = new HashMap<Itemset, Integer>(ct._itemsetCode);
+		_itemsetUsage = new HashMap<KItemset, Integer>(ct._itemsetUsage);
+		_itemsetCode = new HashMap<KItemset, Integer>(ct._itemsetCode);
 		_usageTotal = ct._usageTotal;
 		_standardFlag = ct._standardFlag;
 		_index = ct._index; // only depend on transactions and unmutable, no copy needed
@@ -123,7 +124,7 @@ public class CodeTable {
 	/**
 	 * @return Iterator over a sorted temporary copy of the itemset list of the code table
 	 */
-	public Iterator<Itemset> codeIterator() {
+	public Iterator<KItemset> codeIterator() {
 		return _codes.iterator();
 	}
 	
@@ -135,9 +136,9 @@ public class CodeTable {
 	 * Create new indices for new codes, put the usage of each code to 0
 	 */
 	private void initCodes() {
-		this._codes.forEach(new Consumer<Itemset>() {
+		this._codes.forEach(new Consumer<KItemset>() {
 			@Override
-			public void accept(Itemset code) {
+			public void accept(KItemset code) {
 				if(_itemsetCode.get(code) == null) {
 					_itemsetCode.put(code, Utils.getAttributeNumber());
 				}
@@ -154,8 +155,8 @@ public class CodeTable {
 		Iterator<Integer> itItem = _index.itemIterator();
 		while(itItem.hasNext()) {
 			int item = itItem.next();
-			Itemset single = Utils.createCodeSingleton(item);
-			single.setAbsoluteSupport(_index.getItemSupport(item));
+			KItemset single = Utils.createCodeSingleton(item);
+			single.setSupport(_index.getItemSupport(item));
 			if(! this._codes.contains(single)) {
 				_codes.add(single);
 			}
@@ -178,18 +179,18 @@ public class CodeTable {
 //		this._codeSupport.put(code, candidateSupport);		
 //	}
 	
-	public int getUsage(Itemset is) {
-		if(this._itemsetUsage.get(is) == null) {
+	public int getUsage(KItemset code) {
+		if(this._itemsetUsage.get(code) == null) {
 			return 0;
 		}
-		return this._itemsetUsage.get(is);
+		return this._itemsetUsage.get(code);
 	}
 	
-	public Integer getCodeIndice(Itemset is) {
-		return this._itemsetCode.get(is);
+	public Integer getCodeIndice(KItemset it) {
+		return this._itemsetCode.get(it);
 	}
 	
-	public double probabilisticDistrib(Itemset code) {
+	public double probabilisticDistrib(KItemset code) {
 		return (double) this.getUsage(code) / (double) this._usageTotal;
 	}
 	
@@ -198,7 +199,7 @@ public class CodeTable {
 	 * @param code
 	 * @return
 	 */
-	public double codeLengthOfcode(Itemset code) {
+	public double codeLengthOfcode(KItemset code) {
 		return - Math.log(this.probabilisticDistrib(code));
 	}
 	
@@ -209,12 +210,12 @@ public class CodeTable {
 	 * @return
 	 * @throws LogicException 
 	 */
-	public double encodedTransactionCodeLength(Itemset transaction) throws LogicException {
+	public double encodedTransactionCodeLength(KItemset transaction) throws LogicException {
 		double result = 0.0;
-		Iterator<Itemset> itCodes = this.codeIterator();
+		Iterator<KItemset> itCodes = this.codeIterator();
 //		logger.debug("encodingTransaction: "+transaction);
 		while(itCodes.hasNext()) {
-			Itemset code = itCodes.next();
+			KItemset code = itCodes.next();
 			if(this.getUsage(code) > 0 && isCover(transaction, code) ) {
 //				logger.debug("coveredBy: "+code);
 				result += codeLengthOfcode(code);
@@ -235,9 +236,9 @@ public class CodeTable {
 	 */
 	public double encodedTransactionSetCodeLength() throws LogicException {
 		double result = 0.0;
-		Iterator<Itemset> itTrans = this._transactions.iterator();
+		Iterator<KItemset> itTrans = this._transactions.iterator();
 		while(itTrans.hasNext()) {
-			Itemset trans = itTrans.next();
+			KItemset trans = itTrans.next();
 			result += this.encodedTransactionCodeLength(trans);
 		}
 		
@@ -250,9 +251,9 @@ public class CodeTable {
 	 */
 	public double codeTableCodeLength() {
 		double result = 0.0;
-		Iterator<Itemset> itCodes = this.codeIterator();
+		Iterator<KItemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
-			Itemset code = itCodes.next();
+			KItemset code = itCodes.next();
 			if(this.getUsage(code) != 0.0) {
 				// CB: this is the code length according to the CT
 				double cL = codeLengthOfcode(code);
@@ -280,12 +281,14 @@ public class CodeTable {
 	 * L(code_ST(X))
 	 */
 	
-	public double codeLengthOfCodeAccordingST(Itemset code) {
+	public double codeLengthOfCodeAccordingST(KItemset code) {
 		double result = 0.0;
 		// this method should return 0 if the codetable is not the ST
 		if (!_standardFlag) {
-			for (int i=0; i<code.size(); i++) {
-				result+= this._standardCT.codeLengthOfCodeAccordingST(new Itemset(code.get(i))); 
+			Iterator<Integer> itCode = code.iterator();
+			while(itCode.hasNext()) {
+				Integer item = itCode.next();
+				result+= this._standardCT.codeLengthOfCodeAccordingST(Utils.createCodeSingleton(item)); 
 			}
 		}
 		return result; 
@@ -330,15 +333,15 @@ public class CodeTable {
 	 */
 	public void updateUsages() {
 		this._usageTotal = 0;
-		Iterator<Itemset> itCodes = this.codeIterator();
+		Iterator<KItemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
-			Itemset code = itCodes.next();
+			KItemset code = itCodes.next();
 			
 			_itemsetUsage.replace(code, 0);
 			
 			int itrans = this._index.getCodeTransactionVector(code).nextSetBit(0);
 			while(itrans >= 0) {
-				Itemset trans = this._transactions.get(itrans);
+				KItemset trans = this._transactions.get(itrans);
 				if(isCover(trans, code)) {
 					_itemsetUsage.replace(code, _itemsetUsage.get(code) +1);
 				}
@@ -352,19 +355,15 @@ public class CodeTable {
 	/**
 	 * Comparator to sort the code list
 	 */
-	public static Comparator<Itemset> standardCoverOrderComparator = new Comparator<Itemset>() {
+	public static Comparator<KItemset> standardCoverOrderComparator = new Comparator<KItemset>() {
 		@Override
-		public int compare(Itemset o1, Itemset o2) {
+		public int compare(KItemset o1, KItemset o2) {
 			if(o1.size() != o2.size()) {
 				return - Integer.compare(o1.size(), o2.size());
-			} else if(o1.support != o2.support) {
-				return - Integer.compare(o1.support, o2.support);
-			} else if( ! o1.isEqualTo(o2)) {
-				for(int i = 0 ; i < o1.size() ; i++) {
-					if(o1.get(i) != o2.get(i)) {
-						return Integer.compare(o1.get(i), o2.get(i));
-					}
-				}
+			} else if(o1.getSupport() != o2.getSupport()) {
+				return - Integer.compare(o1.getSupport(), o2.getSupport());
+			} else if( ! o1.equals(o2)) {
+				return o1.alphabeticalCompare(o2);
 			}
 			return 0;
 		}
@@ -373,19 +372,15 @@ public class CodeTable {
 	/**
 	 * Comparator to sort the code list
 	 */
-	public static Comparator<Itemset> standardCandidateOrderComparator = new Comparator<Itemset>() {
+	public static Comparator<KItemset> standardCandidateOrderComparator = new Comparator<KItemset>() {
 		@Override
-		public int compare(Itemset o1, Itemset o2) {
-			if(o1.support != o2.support) {
-				return - Integer.compare(o1.support, o2.support);
+		public int compare(KItemset o1, KItemset o2) {
+			if(o1.getSupport() != o2.getSupport()) {
+				return - Integer.compare(o1.getSupport(), o2.getSupport());
 			} else if(o1.size() != o2.size()) {
 				return - Integer.compare(o1.size(), o2.size());
-			} else if( ! o1.isEqualTo(o2)) {
-				for(int i = 0 ; i < o1.size() ; i++) {
-					if(o1.get(i) != o2.get(i)) {
-						return Integer.compare(o1.get(i), o2.get(i));
-					}
-				}
+			} else if( ! o1.equals(o2)) {
+				return o1.alphabeticalCompare(o2);
 			}
 			return 0;
 		}
@@ -397,20 +392,20 @@ public class CodeTable {
 	 * @param code code
 	 * @return true if code is smaller or equal and contained in the transaction
 	 */
-	private boolean isCoverCandidate(Itemset trans, Itemset code) {
+	private boolean isCoverCandidate(KItemset trans, KItemset code) {
 		return ( code.size() <= trans.size()  && ( trans.containsAll(code)));
 	}
 	
 	/**
 	 * 
-	 * @param trans transaction
+	 * @param transaction transaction
 	 * @param code code from the codetable
 	 * @return true if the code is part of the transaction cover
 	 */
-	public boolean isCover(Itemset trans, Itemset code) {
-		if(isCoverCandidate(trans, code)) {
-			Iterator<Itemset> itIs = codeIterator();
-			return isCover(trans, code, itIs);
+	public boolean isCover(KItemset transaction, KItemset code) {
+		if(isCoverCandidate(transaction, code)) {
+			Iterator<KItemset> itIs = codeIterator();
+			return isCover(transaction, code, itIs);
 			
 		}
 		return false;
@@ -424,18 +419,19 @@ public class CodeTable {
 	 *  over the whole code set when one is cover without intersection with code
 	 * @return true if the code is part of the transaction cover
 	 */
-	private boolean isCover(Itemset trans, Itemset code, Iterator<Itemset> itLastTestedCode) {
-		Itemset tmpCode = null;
+	private boolean isCover(KItemset trans, KItemset code, Iterator<KItemset> itLastTestedCode) {
+		KItemset tmpCode = null;
 		while(itLastTestedCode.hasNext()) {
 			tmpCode = itLastTestedCode.next();
 			
 			if(isCoverCandidate(trans, tmpCode)) { // If the size of code is correct and it is contained in trans
-				if(tmpCode.isEqualTo(code)) { // if code cover = OK
+				if(tmpCode.equals(code)) { // if code cover = OK
 					return true;
 				} else if (tmpCode.intersection(code).size() != 0) { // if another cover code overlap with code = !OK
 					return false;
 				} else { // transaction partially covered but there is still some chances
-					Itemset covered = CodeTable.itemsetSubstraction(trans, tmpCode);
+//					KItemset covered = CodeTable.itemsetSubstraction(trans, tmpCode);
+					KItemset covered = trans.substraction(tmpCode);
 					return isCover(covered, code, itLastTestedCode); 
 				}
 			}
@@ -451,16 +447,17 @@ public class CodeTable {
 	 * @param trans
 	 * @return
 	 */
-	public ItemsetSet codify(Itemset trans) {
-		Itemset auxTrans = new Itemset(trans.itemset);
+	public ItemsetSet codify(KItemset trans) {
+		KItemset auxTrans = new KItemset(trans);
 		ItemsetSet result = new ItemsetSet(); 
-		Iterator<Itemset> itIs = codeIterator();
-		Itemset auxCode = null; 
+		Iterator<KItemset> itIs = codeIterator();
+		KItemset auxCode = null; 
 		while (itIs.hasNext() && (auxTrans.size() != 0) ) {
 			auxCode = itIs.next(); 
 			if (auxTrans.containsAll(auxCode)) {
 				result.add(auxCode); 
-				auxTrans = auxTrans.cloneItemSetMinusAnItemset(auxCode); 
+//				auxTrans = auxTrans.cloneItemSetMinusAnItemset(auxCode); 
+				auxTrans = auxTrans.substraction(auxCode); 
 			}
 		}
 		assert trans.size() == 0; // this should always happen 
@@ -473,11 +470,11 @@ public class CodeTable {
 	 * 
 	 */
 	
-	public ItemsetSet codifyUsingIsCover (Itemset trans) {
+	public ItemsetSet codifyUsingIsCover (KItemset trans) {
 		ItemsetSet result = new ItemsetSet(); 
-		Iterator<Itemset> itIs = codeIterator();
+		Iterator<KItemset> itIs = codeIterator();
 		
-		Itemset auxCode = null; 
+		KItemset auxCode = null; 
 		while (itIs.hasNext()) {
 			auxCode = itIs.next();
 			if (this.isCover(trans, auxCode)) {
@@ -488,24 +485,24 @@ public class CodeTable {
 	}
 	
 	
-	public void removeCode(Itemset code) {
-		this._codes.remove(code);
-		this._itemsetCode.remove(code);
-		this._itemsetUsage.remove(code);
+	public void removeCode(KItemset pruneCandidate) {
+		this._codes.remove(pruneCandidate);
+		this._itemsetCode.remove(pruneCandidate);
+		this._itemsetUsage.remove(pruneCandidate);
 		// CB: removing from an ordered list must not alter the order
 		updateUsages(); // Have to maintain the thing up to date ? 
 		
 	}
 	
-	public boolean contains(Itemset code) {
-		return this._codes.contains(code);
+	public boolean contains(KItemset candidate) {
+		return this._codes.contains(candidate);
 	}
 	
 	/**
 	 * Supposed to be a new code
 	 * @param code
 	 */
-	public void addCode(Itemset code) {
+	public void addCode(KItemset code) {
 		this.addCode(code, Utils.getAttributeNumber());
 	}
 	
@@ -514,7 +511,7 @@ public class CodeTable {
 	 * @param code
 	 * @param indice
 	 */
-	public void addCode(Itemset code, int indice) {
+	public void addCode(KItemset code, int indice) {
 		if(! this._codes.contains(code)) {
 			this._codes.add(code);
 			this._itemsetCode.put(code, indice);
@@ -540,19 +537,20 @@ public class CodeTable {
 		return new Itemset(new ArrayList<Integer>(tmpBaseSet), iSet.getAbsoluteSupport());
 	}
 	
-	public static Itemset itemsetSubstraction(Itemset iSet, Itemset substracted) {
-		TreeSet<Integer> tmpBaseSet = new TreeSet<Integer>();
-		for(int i = 0; i < iSet.getItems().length; i++) {
-			tmpBaseSet.add(iSet.get(i));
-		}
-		TreeSet<Integer> tmpSubstractedSet = new TreeSet<Integer>();
-		for(int i = 0; i < substracted.getItems().length; i++) {
-			tmpSubstractedSet.add(substracted.get(i));
-		}
-		tmpBaseSet.removeAll(tmpSubstractedSet);
-		
-		return new Itemset(new ArrayList<Integer>(tmpBaseSet), iSet.getAbsoluteSupport());
-	}
+	// replaced by KItemset.substraction
+//	public static Itemset itemsetSubstraction(KItemset trans, KItemset tmpCode) {
+//		TreeSet<Integer> tmpBaseSet = new TreeSet<Integer>();
+//		for(int i = 0; i < trans.getItems().length; i++) {
+//			tmpBaseSet.add(trans.get(i));
+//		}
+//		TreeSet<Integer> tmpSubstractedSet = new TreeSet<Integer>();
+//		for(int i = 0; i < tmpCode.getItems().length; i++) {
+//			tmpSubstractedSet.add(tmpCode.get(i));
+//		}
+//		tmpBaseSet.removeAll(tmpSubstractedSet);
+//		
+//		return new Itemset(new ArrayList<Integer>(tmpBaseSet), trans.getAbsoluteSupport());
+//	}
 	
 	public String toString() {
 		
@@ -561,12 +559,12 @@ public class CodeTable {
 		r.append("Total Usages: ");
 		r.append(this._usageTotal);
 		r.append('\n');
-		Iterator<Itemset> itIs = this.codeIterator();
+		Iterator<KItemset> itIs = this.codeIterator();
 		while(itIs.hasNext()) {
-			Itemset is = itIs.next();
+			KItemset is = itIs.next();
 			r.append(is.toString());
 			r.append(" s:"); 
-			r.append(is.getAbsoluteSupport()); 
+			r.append(is.getSupport()); 
 			r.append(" u:");
 			r.append(this.getUsage(is));
 			r.append(" P:");
@@ -586,12 +584,12 @@ public class CodeTable {
 		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 	}
 	
-	public Itemset getCodeFromIndex (Integer idx) {
+	public KItemset getCodeFromIndex (Integer idx) {
 		
 		// CB: this should be stored as an inverted index
 		// done this way only for testing purposes
-		Itemset result = null; 
-		for (Itemset it: _codes) {
+		KItemset result = null; 
+		for (KItemset it: _codes) {
 			Integer aux = _itemsetCode.get(it); 
 			if (aux != null) {
 				if (aux.equals(idx)) {
@@ -611,9 +609,9 @@ public class CodeTable {
 	public double codificationLength (ItemsetSet database) {
 		double result = 0.0;
 		ItemsetSet codes = null; 
-		for (Itemset it: database) {
+		for (KItemset it: database) {
 			codes = this.codify(it); 
-			for (Itemset code: codes) {
+			for (KItemset code: codes) {
 				result += this.codeLengthOfcode(code); 
 			}
 		}

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -33,6 +34,7 @@ import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.FrequentItemSetExtractor;
 import com.irisa.krimp.KrimpAlgorithm;
 import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.KItemset;
 import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.SWFrequentItemsetExtractor;
 import com.irisa.swpatterns.TransactionsExtractor;
@@ -219,7 +221,7 @@ public class CodifyingTest {
 					long codifyCoverageTime = 0; 
 					long startTime = 0; 
 					ItemsetSet codification = null; 
-					for (Itemset trans: realtransactions) {
+					for (KItemset trans: realtransactions) {
 						startTime = System.nanoTime(); 
 						krimpCT.codifyUsingIsCover(trans); 
 						isCoverTime += (System.nanoTime()-startTime); 
@@ -229,7 +231,7 @@ public class CodifyingTest {
 						codifyCoverageTime += (System.nanoTime()-startTime); 
 						
 						HashSet<Integer> cod = new HashSet<>(); 
-						for (Itemset it: codification) {
+						for (KItemset it: codification) {
 							cod.add(krimpCT.getCodeIndice(it)); 
 						}
 						codifiedDatabase.add(cod); 
@@ -243,21 +245,22 @@ public class CodifyingTest {
 					ItemsetSet reconstructedTransactions = new ItemsetSet() ;
 					for (HashSet<Integer> codifiedTrans: codifiedDatabase) {
 						HashSet<Integer> reconstructedTrans = new HashSet<>(); 
-						int[] auxContainer = null; 
+						List<Integer> auxContainer = null; 
 						for (Integer codifiedItemset: codifiedTrans) {
-							auxContainer = krimpCT.getCodeFromIndex(codifiedItemset).itemset; 
-							for (int i=0; i<auxContainer.length; i++) {
-								reconstructedTrans.add(auxContainer[i]); 
+							auxContainer = krimpCT.getCodeFromIndex(codifiedItemset).getItemList(); 
+							for (int i=0; i<auxContainer.size(); i++) {
+								reconstructedTrans.add(auxContainer.get(i)); 
 							}
 						}
-						auxContainer = new int[reconstructedTrans.size()]; 
+						auxContainer = new ArrayList<Integer>(reconstructedTrans.size()); 
 						int j= 0; 
 						for (Integer auxInt: reconstructedTrans) {
-							auxContainer[j] = auxInt; 
+							auxContainer.remove(j); 
+							auxContainer.add(j,auxInt); 
 							j++; 
 						}
-						Arrays.sort(auxContainer);
-						Itemset reconstructedItemset = new Itemset(auxContainer); 
+						Collections.sort(auxContainer);
+						KItemset reconstructedItemset = new KItemset(auxContainer); 
 						reconstructedTransactions.add(reconstructedItemset); 
 						
 					}

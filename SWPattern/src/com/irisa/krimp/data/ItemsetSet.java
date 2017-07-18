@@ -15,9 +15,9 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
  * @author pmaillot
  *
  */
-public class ItemsetSet extends LinkedList<Itemset> {
+public class ItemsetSet extends LinkedList<KItemset> {
 
-	protected HashMap<Integer, HashSet<Itemset>> itemItemsetIndex = new HashMap<Integer, HashSet<Itemset>>();
+	protected HashMap<Integer, HashSet<KItemset>> itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>();
 	
 	public ItemsetSet() {
 		super();
@@ -25,7 +25,7 @@ public class ItemsetSet extends LinkedList<Itemset> {
 	
 	public ItemsetSet(ItemsetSet is) {
 		super(is);
-		itemItemsetIndex = new HashMap<Integer, HashSet<Itemset>>(is.itemItemsetIndex);
+		itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>(is.itemItemsetIndex);
 	}
 	
 	public ItemsetSet(Itemsets iset) {
@@ -36,29 +36,37 @@ public class ItemsetSet extends LinkedList<Itemset> {
 		while(itSets.hasNext()) {
 			List<Itemset> list = itSets.next();
 			
-			addAll(list);
+			Iterator<Itemset> itList = list.iterator();
+			while(itList.hasNext()) {
+				KItemset smpf = new KItemset(itList.next());
+				
+				add(smpf);
+			}
 		}
 	}
 	
-	public void addItemset(Itemset is) {
-		super.add(is);
-		for(int i = 0; i < is.getItems().length; i++) {
-			if(itemItemsetIndex.get(is.get(i)) == null) {
-				itemItemsetIndex.put(is.get(i), new HashSet<Itemset>());
+	public void addItemset(KItemset auxCode) {
+		KItemset newIs = new KItemset(auxCode);
+		super.add(newIs);
+		Iterator<Integer> itAux = auxCode.iterator();
+		while(itAux.hasNext()) {
+			int item = itAux.next();
+			if(itemItemsetIndex.get(item) == null) {
+				itemItemsetIndex.put(item, new HashSet<KItemset>());
 			}
-			itemItemsetIndex.get(is.get(i)).add(is);
+			itemItemsetIndex.get(item).add(newIs);
 		}
 	}
 	
 	public String toString() {
 		// Copied from smpf code, just to see ...
 		StringBuilder r = new StringBuilder ();
-		Iterator<Itemset> itIs = this.iterator();
+		Iterator<KItemset> itIs = this.iterator();
 		while(itIs.hasNext()) {
-			Itemset is = itIs.next();
+			KItemset is = itIs.next();
 			r.append(is.toString());
 			r.append(" (");
-			r.append(is.getAbsoluteSupport());
+			r.append(is.getSupport());
 			r.append(")\n");
 		}
 		
@@ -68,10 +76,10 @@ public class ItemsetSet extends LinkedList<Itemset> {
 	public Itemsets toItemsets() {
 		Itemsets result = new Itemsets("");
 		
-		this.forEach(new Consumer<Itemset>() {
+		this.forEach(new Consumer<KItemset>() {
 			@Override
-			public void accept(Itemset t) {
-				result.addItemset(t, t.size());
+			public void accept(KItemset t) {
+				result.addItemset(t.toSMPFItemset(), t.size());
 			}
 		});
 		

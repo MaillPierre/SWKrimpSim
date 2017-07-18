@@ -250,16 +250,26 @@ public class Utils {
 			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' ').withQuote(null).withIgnoreEmptyLines());
 
 			// Writing lines
-			Iterator<Itemset> itResult = transactions.iterator();
+			Iterator<KItemset> itResult = transactions.iterator();
 			while(itResult.hasNext()) {
-				Itemset resultLine = itResult.next();
+				KItemset resultLine = itResult.next();
 				// Ecriture des attributs types
-				for(int i = 0; i < resultLine.size(); i++) {
-					printer.print(resultLine.get(i));
-				}
+				resultLine.forEach(new Consumer<Integer>() {
+
+					@Override
+					public void accept(Integer item) {
+						try {
+							printer.print(item);
+						} catch (IOException e) {
+							logger.error(e);
+						}
+					}
+					
+				});
+				
 				if(! noSupport) {
 					printer.print((Object)"#SUP:");
-					printer.print(resultLine.support);
+					printer.print(resultLine.getSupport());
 				}
 				printer.println();
 			}
@@ -275,8 +285,8 @@ public class Utils {
 		printItemsetSet(transactions, output, true);
 	}
 
-	public static Itemset createCodeSingleton(int codeNum) {
-		return new Itemset(codeNum);
+	public static KItemset createCodeSingleton(int codeNum) {
+		return new KItemset(Collections.singleton(codeNum));
 	}
 
 	public static int getAttributeNumber() {

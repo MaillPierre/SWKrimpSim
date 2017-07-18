@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
 import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.KItemset;
 import com.irisa.krimp.data.Utils;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
@@ -134,7 +135,7 @@ public class AttributeIndex {
 		return result;
 	}
 	
-	public Itemset convertToTransaction(LabeledTransaction t ) {
+	public KItemset convertToTransaction(LabeledTransaction t ) {
 		LinkedList<Integer> result = new LinkedList<Integer>();
 		Iterator<RDFPatternComponent> itCompo = t.getSortedIterator();
 		while(itCompo.hasNext()) {
@@ -143,7 +144,7 @@ public class AttributeIndex {
 			result.add(this.getItem(compo));
 		}
 		Collections.sort(result);
-		return new Itemset(result, t.getSupport());
+		return new KItemset(result, t.getSupport());
 	}
 	
 	public int size() {

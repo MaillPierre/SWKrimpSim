@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
 import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.KItemset;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
@@ -40,9 +41,9 @@ public class KrimpAlgorithm {
 //		logger.debug("CANDIDATE CODES");
 //		logger.debug(_candidateCodes);
 		
-		Iterator<Itemset> itCandidates = this._candidateCodes.iterator();
+		Iterator<KItemset> itCandidates = this._candidateCodes.iterator();
 		while(itCandidates.hasNext()) {
-			Itemset candidate = itCandidates.next();
+			KItemset candidate = itCandidates.next();
 //			logger.debug("Trying to add: "+candidate);
 			CodeTable tmpCT = new CodeTable(result);
 			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
@@ -77,8 +78,8 @@ public class KrimpAlgorithm {
 	 */
 	private ItemsetSet pruneSet(CodeTable inferior, CodeTable superior) {
 		ItemsetSet pruneSet = new ItemsetSet();
-		Itemset auxCode = null; 
-		Iterator<Itemset> itInferiorCodes = inferior.codeIterator(); 
+		KItemset auxCode = null; 
+		Iterator<KItemset> itInferiorCodes = inferior.codeIterator(); 
 		// Iterator<Itemset> itCodes = previousTable.codeIterator(); 
 		while (itInferiorCodes.hasNext()) {
 			auxCode = itInferiorCodes.next(); 
@@ -104,7 +105,7 @@ public class KrimpAlgorithm {
 		double CTcSize = -1; 
 		CodeTable CTp = null;
 		double CTpSize = -1; 
-		Itemset pruneCandidate = null;
+		KItemset pruneCandidate = null;
 		
 		CTcSize = CTc.totalCompressedSize(); 
 		while (!pruneSet.isEmpty()) {
@@ -122,10 +123,10 @@ public class KrimpAlgorithm {
 		return CTc; 
 	}
 	
-	private Itemset findLowestUsageCode (ItemsetSet pSet, CodeTable CT) {
-		Collections.sort(pSet, new Comparator<Itemset>() {
+	private KItemset findLowestUsageCode (ItemsetSet pSet, CodeTable CT) {
+		Collections.sort(pSet, new Comparator<KItemset>() {
 			@Override
-			public int compare(Itemset arg0, Itemset arg1) {
+			public int compare(KItemset arg0, KItemset arg1) {
 				return Integer.compare(CT.getUsage(arg0), CT.getUsage(arg1));
 			}
 		});
