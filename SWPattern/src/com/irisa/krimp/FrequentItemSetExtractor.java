@@ -25,8 +25,6 @@ public class FrequentItemSetExtractor {
 
 	protected ALGORITHM _algo = ALGORITHM.FPClose;
 
-	protected static int countPattern = 0;
-
 	protected static String tmpTransactionFilename = "transactions.tmp";
 	protected static String tmpItemsetFilename = "itemsets.tmp";
 	
@@ -41,11 +39,6 @@ public class FrequentItemSetExtractor {
 
 	public FrequentItemSetExtractor() {
 	}
-
-	public static int getPatternNumber() {
-		return countPattern++;
-	}
-
 
 	public Itemsets computeItemsets(ItemsetSet is) {
 		return computeItemsets(is.toItemsets());
