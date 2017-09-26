@@ -41,6 +41,8 @@ public class TransactionsExtractor {
 	private HashMap<Resource, Integer> _inDegreeCount = new HashMap<Resource, Integer>();
 	private HashMap<Resource, Integer> _outDegreeCount = new HashMap<Resource, Integer>();
 	private HashSet<Resource> _outliers = new HashSet<Resource>();
+	
+	private HashSet<Resource> _individuals = new HashSet<Resource>();
 
 	private boolean _noTypeBool = false;
 	private boolean _noInBool = false;
@@ -312,8 +314,10 @@ public class TransactionsExtractor {
 		Iterator<Resource> itIndiv = indivSet.iterator();
 		while(itIndiv.hasNext()) {
 			Resource currIndiv = itIndiv.next();
-			
-			results.add(extractTransactionsForIndividual(baseRDF, onto, currIndiv));
+			if(! currIndiv.isAnon() && ! this._individuals.contains(currIndiv)) {
+				this._individuals.add(currIndiv);
+				results.add(extractTransactionsForIndividual(baseRDF, onto, currIndiv));
+			}
 		}
 		return results;
 	}
