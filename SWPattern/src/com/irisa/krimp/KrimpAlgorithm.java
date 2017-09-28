@@ -21,8 +21,8 @@ public class KrimpAlgorithm {
 
 	private static Logger logger = Logger.getLogger(KrimpAlgorithm.class);
 
-	private ItemsetSet _transactions = null;
-	private ItemsetSet _candidateCodes = null;
+	protected ItemsetSet _transactions = null;
+	protected ItemsetSet _candidateCodes = null;
 
 
 	public KrimpAlgorithm(ItemsetSet transactions, ItemsetSet candidates) {
