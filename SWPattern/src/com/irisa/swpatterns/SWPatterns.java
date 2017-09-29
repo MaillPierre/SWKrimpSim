@@ -22,7 +22,9 @@ import com.irisa.jenautils.BaseRDF.MODE;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
 import com.irisa.krimp.CodeTable;
+import com.irisa.krimp.CodeTableSlim;
 import com.irisa.krimp.KrimpAlgorithm;
+import com.irisa.krimp.KrimpSlimAlgorithm;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
@@ -125,9 +127,9 @@ public class SWPatterns {
 				boolean inputOtherCodeTable = cmd.hasOption(inputOtherCodeTableOption);
 				boolean otherInput = inputOtherRDFFile || inputOtherTransaction || inputOtherCodeTable;
 				boolean outputTransaction = cmd.hasOption(outputTransactionOption);
-				boolean inputCandidatesCodes = cmd.hasOption(inputCandidatesOption);
-				boolean inputOtherCandidatesCodes = cmd.hasOption(inputOtherCandidatesOption);
-				boolean outputCandidatesCodes = cmd.hasOption(outputCandidatesOption);
+//				boolean inputCandidatesCodes = cmd.hasOption(inputCandidatesOption);
+//				boolean inputOtherCandidatesCodes = cmd.hasOption(inputOtherCandidatesOption);
+//				boolean outputCandidatesCodes = cmd.hasOption(outputCandidatesOption);
 				boolean inputCodeTableCodes = cmd.hasOption(inputCodeTableOption);
 				boolean outputCodeTableCodes = cmd.hasOption(outputCodeTableOption);
 				boolean inputConversionIndex = cmd.hasOption(inputConversionIndexOption);
@@ -197,7 +199,7 @@ public class SWPatterns {
 				firstOutputFile += "." + converter.getNeighborLevel();
 				String firstOutputTransactionFile = firstOutputFile + ".dat";
 				String firstOutputCandidateFile = firstOutputFile + ".candidates.dat";
-				String firstOutputKRIMPFile = firstOutputFile + ".krimp.dat";
+				String firstOutputKRIMPFile = firstOutputFile + ".krimpslim.dat";
 				String otherOutputFile = "";
 				if(inputOtherRDFFile) {
 					otherOutputFile = otherRDFFile;
@@ -207,7 +209,7 @@ public class SWPatterns {
 				otherOutputFile += "." + converter.getNeighborLevel();
 				String otherOutputTransactionFile = otherOutputFile + ".dat";
 				String otherOutputCandidateFile = otherOutputFile + ".candidates.dat";
-				String otherOutputKRIMPFile = otherOutputFile + ".krimp.dat";
+				String otherOutputKRIMPFile = otherOutputFile + ".krimpslim.dat";
 				
 				String inputConversionIndexFile = cmd.getOptionValue(inputConversionIndexOption);
 				String outputConversionIndexFile = cmd.getOptionValue(outputConversionIndexOption);
@@ -273,42 +275,41 @@ public class SWPatterns {
 					}
 	
 					realtransactions = index.convertToTransactions(transactions);
-					if(! inputCandidatesCodes) {
-						codes = new ItemsetSet(fsExtractor.computeItemsets(transactions, index));
-					} else {
-						codes = Utils.readItemsetSetFile(cmd.getOptionValue(inputCandidatesOption));
-					}
+//					if(! inputCandidatesCodes) {
+//						codes = new ItemsetSet(fsExtractor.computeItemsets(transactions, index));
+//					} else {
+//						codes = Utils.readItemsetSetFile(cmd.getOptionValue(inputCandidatesOption));
+//					}
 					logger.debug("Nb transactions: " + realtransactions.size());
 	
-					if(outputCandidatesCodes) {
-						index.printTransactionsItems(transactions, firstOutputCandidateFile);
-					}
+//					if(outputCandidatesCodes) {
+//						index.printTransactionsItems(transactions, firstOutputCandidateFile);
+//					}
 					logger.debug("Nb items: " + converter.getIndex().size());
 	
 					baseRDF.close();
 	
 				} else {
 					realtransactions = new ItemsetSet(Utils.readTransactionFile(cmd.getOptionValue(inputTransactionOption)));
-					if(! inputCandidatesCodes) {
-						codes = new ItemsetSet(fsExtractor.computeItemsets(realtransactions));
-					} else {
-						codes = Utils.readItemsetSetFile(inputCandidatesOption);
-					}
+//					if(! inputCandidatesCodes) {
+//						codes = new ItemsetSet(fsExtractor.computeItemsets(realtransactions));
+//					} else {
+//						codes = Utils.readItemsetSetFile(inputCandidatesOption);
+//					}
 					logger.debug("Nb Lines: " + realtransactions.size());
 				}
-				ItemsetSet realcodes = new ItemsetSet(codes);
+//				ItemsetSet realcodes = new ItemsetSet(codes);
 	
 				try {
 					DataIndexes analysis = new DataIndexes(realtransactions);
 					CodeTable standardCT = CodeTable.createStandardCodeTable(realtransactions, analysis );
 	
-					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes);
-					CodeTable krimpCT;
+					KrimpSlimAlgorithm kAlgo = new KrimpSlimAlgorithm(realtransactions);
+					CodeTableSlim krimpCT;
 					if(inputCodeTableCodes) {
-						ItemsetSet KRIMPcodes = Utils.readItemsetSetFile(firstKRIMPFile);
-						krimpCT = new CodeTable(realtransactions, KRIMPcodes, analysis);
+						krimpCT = new CodeTableSlim(realtransactions, analysis);
 					} else {
-						krimpCT = kAlgo.runAlgorithm(activatePruning);
+						krimpCT = kAlgo.runAlgorithm();
 					}
 					
 					if(outputCodeTableCodes) {
@@ -354,17 +355,17 @@ public class SWPatterns {
 						standardCT = CodeTable.createStandardCodeTable(otherRealTransactions, otherAnalysis );
 						CodeTable otherKrimpCT ;
 						if(! inputOtherCodeTable) {
-							ItemsetSet otherCandidates;
-							if(inputOtherCandidatesCodes) {
-								otherCandidates = Utils.readItemsetSetFile(otherCandidatesFile);
-							} else {
-								otherCandidates = new ItemsetSet(fsExtractor.computeItemsets(otherRealTransactions));
-							}
-							if(outputCandidatesCodes) {
-								Utils.printItemsetSet(otherCandidates, otherOutputCandidateFile);
-							}
+//							ItemsetSet otherCandidates;
+//							if(inputOtherCandidatesCodes) {
+//								otherCandidates = Utils.readItemsetSetFile(otherCandidatesFile);
+//							} else {
+//								otherCandidates = new ItemsetSet(fsExtractor.computeItemsets(otherRealTransactions));
+//							}
+//							if(outputCandidatesCodes) {
+//								Utils.printItemsetSet(otherCandidates, otherOutputCandidateFile);
+//							}
 							
-							KrimpAlgorithm otherKrimpAlgo = new KrimpAlgorithm(otherRealTransactions, otherCandidates);
+							KrimpSlimAlgorithm otherKrimpAlgo = new KrimpSlimAlgorithm(otherRealTransactions);
 							otherKrimpCT = otherKrimpAlgo.runAlgorithm(activatePruning);
 						} else {
 							otherKrimpCT = new CodeTable(otherRealTransactions, Utils.readItemsetSetFile(otherKRIMPFile), otherAnalysis);

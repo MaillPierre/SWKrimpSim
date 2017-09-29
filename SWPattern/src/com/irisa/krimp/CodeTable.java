@@ -1,6 +1,7 @@
 package com.irisa.krimp;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ public class CodeTable {
 	protected ItemsetSet _codes = null;
 	protected HashMap<KItemset, Integer> _itemsetUsage = new HashMap<KItemset, Integer>();
 	protected HashMap<KItemset, Integer> _itemsetCode = new HashMap<KItemset, Integer>();
+	protected HashMap<KItemset, BitSet> _itemsetUsageVector = new HashMap<KItemset, BitSet>();
 	protected DataIndexes _index = null;
 	protected long _usageTotal = 0;
 
