@@ -276,7 +276,9 @@ public class SWPatterns {
 	
 					realtransactions = index.convertToTransactions(transactions);
 //					if(! inputCandidatesCodes) {
-//						codes = new ItemsetSet(fsExtractor.computeItemsets(transactions, index));
+					logger.debug("Itemset extraction START");
+						codes = new ItemsetSet(fsExtractor.computeItemsets(transactions, index));
+						logger.debug("Itemset extraction STOP");
 //					} else {
 //						codes = Utils.readItemsetSetFile(cmd.getOptionValue(inputCandidatesOption));
 //					}
@@ -296,7 +298,7 @@ public class SWPatterns {
 //					} else {
 //						codes = Utils.readItemsetSetFile(inputCandidatesOption);
 //					}
-					logger.debug("Nb Lines: " + realtransactions.size());
+//					logger.debug("Nb Lines: " + realtransactions.size());
 				}
 //				ItemsetSet realcodes = new ItemsetSet(codes);
 	
@@ -304,24 +306,34 @@ public class SWPatterns {
 					DataIndexes analysis = new DataIndexes(realtransactions);
 					CodeTable standardCT = CodeTable.createStandardCodeTable(realtransactions, analysis );
 	
-					KrimpSlimAlgorithm kAlgo = new KrimpSlimAlgorithm(realtransactions);
-					CodeTableSlim krimpCT;
-					if(inputCodeTableCodes) {
-						krimpCT = new CodeTableSlim(realtransactions, analysis);
-					} else {
-						krimpCT = kAlgo.runAlgorithm();
-					}
+					KrimpSlimAlgorithm kAlgoSlim = new KrimpSlimAlgorithm(realtransactions);
+					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, codes);
+					CodeTableSlim krimpCTSlim;
+					CodeTable krimpCT;
+//					if(inputCodeTableCodes) {
+//						krimpCTSlim = new CodeTableSlim(realtransactions, analysis);
+//					} else {
+					logger.debug("KRIMP SLIM algorithm START");
+						krimpCTSlim = kAlgoSlim.runAlgorithm();
+						logger.debug("KRIMP SLIM algorithm STOP");
+						logger.debug("KRIMP algorithm START");
+						krimpCT = kAlgo.runAlgorithm(true);
+						logger.debug("KRIMP algorithm STOP");
+//					}
 					
 					if(outputCodeTableCodes) {
-						Utils.printItemsetSet(krimpCT.getCodes(), firstOutputKRIMPFile);
+						Utils.printItemsetSet(krimpCTSlim.getCodes(), firstOutputKRIMPFile);
 					}
 					double normalSize = standardCT.totalCompressedSize();
+					double compressedSizeSlim = krimpCTSlim.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
 					logger.debug("-------- FIRST RESULT ---------");
 //					logger.debug(krimpCT);
 					//					logger.debug("First Code table: " + krimpCT);
 					logger.debug("First NormalLength: " + normalSize);
+					logger.debug("First CompressedLength SLIM: " + compressedSizeSlim);
 					logger.debug("First CompressedLength: " + compressedSize);
+					logger.debug("First Compression SLIM: " + (compressedSizeSlim / normalSize));
 					logger.debug("First Compression: " + (compressedSize / normalSize));
 	
 					if(otherInput) {
@@ -371,7 +383,7 @@ public class SWPatterns {
 							otherKrimpCT = new CodeTable(otherRealTransactions, Utils.readItemsetSetFile(otherKRIMPFile), otherAnalysis);
 						}
 						
-						CodeTable otherComparisonResult = new CodeTable( otherRealTransactions, krimpCT.getCodes(), otherAnalysis);
+						CodeTable otherComparisonResult = new CodeTable( otherRealTransactions, krimpCTSlim.getCodes(), otherAnalysis);
 						double otherNormalSize = standardCT.totalCompressedSize();
 						double otherCompressedSize = otherKrimpCT.totalCompressedSize();
 						double otherCompressedSizeWithoutCT = otherKrimpCT.encodedTransactionSetCodeLength();
@@ -386,9 +398,9 @@ public class SWPatterns {
 						logger.debug("Compression ratio: "+(othercomparisonSize/otherCompressedSize));
 						logger.debug("-------- NEW FORMULATION --------");
 						double evalKrimpSize = otherKrimpCT.codificationLength(otherRealTransactions); 
-						krimpCT.setTransactions(otherRealTransactions);
-						krimpCT.updateUsages();
-						double refKrimpSize = krimpCT.codificationLength(otherRealTransactions); 
+						krimpCTSlim.setTransactions(otherRealTransactions);
+						krimpCTSlim.updateUsages();
+						double refKrimpSize = krimpCTSlim.codificationLength(otherRealTransactions); 
 						
 						logger.debug("Size of eval database using its Krimp CT: "+evalKrimpSize);
 						logger.debug("Size of eval database using the Reference Krimp CT: "+refKrimpSize);
@@ -445,7 +457,7 @@ public class SWPatterns {
 								line.append(converter.getNeighborLevel().toString());
 								line.append(";");
 								// refCompressionRationOwnCT
-								line.append(compressedSize / normalSize); 
+								line.append(compressedSizeSlim / normalSize); 
 								line.append(";"); 
 								// evalCompressionRatioOwnCT
 								line.append(otherCompressedSize / otherNormalSize); 

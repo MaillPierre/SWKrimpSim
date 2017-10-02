@@ -24,6 +24,7 @@ public class DataIndexes {
 	private HashMap<KItemset, BitSet> _codeTransactionVectors = new HashMap<KItemset, BitSet>();
 	
 	private int _highestItemIndice = 0;
+	private int _maxSize = 0;
 	
 	public DataIndexes(ItemsetSet transactions) {
 		this._transactions = transactions;
@@ -31,11 +32,18 @@ public class DataIndexes {
 		analyze();
 	}
 	
+	public int getMaxSize() {
+		return this._maxSize;
+	}
+	
 	private void analyze() {
 		for(int iTrans = 0; iTrans < this._transactions.size(); iTrans++ ) {
 			KItemset trans = this._transactions.get(iTrans);
 			if(this._transactionItemVectors.get(trans) == null) {
 				this._transactionItemVectors.put(trans, new BitSet());
+			}
+			if(trans.size() > this._maxSize) {
+				this._maxSize = trans.size();
 			}
 			Iterator<Integer> itTrans = trans.iterator();
 			while(itTrans.hasNext()) {
