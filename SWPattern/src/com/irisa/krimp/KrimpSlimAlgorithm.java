@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 
@@ -22,7 +23,29 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 		super(transactions, new ItemsetSet());
 	}
 
-
+	/**
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * All the time and lack of precision make SLIM a dull algorithm
+	 * @return
+	 * @throws LogicException
+	 */
 	public CodeTableSlim runAlgorithm() throws LogicException {
 		logger.debug("Starting KRIMP SLIM algorithm");
 		logger.debug(this._transactions.size() + " transactions");
@@ -55,45 +78,62 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	}
 
 	/**
-	 * Generate candidates codes by:
-	 * 1) ordering the codes by descending order of usage
-	 * 2) test the combination of two different codes according to their gain as a new code, using b&b algorithm while keeping in memory the best gain found and the usage of the best candidate found
-	 * 	i) if usage(X) or usage(Y) are inferior to best usage, cut the branch
-	 *  ii) if size of the candidate is superior to max size of transaction, cut the branch
-	 *  iii) if the candidate was previously tested, cut the branch
-	 *  iv) 
+	 * 
 	 * @param codetable
 	 * @param standardSize
 	 * @param testedCandidates
 	 * @return
 	 */
-	private KItemset generateCandidate(CodeTableSlim codetable, double standardSize , HashSet<KItemset> testedCandidates) {
-		double currentMaxGain = 0;
-		double bestUsage = 0;
+	private KItemset generateCandidate(final CodeTableSlim codetable, double standardSize , HashSet<KItemset> testedCandidates) {
+		
+		Comparator<Couple<KItemset, KItemset>> gainComparator = new Comparator<Couple<KItemset, KItemset>>(){
+			@Override
+			public int compare(Couple<KItemset, KItemset> o1, Couple<KItemset, KItemset> o2) {
+				KItemset tmp1X = o1.getFirst();
+				KItemset tmp1Y = o1.getSecond();
+				int tmp1CombiUsage = codetable.estimateUsageCombination(tmp1X, tmp1Y);
+				KItemset tmp2X = o2.getFirst();
+				KItemset tmp2Y = o2.getSecond();
+				int tmp2CombiUsage = codetable.estimateUsageCombination(tmp2X, tmp2Y);
+				return Double.compare(deltaSize(codetable, standardSize, tmp1X, tmp1Y, tmp1CombiUsage), deltaSize(codetable, standardSize, tmp2X, tmp2Y, tmp2CombiUsage));
+			}
+		};
+		Comparator<KItemset> usageComparator = new Comparator<KItemset>(){
+			@Override
+			public int compare(KItemset o1, KItemset o2) {
+				return Integer.compare(codetable.getUsage(o1), codetable.getUsage(o2));
+			}
+		};
 		
 		boolean moreCandidates = true;
 		while(! this._topKCandidates.isEmpty() || moreCandidates) {
 			if(! this._topKCandidates.isEmpty()) {
+				moreCandidates = this._topKCandidates.size() <= 1;
+				
+				logger.debug("Trying with top "+ this._topKCandidates.size() +" candidates");
 				KItemset tmpX = this._topKCandidates.peekFirst().getFirst();
 				KItemset tmpY = this._topKCandidates.peekFirst().getSecond();
 				if(codetable.estimateUsageCombination(tmpX, tmpY) > 0) {
-					KItemset candidate = this._topKCandidates.peekFirst().getFirst();
+					KItemset candidate = new KItemset(tmpX);
 					candidate.addAll(this._topKCandidates.peekFirst().getSecond());
 					this._topKCandidates.removeFirst();
 					return candidate;
 				} else {
+					logger.debug("Removed top K " + this._topKCandidates.getFirst());
 					this._topKCandidates.removeFirst();
 				}
-			} else if(moreCandidates){
+			}
+			if(moreCandidates){
+				logger.debug("Generating more candidates");
+				TreeSet<Couple<KItemset, KItemset>> newCandidates = new TreeSet<Couple<KItemset, KItemset>>(gainComparator);
+				double bestUsage = 0;
+				if(! this._topKCandidates.isEmpty()) {
+					bestUsage = codetable.estimateUsageCombination(this._topKCandidates.getFirst().getFirst(), this._topKCandidates.getFirst().getSecond());
+				}
 				moreCandidates = false;
 				ItemsetSet codes = new ItemsetSet(codetable._codes);
-				codes.sort(new Comparator<KItemset>(){
-					@Override
-					public int compare(KItemset o1, KItemset o2) {
-						return Integer.compare(codetable.getUsage(o1), codetable.getUsage(o2));
-					}
-				});
-				
+				codes.sort(usageComparator);
+								
 				for(int iX = 0; iX < codetable._codes.size(); iX++) {
 					KItemset tmpX = codetable._codes.get(iX);
 					int currentXUsage = codetable.getUsage(tmpX);
@@ -101,19 +141,32 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 						for(int iY = iX+1; iY < codetable._codes.size(); iY++) {
 							KItemset tmpY = codetable._codes.get(iY);
 							int currentYUsage = codetable.getUsage(tmpY);
-							if(currentYUsage > 0 && currentYUsage >= bestUsage) {
-								double deltaSize = evaluateGainCandidate(codetable, standardSize, tmpX, tmpY, currentMaxGain, testedCandidates);
-								if( deltaSize > currentMaxGain) {
-									moreCandidates = true;
-									this._topKCandidates.addFirst(new Couple<KItemset, KItemset>(tmpX, tmpY));
-									bestUsage = currentYUsage;
-									currentMaxGain = deltaSize;
+							if(currentYUsage > 0 /*&& currentYUsage >= bestUsage*/) {
+								KItemset candidatePotential = new KItemset(tmpX);
+								candidatePotential.addAll(tmpY);
+								if(candidatePotential.size() <= codetable._index.getMaxSize()
+										&& ! testedCandidates.contains(candidatePotential)
+										&& ! this._topKCandidates.contains(new Couple<KItemset, KItemset>(tmpX, tmpY))
+										&& candidatePotential.size() > 1) {
+									if( codetable.estimateUsageCombination(tmpX, tmpY) > 0 /*&& deltaSize > currentMaxGain*/) {
+										moreCandidates = true;
+										newCandidates.add(new Couple<KItemset, KItemset>(tmpX, tmpY));
+	//									bestUsage = currentYUsage;
+	//									currentMaxGain = deltaSize;
+									}
 								}
 							} else {
 								break;
 							}
 						}
 					}
+				}
+
+				newCandidates.removeAll(_topKCandidates);
+				this._topKCandidates.addAll(newCandidates);
+				this._topKCandidates.sort(gainComparator);
+				while(this._topKCandidates.size() > 100) {
+					this._topKCandidates.removeLast();
 				}
 			}
 		}
@@ -130,9 +183,7 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 					&& candidatePotential.size() > 1) {
 				int tmpCombiUsage = codetable.estimateUsageCombination(tmpX, tmpY); // xy'
 				if(tmpCombiUsage > 0) {
-					double deltaD = deltaDCTModified(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
-					double deltaCT = deltaCTModifiedD(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
-					double deltaSize = (deltaD + deltaCT);
+					double deltaSize = deltaSize(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
 					//logger.debug("Testing potential candidate "+ candidatePotential +" deltaD: " + deltaD + " deltaCT: " + deltaCT);
 					if(deltaSize > maxGain ) {
 						return deltaSize;
@@ -141,6 +192,12 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 			}
 		}
 		return maxGain;
+	}
+	
+	private double deltaSize(CodeTableSlim codetable, double standardSize, KItemset tmpX, KItemset tmpY, int tmpCombiUsage) {
+		double deltaD = deltaDCTModified(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
+		double deltaCT = deltaCTModifiedD(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
+		return (deltaD + deltaCT);
 	}
 
 	private double deltaDCTModified(CodeTableSlim codetable, double standardSize, KItemset x, KItemset y, int tmpCombiUsage) {
