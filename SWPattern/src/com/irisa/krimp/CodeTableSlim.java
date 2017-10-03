@@ -3,6 +3,7 @@ package com.irisa.krimp;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 import org.apache.log4j.Logger;
 
@@ -15,6 +16,8 @@ import com.irisa.krimp.data.Utils;
 public class CodeTableSlim extends CodeTable {
 	
 	private static Logger logger = Logger.getLogger(CodeTableSlim.class);
+
+	protected HashMap<KItemset, BitSet> _itemsetUsageVector = new HashMap<KItemset, BitSet>();
 
 	public CodeTableSlim(ItemsetSet transactions, DataIndexes analysis) {
 		this(transactions, analysis, false);
@@ -38,6 +41,13 @@ public class CodeTableSlim extends CodeTable {
 	
 	public CodeTableSlim(CodeTable ct) {
 		super(ct);
+		if(ct instanceof CodeTableSlim) {
+			this._itemsetUsageVector = new HashMap<KItemset, BitSet>(((CodeTableSlim) ct)._itemsetUsageVector);
+		} else {
+			this._itemsetUsageVector = new HashMap<KItemset, BitSet>();
+		}
+		
+		
 	}
 	
 	public static CodeTableSlim createStandardCodeTable(ItemsetSet transactions, DataIndexes analysis) {
@@ -48,6 +58,36 @@ public class CodeTableSlim extends CodeTable {
 		return new CodeTableSlim(transactions, new DataIndexes(transactions), true);
 	}
 	
+	@Override
+	protected void init() {
+		_itemsetUsageVector = new HashMap<KItemset, BitSet>(); // Have to move that here to remove null pointer exception, dirty but ....
+		initSingletonSupports();
+		initCodes();
+		orderCodesStandardCoverageOrder();
+		updateUsages();		
+	}
+	
+	@Override
+	/**
+	 * Create new indices for new codes, put the usage of each code to 0
+	 */ 
+	protected void initCodes() {
+		this._codes.forEach(new Consumer<KItemset>() {
+			@Override
+			public void accept(KItemset code) {
+				if(_itemsetCode.get(code) == null) {
+					_itemsetCode.put(code, Utils.getAttributeNumber());
+				}
+				if(_itemsetUsage.get(code) == null) {
+					_itemsetUsage.put(code, 0);
+				}
+				if(_itemsetUsageVector.get(code) == null) {
+					_itemsetUsageVector.put(code, generateUsageVector(code));
+				}
+			}
+		});
+	}
+	
 	/**
 	 * Return a boolean vector representing the transaction the code is support of
 	 * @return
@@ -55,6 +95,7 @@ public class CodeTableSlim extends CodeTable {
 	public BitSet getUsageVector(KItemset code) {
 		if(this._itemsetUsageVector.get(code) == null) {
 			this._itemsetUsageVector.put(code, this.generateUsageVector(code));
+			this._itemsetUsage.put(code, this._itemsetUsageVector.get(code).cardinality());
 		}
 		return this._itemsetUsageVector.get(code);
 	}
@@ -69,6 +110,7 @@ public class CodeTableSlim extends CodeTable {
 		BitSet estimate = new BitSet();
 		estimate.or(this.getUsageVector(x));
 		estimate.and(this.getUsageVector(y));
+//		logger.debug("estimateUsageCombination( " + x + " , " + y + " ): " + estimate.cardinality() );
 		return estimate.cardinality();
 	}
 	
@@ -82,7 +124,7 @@ public class CodeTableSlim extends CodeTable {
 	 * @return
 	 */
 	public double estimateCodeLengthOfcode(KItemset x, KItemset y) {
-		logger.debug("estimateCodeLengthOfcode( " + x + ", " + y + " ) "+ this.estimateProbabilisticDistrib(x,y));
+//		logger.debug("estimateCodeLengthOfcode( " + x + ", " + y + " ) "+ this.estimateProbabilisticDistrib(x,y));
 		return - Math.log(this.estimateProbabilisticDistrib(x,y));
 	}
 	
@@ -141,8 +183,7 @@ public class CodeTableSlim extends CodeTable {
 		while(itCodes.hasNext()) {
 			KItemset code = itCodes.next();
 			_itemsetUsage.replace(code, 0); 
-			BitSet newUsageVector = new BitSet(this._index.getNumberOfTransactions());
-			_itemsetUsageVector.put(code, newUsageVector);
+			_itemsetUsageVector.put(code, null);
 		}
 		
 		for (int i = 0; i < this._transactions.size(); i++) {
@@ -150,13 +191,14 @@ public class CodeTableSlim extends CodeTable {
 			ItemsetSet codes = this.codify(t); 
 			for (KItemset aux: codes) {
 				_itemsetUsage.replace(aux, _itemsetUsage.get(aux)+1); 
-				_itemsetUsageVector.get(aux).set(i);
+//				_itemsetUsageVector.get(aux).set(i);
 			}
 			this._usageTotal+=codes.size(); 
 		}		
 	}
 	
 	private BitSet generateUsageVector(KItemset code) {
+//		logger.debug("Usage vector for " + code + " has been generated");
 		BitSet newUsageVector = new BitSet(this._index.getNumberOfTransactions());
 
 		BitSet supportVector = this._index.getCodeTransactionVector(code);
@@ -169,9 +211,11 @@ public class CodeTableSlim extends CodeTable {
 		return newUsageVector;
 	}
 	
-	public int getUsageWithRefresh(KItemset code) {
+	public int getUsage(KItemset code) {
 		if(this._itemsetUsage.get(code) == null) {
-			return this.getUsageVector(code).cardinality();
+			BitSet usageVector = this.generateUsageVector(code);
+			this._itemsetUsageVector.put(code, usageVector);
+			this._itemsetUsage.put(code, usageVector.cardinality());
 		}
 		return this._itemsetUsage.get(code);
 	}

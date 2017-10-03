@@ -31,7 +31,6 @@ public class CodeTable {
 	protected ItemsetSet _codes = null;
 	protected HashMap<KItemset, Integer> _itemsetUsage = new HashMap<KItemset, Integer>();
 	protected HashMap<KItemset, Integer> _itemsetCode = new HashMap<KItemset, Integer>();
-	protected HashMap<KItemset, BitSet> _itemsetUsageVector = new HashMap<KItemset, BitSet>();
 	protected DataIndexes _index = null;
 	protected long _usageTotal = 0;
 
@@ -69,7 +68,7 @@ public class CodeTable {
 		init();	
 	}
 	
-	private void init() {
+	protected void init() {
 		initSingletonSupports();
 		initCodes();
 		orderCodesStandardCoverageOrder();
@@ -137,7 +136,7 @@ public class CodeTable {
 	/**
 	 * Create new indices for new codes, put the usage of each code to 0
 	 */
-	private void initCodes() {
+	protected void initCodes() {
 		this._codes.forEach(new Consumer<KItemset>() {
 			@Override
 			public void accept(KItemset code) {
@@ -151,7 +150,7 @@ public class CodeTable {
 		});
 	}
 	
-	private void initSingletonSupports() {
+	protected void initSingletonSupports() {
 		logger.debug("initSupport");
 		
 		Iterator<Integer> itItem = _index.itemIterator();
