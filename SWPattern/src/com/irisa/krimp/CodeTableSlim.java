@@ -21,22 +21,22 @@ public class CodeTableSlim extends CodeTable {
 
 	public CodeTableSlim(ItemsetSet transactions, DataIndexes analysis) {
 		this(transactions, analysis, false);
-		logger.debug("CodeTableSlim(ItemsetSet transactions, DataIndexes analysis)");
+//		logger.debug("CodeTableSlim(ItemsetSet transactions, DataIndexes analysis)");
 	}
 	
 	public CodeTableSlim(ItemsetSet transactions, DataIndexes analysis, boolean standardFlag) {
 		super(transactions, new ItemsetSet(), analysis, standardFlag);
-		logger.debug("CodeTableSlim(ItemsetSet transactions, DataIndexes analysis, boolean standardFlag)");
+//		logger.debug("CodeTableSlim(ItemsetSet transactions, DataIndexes analysis, boolean standardFlag)");
 	}
 	
 	public CodeTableSlim(ItemsetSet transactions, boolean standardFlag) {
 		this(transactions, new DataIndexes(transactions), standardFlag);
-		logger.debug("CodeTableSlim(ItemsetSet transactions, boolean standardFlag)");
+//		logger.debug("CodeTableSlim(ItemsetSet transactions, boolean standardFlag)");
 	}
 	
 	public CodeTableSlim(ItemsetSet transactions) {
 		this(transactions, new DataIndexes(transactions), false);
-		logger.debug("CodeTableSlim(ItemsetSet transactions)");
+//		logger.debug("CodeTableSlim(ItemsetSet transactions)");
 	}
 	
 	public CodeTableSlim(CodeTable ct) {
@@ -46,7 +46,7 @@ public class CodeTableSlim extends CodeTable {
 		} else {
 			this._itemsetUsageVector = new HashMap<KItemset, BitSet>();
 		}
-		
+//		logger.debug("CodeTableSlim(CodeTable ct)");
 		
 	}
 	
@@ -60,11 +60,13 @@ public class CodeTableSlim extends CodeTable {
 	
 	@Override
 	protected void init() {
+		logger.debug("CT init");
 		_itemsetUsageVector = new HashMap<KItemset, BitSet>(); // Have to move that here to remove null pointer exception, dirty but ....
 		initSingletonSupports();
 		initCodes();
 		orderCodesStandardCoverageOrder();
 		updateUsages();		
+		logger.debug("CT init END");
 	}
 	
 	@Override
@@ -183,7 +185,7 @@ public class CodeTableSlim extends CodeTable {
 		while(itCodes.hasNext()) {
 			KItemset code = itCodes.next();
 			_itemsetUsage.replace(code, 0); 
-			_itemsetUsageVector.put(code, null);
+			_itemsetUsageVector.put(code, new BitSet(this._transactions.size()));
 		}
 		
 		for (int i = 0; i < this._transactions.size(); i++) {
@@ -191,7 +193,7 @@ public class CodeTableSlim extends CodeTable {
 			ItemsetSet codes = this.codify(t); 
 			for (KItemset aux: codes) {
 				_itemsetUsage.replace(aux, _itemsetUsage.get(aux)+1); 
-//				_itemsetUsageVector.get(aux).set(i);
+				_itemsetUsageVector.get(aux).set(i);
 			}
 			this._usageTotal+=codes.size(); 
 		}		
@@ -213,11 +215,70 @@ public class CodeTableSlim extends CodeTable {
 	
 	public int getUsage(KItemset code) {
 		if(this._itemsetUsage.get(code) == null) {
-			BitSet usageVector = this.generateUsageVector(code);
-			this._itemsetUsageVector.put(code, usageVector);
-			this._itemsetUsage.put(code, usageVector.cardinality());
+//			logger.debug("Usage of " + code + " unknown");
+			this._itemsetUsage.put(code, this.getUsageVector(code).cardinality());
 		}
 		return this._itemsetUsage.get(code);
+	}
+	
+	@Override
+	/**
+	 * 
+	 * @param transaction transaction
+	 * @param code code from the codetable
+	 * @return true if the code is part of the transaction cover
+	 */
+	public boolean isCover(KItemset transaction, KItemset code) {
+		if(isCoverCandidate(transaction, code)) {
+			BitSet codeBit = this._index.getCodeItemVector(code);
+			BitSet transBitMask = new BitSet();
+			transBitMask.or(this._index.getTransactionItemVector(transaction));
+			Iterator<KItemset> itCodes = this.codeIterator();
+			while(itCodes.hasNext()) {
+				KItemset otherCode = itCodes.next();
+				BitSet otherCodeBitMask = this._index.getCodeItemVector(otherCode);
+				transBitMask.or(otherCodeBitMask);
+				if(transBitMask.intersects(codeBit)) {
+					return false;
+				}
+			}
+			return true;
+		}
+		
+//		if(isCoverCandidate(transaction, code)) {
+//			Iterator<KItemset> itIs = codeIterator();
+//			return isCover(transaction, code, itIs);
+//			
+//		}
+		return false;
+	}
+	
+	/**
+	 * 
+	 * @param trans transaction
+	 * @param code code from the codetable
+	 * @param itLastTestedCode Iterator over codes, used for recursive calls to avoid re-iteration
+	 *  over the whole code set when one is cover without intersection with code
+	 * @return true if the code is part of the transaction cover
+	 */
+	private boolean isCover(KItemset trans, KItemset code, Iterator<KItemset> itLastTestedCode) {
+		KItemset tmpCode = null;
+		while(itLastTestedCode.hasNext()) {
+			tmpCode = itLastTestedCode.next();
+			
+			if(isCoverCandidate(trans, tmpCode)) { // If the size of code is correct and it is contained in trans
+				if(tmpCode.equals(code)) { // if code cover = OK
+					return true;
+				} else if (tmpCode.intersection(code).size() != 0) { // if another cover code overlap with code = !OK
+					return false;
+				} else { // transaction partially covered but there is still some chances
+//					KItemset covered = CodeTable.itemsetSubstraction(trans, tmpCode);
+					KItemset covered = trans.substraction(tmpCode);
+					return isCover(covered, code, itLastTestedCode); 
+				}
+			}
+		}
+		return false;
 	}
 
 }

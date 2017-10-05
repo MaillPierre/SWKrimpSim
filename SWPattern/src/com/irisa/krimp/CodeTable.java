@@ -367,7 +367,7 @@ public class CodeTable {
 	 * @param code code
 	 * @return true if code is smaller or equal and contained in the transaction
 	 */
-	private boolean isCoverCandidate(KItemset trans, KItemset code) {
+	protected boolean isCoverCandidate(KItemset trans, KItemset code) {
 		return ( code.size() <= trans.size()  && ( trans.containsAll(code)));
 	}
 	

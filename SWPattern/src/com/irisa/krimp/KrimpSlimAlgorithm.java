@@ -66,7 +66,7 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 				//				logger.debug("candidateSize: "+candidateSize +" resultSize: "+resultSize); 
 				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
 					//					logger.debug("--> Added:"+candidate);
-					result = new CodeTableSlim(postAcceptancePruning(tmpCT, result));
+					result = postAcceptancePruning(tmpCT, result);
 					// we have to update the size 
 					resultSize = result.totalCompressedSize(); 				
 				}
@@ -75,6 +75,37 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 		}
 		logger.debug("KRIMP algorithm ended");
 		return result;
+	}
+	
+	public CodeTableSlim postAcceptancePruning(CodeTableSlim candidateTable, CodeTableSlim previousTable) throws LogicException {
+		
+		// CB: after the acceptance of the new code
+		// first we have to get the PruneSet => those codes whose usage has become lower 
+		// after adding the candidates
+		ItemsetSet pruneSet = pruneSet(candidateTable, previousTable);
+		
+
+		// names are taken from the paper 
+		CodeTableSlim CTc = candidateTable;
+		double CTcSize = -1; 
+		CodeTableSlim CTp = null;
+		double CTpSize = -1; 
+		KItemset pruneCandidate = null;
+		
+		CTcSize = CTc.totalCompressedSize(); 
+		while (!pruneSet.isEmpty()) {
+			pruneCandidate = findLowestUsageCode (pruneSet, CTc);		
+			pruneSet.remove(pruneCandidate); 
+			CTp = new CodeTableSlim(CTc); 
+			CTp.removeCode(pruneCandidate);
+			CTpSize = CTp.totalCompressedSize(); 
+			if (CTpSize < CTcSize) {
+				pruneSet = pruneSet(CTp, CTc);
+				CTc = CTp; 
+				CTcSize = CTpSize; 
+			}			
+		}
+		return CTc; 
 	}
 
 	/**
@@ -85,6 +116,8 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	 * @return
 	 */
 	private KItemset generateCandidate(final CodeTableSlim codetable, double standardSize , HashSet<KItemset> testedCandidates) {
+		
+		int maxNumberofCandidates = 500;
 		
 		Comparator<Couple<KItemset, KItemset>> gainComparator = new Comparator<Couple<KItemset, KItemset>>(){
 			@Override
@@ -108,7 +141,6 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 		boolean moreCandidates = true;
 		while(! this._topKCandidates.isEmpty() || moreCandidates) {
 			if(! this._topKCandidates.isEmpty()) {
-				moreCandidates = this._topKCandidates.size() <= 1;
 				
 				logger.debug("Trying with top "+ this._topKCandidates.size() +" candidates");
 				KItemset tmpX = this._topKCandidates.peekFirst().getFirst();
@@ -123,6 +155,7 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 					this._topKCandidates.removeFirst();
 				}
 			}
+			moreCandidates = this._topKCandidates.isEmpty();
 			if(moreCandidates){
 				logger.debug("Generating more candidates");
 				TreeSet<Couple<KItemset, KItemset>> newCandidates = new TreeSet<Couple<KItemset, KItemset>>(gainComparator);
@@ -165,7 +198,7 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 				newCandidates.removeAll(_topKCandidates);
 				this._topKCandidates.addAll(newCandidates);
 				this._topKCandidates.sort(gainComparator);
-				while(this._topKCandidates.size() > 100) {
+				while(this._topKCandidates.size() > maxNumberofCandidates) {
 					this._topKCandidates.removeLast();
 				}
 			}

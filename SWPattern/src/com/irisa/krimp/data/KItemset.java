@@ -14,9 +14,6 @@ public class KItemset extends HashSet<Integer> {
 	
 	private int _support = 0;
 
-	public KItemset() {
-	}
-
 	public KItemset(Collection<? extends Integer> arg0) {
 		super(arg0);
 		if(arg0 instanceof KItemset) {

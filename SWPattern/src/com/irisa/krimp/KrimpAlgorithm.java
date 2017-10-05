@@ -76,7 +76,7 @@ public class KrimpAlgorithm {
 	 * @param superior
 	 * @return
 	 */
-	private ItemsetSet pruneSet(CodeTable inferior, CodeTable superior) {
+	protected ItemsetSet pruneSet(CodeTable inferior, CodeTable superior) {
 		ItemsetSet pruneSet = new ItemsetSet();
 		KItemset auxCode = null; 
 		Iterator<KItemset> itInferiorCodes = inferior.codeIterator(); 
@@ -123,7 +123,7 @@ public class KrimpAlgorithm {
 		return CTc; 
 	}
 	
-	private KItemset findLowestUsageCode (ItemsetSet pSet, CodeTable CT) {
+	protected KItemset findLowestUsageCode (ItemsetSet pSet, CodeTable CT) {
 		Collections.sort(pSet, new Comparator<KItemset>() {
 			@Override
 			public int compare(KItemset arg0, KItemset arg1) {

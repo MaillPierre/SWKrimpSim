@@ -4,13 +4,7 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.function.Consumer;
-
 import org.apache.log4j.Logger;
-
-import com.irisa.exception.LogicException;
-
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
 public class DataIndexes {
 	
@@ -119,8 +113,15 @@ public class DataIndexes {
 		return getCodeTransactionVector(code).cardinality();
 	}
 	
-	public BitSet getTransactionItemVector(Itemset trans) {
-		return this._transactionItemVectors.get(trans);
+	public BitSet getTransactionItemVector(KItemset transaction) {
+		return this._transactionItemVectors.get(transaction);
+	}
+	
+	public BitSet getCodeItemVector(KItemset code) {
+		if(this._codeItemVectors.get(code) == null) {
+			computeCodeItemVector(code);
+		}
+		return this._codeItemVectors.get(code);
 	}
 	
 	public BitSet getItemTransactionVector(int item) {
@@ -138,9 +139,6 @@ public class DataIndexes {
 	}
 	
 	public BitSet getCodeTransactionVector(KItemset code) {
-		if(this._codeItemVectors.get(code) == null) {
-			computeCodeItemVector(code);
-		}
 		if(this._codeTransactionVectors.get(code) == null) {
 			computeCodeTransactionVector(code);
 		}
