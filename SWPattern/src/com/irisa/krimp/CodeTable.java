@@ -1,7 +1,6 @@
 package com.irisa.krimp;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,6 +37,9 @@ public class CodeTable {
 	
 	protected boolean _standardFlag = false; // Set true if it is the standard codetable
 	protected CodeTable _standardCT = null; // Codetable containing only singletons for the coding length of a CT
+	
+	protected CodeTable() {
+	}
 	
 	/**
 	 * Initialization of the usages and codes indices
@@ -151,7 +153,7 @@ public class CodeTable {
 	}
 	
 	protected void initSingletonSupports() {
-		logger.debug("initSupport");
+//		logger.debug("initSupport");
 		
 		Iterator<Integer> itItem = _index.itemIterator();
 		while(itItem.hasNext()) {
@@ -394,7 +396,7 @@ public class CodeTable {
 	 *  over the whole code set when one is cover without intersection with code
 	 * @return true if the code is part of the transaction cover
 	 */
-	private boolean isCover(KItemset trans, KItemset code, Iterator<KItemset> itLastTestedCode) {
+	protected boolean isCover(KItemset trans, KItemset code, Iterator<KItemset> itLastTestedCode) {
 		KItemset tmpCode = null;
 		while(itLastTestedCode.hasNext()) {
 			tmpCode = itLastTestedCode.next();
@@ -533,6 +535,8 @@ public class CodeTable {
 		StringBuilder r = new StringBuilder ();
 		r.append("Total Usages: ");
 		r.append(this._usageTotal);
+		r.append(" number of codes: ");
+		r.append(this._codes.size());
 		r.append('\n');
 		Iterator<KItemset> itIs = this.codeIterator();
 		while(itIs.hasNext()) {

@@ -2,9 +2,9 @@ package com.irisa.krimp;
 
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 import org.apache.log4j.Logger;
 
@@ -46,11 +46,11 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	 * @return
 	 * @throws LogicException
 	 */
-	public CodeTableSlim runAlgorithm() throws LogicException {
+	public CodeTable runAlgorithm() throws LogicException {
 		logger.debug("Starting KRIMP SLIM algorithm");
 		logger.debug(this._transactions.size() + " transactions");
 
-		CodeTableSlim result = CodeTableSlim.createStandardCodeTable( _transactions); // CT ←Standard Code Table(D)
+		CodeTable result = CodeTable.createStandardCodeTable( _transactions); // CT ←Standard Code Table(D)
 		double resultSize = result.totalCompressedSize();
 		double standardSize = resultSize;
 		HashSet<KItemset> testedCandidates = new HashSet<KItemset>();
@@ -77,7 +77,7 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 		return result;
 	}
 	
-	public CodeTableSlim postAcceptancePruning(CodeTableSlim candidateTable, CodeTableSlim previousTable) throws LogicException {
+	public CodeTable postAcceptancePruning(CodeTable candidateTable, CodeTableSlim previousTable) throws LogicException {
 		
 		// CB: after the acceptance of the new code
 		// first we have to get the PruneSet => those codes whose usage has become lower 
@@ -86,7 +86,7 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 		
 
 		// names are taken from the paper 
-		CodeTableSlim CTc = candidateTable;
+		CodeTable CTc = candidateTable;
 		double CTcSize = -1; 
 		CodeTableSlim CTp = null;
 		double CTpSize = -1; 
@@ -115,9 +115,10 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	 * @param testedCandidates
 	 * @return
 	 */
-	private KItemset generateCandidate(final CodeTableSlim codetable, double standardSize , HashSet<KItemset> testedCandidates) {
+	private KItemset generateCandidate(final CodeTable refCode, double standardSize , HashSet<KItemset> testedCandidates) {
 		
-		int maxNumberofCandidates = 500;
+		int maxNumberofCandidates = 100;
+		final CodeTableSlim codetable = new CodeTableSlim(refCode);
 		
 		Comparator<Couple<KItemset, KItemset>> gainComparator = new Comparator<Couple<KItemset, KItemset>>(){
 			@Override
@@ -138,6 +139,17 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 			}
 		};
 		
+		Predicate<KItemset> zeroUsagePredicate = new Predicate<KItemset>() {
+			@Override
+			public boolean test(KItemset fi) {
+				return codetable.getUsage(fi) == 0;
+			}
+		};
+		
+		ItemsetSet codes = new ItemsetSet(codetable._codes);
+		codes.removeIf(zeroUsagePredicate);
+		codes.sort(usageComparator);
+		
 		boolean moreCandidates = true;
 		while(! this._topKCandidates.isEmpty() || moreCandidates) {
 			if(! this._topKCandidates.isEmpty()) {
@@ -155,50 +167,56 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 					this._topKCandidates.removeFirst();
 				}
 			}
-			moreCandidates = this._topKCandidates.isEmpty();
+			
 			if(moreCandidates){
 				logger.debug("Generating more candidates");
 				TreeSet<Couple<KItemset, KItemset>> newCandidates = new TreeSet<Couple<KItemset, KItemset>>(gainComparator);
-				double bestUsage = 0;
-				if(! this._topKCandidates.isEmpty()) {
-					bestUsage = codetable.estimateUsageCombination(this._topKCandidates.getFirst().getFirst(), this._topKCandidates.getFirst().getSecond());
-				}
+				
 				moreCandidates = false;
-				ItemsetSet codes = new ItemsetSet(codetable._codes);
-				codes.sort(usageComparator);
+				int minSeenUsage = 0;
+				if(! _topKCandidates.isEmpty()) {
+					minSeenUsage = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+				}
 								
-				for(int iX = 0; iX < codetable._codes.size(); iX++) {
-					KItemset tmpX = codetable._codes.get(iX);
+				for(int iX = 0; iX < codes.size(); iX++) {
+					KItemset tmpX = codes.get(iX);
 					int currentXUsage = codetable.getUsage(tmpX);
-					if(currentXUsage > 0 && currentXUsage >= bestUsage) {
-						for(int iY = iX+1; iY < codetable._codes.size(); iY++) {
-							KItemset tmpY = codetable._codes.get(iY);
-							int currentYUsage = codetable.getUsage(tmpY);
-							if(currentYUsage > 0 /*&& currentYUsage >= bestUsage*/) {
-								KItemset candidatePotential = new KItemset(tmpX);
-								candidatePotential.addAll(tmpY);
-								if(candidatePotential.size() <= codetable._index.getMaxSize()
-										&& ! testedCandidates.contains(candidatePotential)
-										&& ! this._topKCandidates.contains(new Couple<KItemset, KItemset>(tmpX, tmpY))
-										&& candidatePotential.size() > 1) {
-									if( codetable.estimateUsageCombination(tmpX, tmpY) > 0 /*&& deltaSize > currentMaxGain*/) {
-										moreCandidates = true;
-										newCandidates.add(new Couple<KItemset, KItemset>(tmpX, tmpY));
-	//									bestUsage = currentYUsage;
-	//									currentMaxGain = deltaSize;
+					if(currentXUsage > 0) {
+						for(int iY = iX+1; iY < codes.size(); iY++) {
+							KItemset tmpY = codes.get(iY);
+							if(codetable.haveCommonSupport(tmpX, tmpY)) {
+								int currentYUsage = codetable.getUsage(tmpY);
+								if(currentYUsage > 0 /*&& currentYUsage >= bestUsage*/) {
+									KItemset candidatePotential = new KItemset(tmpX);
+									candidatePotential.addAll(tmpY);
+									if(candidatePotential.size() <= codetable._index.getMaxSize()
+											&& ! testedCandidates.contains(candidatePotential)
+											&& ! this._topKCandidates.contains(new Couple<KItemset, KItemset>(tmpX, tmpY))
+											&& candidatePotential.size() > 1) {
+										int candidateUsage = codetable.estimateUsageCombination(tmpX, tmpY);
+										if( candidateUsage > 0 /*&& deltaSize > currentMaxGain*/) {
+											newCandidates.add(new Couple<KItemset, KItemset>(tmpX, tmpY));
+											if(candidateUsage <= minSeenUsage) {
+												moreCandidates = true;
+											}
+										}
 									}
 								}
-							} else {
-								break;
 							}
 						}
 					}
 				}
 
 				newCandidates.removeAll(_topKCandidates);
+				this._topKCandidates.removeIf(new Predicate<Couple<KItemset, KItemset>>(){
+					@Override
+					public boolean test(Couple<KItemset, KItemset> t) {
+						return codetable.estimateUsageCombination(t.getFirst(), t.getSecond()) > 0;
+					}
+				});
 				this._topKCandidates.addAll(newCandidates);
-				this._topKCandidates.sort(gainComparator);
 				while(this._topKCandidates.size() > maxNumberofCandidates) {
+					this._topKCandidates.sort(gainComparator);
 					this._topKCandidates.removeLast();
 				}
 			}

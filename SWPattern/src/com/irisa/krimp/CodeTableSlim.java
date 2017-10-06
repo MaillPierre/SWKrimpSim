@@ -18,6 +18,9 @@ public class CodeTableSlim extends CodeTable {
 	private static Logger logger = Logger.getLogger(CodeTableSlim.class);
 
 	protected HashMap<KItemset, BitSet> _itemsetUsageVector = new HashMap<KItemset, BitSet>();
+	
+	protected CodeTableSlim() {
+	}
 
 	public CodeTableSlim(ItemsetSet transactions, DataIndexes analysis) {
 		this(transactions, analysis, false);
@@ -39,8 +42,20 @@ public class CodeTableSlim extends CodeTable {
 //		logger.debug("CodeTableSlim(ItemsetSet transactions)");
 	}
 	
+	/**
+	 * Redeifned to speed up copy, the codes are no re-ordered
+	 * @param ct
+	 */
 	public CodeTableSlim(CodeTable ct) {
-		super(ct);
+		_transactions = ct._transactions;
+		_codes = new ItemsetSet(ct._codes);
+		_itemsetUsage = new HashMap<KItemset, Integer>(ct._itemsetUsage);
+		_itemsetCode = new HashMap<KItemset, Integer>(ct._itemsetCode);
+		_usageTotal = ct._usageTotal;
+		_standardFlag = ct._standardFlag;
+		_index = ct._index; // only depend on transactions and unmutable, no copy needed
+				
+		_standardCT = ct._standardCT;
 		if(ct instanceof CodeTableSlim) {
 			this._itemsetUsageVector = new HashMap<KItemset, BitSet>(((CodeTableSlim) ct)._itemsetUsageVector);
 		} else {
@@ -223,7 +238,7 @@ public class CodeTableSlim extends CodeTable {
 	
 	@Override
 	/**
-	 * 
+	 * Version without recursives calls, supposed to be faster
 	 * @param transaction transaction
 	 * @param code code from the codetable
 	 * @return true if the code is part of the transaction cover
@@ -242,9 +257,15 @@ public class CodeTableSlim extends CodeTable {
 					return false;
 				}
 			}
+//			// Comparison to the old version
+//			Iterator<KItemset> itIs = codeIterator();
+//			assert isCover(transaction, code, itIs): new LogicException("New version of isCover is inconsistent with previous one");
+//			// 
+			
 			return true;
 		}
 		
+		// Old version
 //		if(isCoverCandidate(transaction, code)) {
 //			Iterator<KItemset> itIs = codeIterator();
 //			return isCover(transaction, code, itIs);
@@ -253,32 +274,9 @@ public class CodeTableSlim extends CodeTable {
 		return false;
 	}
 	
-	/**
-	 * 
-	 * @param trans transaction
-	 * @param code code from the codetable
-	 * @param itLastTestedCode Iterator over codes, used for recursive calls to avoid re-iteration
-	 *  over the whole code set when one is cover without intersection with code
-	 * @return true if the code is part of the transaction cover
-	 */
-	private boolean isCover(KItemset trans, KItemset code, Iterator<KItemset> itLastTestedCode) {
-		KItemset tmpCode = null;
-		while(itLastTestedCode.hasNext()) {
-			tmpCode = itLastTestedCode.next();
-			
-			if(isCoverCandidate(trans, tmpCode)) { // If the size of code is correct and it is contained in trans
-				if(tmpCode.equals(code)) { // if code cover = OK
-					return true;
-				} else if (tmpCode.intersection(code).size() != 0) { // if another cover code overlap with code = !OK
-					return false;
-				} else { // transaction partially covered but there is still some chances
-//					KItemset covered = CodeTable.itemsetSubstraction(trans, tmpCode);
-					KItemset covered = trans.substraction(tmpCode);
-					return isCover(covered, code, itLastTestedCode); 
-				}
-			}
-		}
-		return false;
+	public boolean haveCommonSupport(KItemset i1, KItemset i2) {
+		return this._index.getCodeTransactionVector(i1).intersects(this._index.getCodeTransactionVector(i2));
+		
 	}
 
 }

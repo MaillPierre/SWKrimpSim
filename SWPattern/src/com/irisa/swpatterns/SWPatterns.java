@@ -308,7 +308,7 @@ public class SWPatterns {
 	
 					KrimpSlimAlgorithm kAlgoSlim = new KrimpSlimAlgorithm(realtransactions);
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, codes);
-					CodeTableSlim krimpCTSlim;
+					CodeTable krimpCTSlim;
 					CodeTable krimpCT;
 //					if(inputCodeTableCodes) {
 //						krimpCTSlim = new CodeTableSlim(realtransactions, analysis);
@@ -320,20 +320,30 @@ public class SWPatterns {
 						krimpCT = kAlgo.runAlgorithm(true);
 						logger.debug("KRIMP algorithm STOP");
 //					}
-					
+
+					CodeTable krimpCTSlimVerify = new CodeTable(realtransactions, krimpCTSlim.getCodes(), analysis); 
+						
 					if(outputCodeTableCodes) {
 						Utils.printItemsetSet(krimpCTSlim.getCodes(), firstOutputKRIMPFile);
 					}
 					double normalSize = standardCT.totalCompressedSize();
 					double compressedSizeSlim = krimpCTSlim.totalCompressedSize();
+					double compressedSizeSlimVerify = krimpCTSlimVerify.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
+					
+					logger.debug("-------------- KRIMP SLIM ---------------");
+					logger.debug(krimpCTSlim);
+					logger.debug("-------------- KRIMP ---------------");
+					logger.debug(krimpCT);
+					
 					logger.debug("-------- FIRST RESULT ---------");
-//					logger.debug(krimpCT);
-					//					logger.debug("First Code table: " + krimpCT);
+					logger.debug("Number of transactions: " + analysis.getNumberOfTransactions() + " Number of items: " + analysis.getNumberOfItems() + " Biggest transaction: " + analysis.getMaxSize());
 					logger.debug("First NormalLength: " + normalSize);
 					logger.debug("First CompressedLength SLIM: " + compressedSizeSlim);
+					logger.debug("First CompressedLength SLIM verify: " + compressedSizeSlimVerify);
 					logger.debug("First CompressedLength: " + compressedSize);
 					logger.debug("First Compression SLIM: " + (compressedSizeSlim / normalSize));
+					logger.debug("First Compression SLIM Verify: " + (compressedSizeSlimVerify / normalSize));
 					logger.debug("First Compression: " + (compressedSize / normalSize));
 	
 					if(otherInput) {
