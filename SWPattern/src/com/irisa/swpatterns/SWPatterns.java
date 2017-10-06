@@ -386,6 +386,9 @@ public class SWPatterns {
 						logger.debug("-------- NEW FORMULATION --------");
 						double evalKrimpSize = otherKrimpCT.codificationLength(otherRealTransactions); 
 						krimpCT.setTransactions(otherRealTransactions);
+						// WARNING!!! update usages is tricky
+						// The cover order is not modified, but the usages (and therefore the code length) are 
+						// This is done on purpose, trying to use the set of codes as efficiently as possible
 						krimpCT.updateUsages();
 						double refKrimpSize = krimpCT.codificationLength(otherRealTransactions); 
 						
