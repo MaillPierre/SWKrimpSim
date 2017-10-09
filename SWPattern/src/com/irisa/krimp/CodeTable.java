@@ -67,6 +67,10 @@ public class CodeTable {
 		init();	
 	}
 	
+	public DataIndexes get_index() {
+		return _index;
+	}
+
 	private void init() {
 		initSingletonSupports();
 		initCodes();

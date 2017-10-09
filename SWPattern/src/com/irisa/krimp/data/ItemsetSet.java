@@ -17,7 +17,7 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
  */
 public class ItemsetSet extends LinkedList<KItemset> {
 
-	protected HashMap<Integer, HashSet<KItemset>> itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>();
+//	protected HashMap<Integer, HashSet<KItemset>> itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>();
 	
 	public ItemsetSet() {
 		super();
@@ -25,7 +25,7 @@ public class ItemsetSet extends LinkedList<KItemset> {
 	
 	public ItemsetSet(ItemsetSet is) {
 		super(is);
-		itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>(is.itemItemsetIndex);
+//		itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>(is.itemItemsetIndex);
 	}
 	
 	public ItemsetSet(Itemsets iset) {
@@ -48,14 +48,14 @@ public class ItemsetSet extends LinkedList<KItemset> {
 	public void addItemset(KItemset auxCode) {
 		KItemset newIs = new KItemset(auxCode);
 		super.add(newIs);
-		Iterator<Integer> itAux = auxCode.iterator();
-		while(itAux.hasNext()) {
-			int item = itAux.next();
-			if(itemItemsetIndex.get(item) == null) {
-				itemItemsetIndex.put(item, new HashSet<KItemset>());
-			}
-			itemItemsetIndex.get(item).add(newIs);
-		}
+//		Iterator<Integer> itAux = auxCode.iterator();
+//		while(itAux.hasNext()) {
+//			int item = itAux.next();
+//			if(itemItemsetIndex.get(item) == null) {
+//				itemItemsetIndex.put(item, new HashSet<KItemset>());
+//			}
+//			itemItemsetIndex.get(item).add(newIs);
+//		}
 	}
 	
 	public String toString() {
