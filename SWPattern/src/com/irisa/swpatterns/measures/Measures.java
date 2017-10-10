@@ -12,7 +12,6 @@ package com.irisa.swpatterns.measures;
 import org.apache.log4j.Logger;
 
 import com.irisa.krimp.CodeTable;
-import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 
@@ -40,8 +39,18 @@ public class Measures {
 
 		// first we get the size of the database D1 codified with its own CT
 		double evalKrimpSize = CT1.codificationLength(D1);
+		
+		// we have to clone and smooth the codeTable 
+		CodeTable tempCT = new CodeTable(CT2);
+		// we change the database without updating anything but the dataIndex
+		tempCT.setTransactions(D1);
+		// we applyLaplaceSmoothing for perplexity purposes
+		tempCT.applyLaplaceSmoothingToUsages();
 		// second we get the size of the database D1 codified with the
-		double refKrimpSize = CT2.codificationLength(D1); 
+		double refKrimpSize = tempCT.codificationLength(D1); 
+		logger.debug("keeping >> codificationLength: "+refKrimpSize);
+		logger.debug("keeping >> innerLength: "+tempCT.encodedTransactionSetCodeLength());
+		
 		assert evalKrimpSize > 0.0; 
 		return refKrimpSize / evalKrimpSize; 		
 	}
@@ -71,7 +80,9 @@ public class Measures {
 		// we clone the CT2
 		// the usages are updated in the init() method
 		// we reuse as much as possible the information already calculated in the previous CTs
-		CodeTable tempCT = new CodeTable(D1, CT2.getCodes(), CT1.get_index());
+		CodeTable tempCT = new CodeTable (CT2); 
+		tempCT.setTransactions(D1);
+		tempCT.updateUsages();
 		
 		double refKrimpSize = tempCT.codificationLength(D1); 
 		
@@ -91,12 +102,17 @@ public class Measures {
 	public static CTLengthDifferences lengthCodeDifferences (CodeTable CT, ItemsetSet D) {
 	
 		CTLengthDifferences result = new CTLengthDifferences(); 
-		// TODO: we could speed up this cloning step if we shared also the indexes 
-		DataIndexes indexes = new DataIndexes(D); 
-		CodeTable tempCT = new CodeTable(D, CT.getCodes(), indexes); 
+		
+		CodeTable originalCT = new CodeTable (CT); 
+		originalCT.applyLaplaceSmoothingToUsages(); 
+		
+		CodeTable tempCT = new CodeTable (CT); 
+		tempCT.setTransactions(D);
+		tempCT.updateUsages();
+		tempCT.applyLaplaceSmoothingToUsages();
 		
 		for (KItemset code: CT.getCodes()) {
-			result.putDifference(code, tempCT.codeLengthOfcode(code) - CT.codeLengthOfcode(code));
+			result.putDifference(code, tempCT.codeLengthOfcode(code) - originalCT.codeLengthOfcode(code));
 		}
 		
 		return result; 
@@ -115,11 +131,17 @@ public class Measures {
 	
 	public static double CTStructuralComparison (CodeTable CT1, CodeTable CT2) {
 		
-		double evalKrimpSize = CT1.codificationLength(CT1.getCodes()); 
-		double refKrimpSize = CT2.codificationLength(CT1.getCodes()); 
+		// we need to apply laplace smoothing to include the codes that are not used
+		// in the game (another option in this case would be to make the assumption of 0*log(0) == 0) 
+		CodeTable originalCT = new CodeTable(CT1); 
+		originalCT.applyLaplaceSmoothingToUsages();
 		
-		logger.debug("CTStructuralComparison>> CT1 coded with CT1: "+evalKrimpSize);
-		logger.debug("CTStructuralComparison>> CT1 coded with CT2: "+refKrimpSize);
+		CodeTable tempCT = new CodeTable (CT2); 
+		tempCT.setTransactions(CT1.getCodes());
+		tempCT.applyLaplaceSmoothingToUsages();
+		
+		double evalKrimpSize = originalCT.codificationLength(CT1.getCodes()); 
+		double refKrimpSize = tempCT.codificationLength(CT1.getCodes()); 
 		
 		return refKrimpSize/evalKrimpSize; 
 		

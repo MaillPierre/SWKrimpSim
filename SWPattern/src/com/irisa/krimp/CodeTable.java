@@ -639,5 +639,35 @@ public class CodeTable {
 		}
 		return result; 
 	}
+	
+	public void applyLaplaceSmoothingToUsages () {
+		
+		int totalAdded = 0;
+		for (KItemset key: _itemsetUsage.keySet()) {
+			totalAdded++; 
+			_itemsetUsage.put(key,_itemsetUsage.get(key)+1); 
+		}
+		// we now add the singletons that might not have been seen in the new database
+		Integer currentItem = null;
+		KItemset currentKey = null; 
+	    for (Iterator<Integer> itemIter = _index.itemIterator(); itemIter.hasNext(); ){
+	    	currentItem = itemIter.next(); 
+	    	currentKey = Utils.createCodeSingleton(currentItem); 
+	    	
+	    	if (!_codes.contains(currentKey)) {
+	    		_codes.add(currentKey); 
+	    		_itemsetUsage.put(currentKey, 1); 
+	    		totalAdded++; 
+	    	}
+	    	else {
+	    		if (_itemsetUsage.get(currentKey) == null) {
+	    			_itemsetUsage.put(currentKey, 1);
+	    			totalAdded++; 
+	    		}
+	    	}
+	    }	
+		_usageTotal += totalAdded; 
+	}
+	
 }
 	
