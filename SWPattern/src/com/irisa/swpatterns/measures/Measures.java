@@ -9,12 +9,16 @@
 
 package com.irisa.swpatterns.measures;
 
+import org.apache.log4j.Logger;
+
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 
 public class Measures {
+	
+	private static Logger logger = Logger.getLogger(Measures.class);
 
 	/** 
 	 * 
@@ -112,7 +116,10 @@ public class Measures {
 	public static double CTStructuralComparison (CodeTable CT1, CodeTable CT2) {
 		
 		double evalKrimpSize = CT1.codificationLength(CT1.getCodes()); 
-		double refKrimpSize = CT2.codificationLength(CT2.getCodes()); 
+		double refKrimpSize = CT2.codificationLength(CT1.getCodes()); 
+		
+		logger.debug("CTStructuralComparison>> CT1 coded with CT1: "+evalKrimpSize);
+		logger.debug("CTStructuralComparison>> CT1 coded with CT2: "+refKrimpSize);
 		
 		return refKrimpSize/evalKrimpSize; 
 		

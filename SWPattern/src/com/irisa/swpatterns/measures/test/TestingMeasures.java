@@ -31,6 +31,7 @@ import com.irisa.swpatterns.TransactionsExtractor;
 import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.LabeledTransactions;
+import com.irisa.swpatterns.measures.CTLengthDifferences;
 import com.irisa.swpatterns.measures.Measures;
 
 public class TestingMeasures {
@@ -389,7 +390,13 @@ public class TestingMeasures {
 						logger.debug("Second Compression with first CT: " + (othercomparisonSize / otherNormalSize));
 						logger.debug("Compression ratio: "+(othercomparisonSize/otherCompressedSize));
 						logger.debug("-------- NEW FORMULATION --------");
-						double evalKrimpSize = otherKrimpCT.codificationLength(otherRealTransactions); 
+						double evalKrimpSize = otherKrimpCT.codificationLength(otherRealTransactions);
+						
+						double keepingDistrib = Measures.structuralSimilarityKeepingDistribution(otherRealTransactions, otherKrimpCT, krimpCT); 
+						double woDistrib = Measures.structuralSimilarityWithoutKeepingDistribution(otherRealTransactions, otherKrimpCT, krimpCT); 
+						double CTSimilarity = Measures.CTStructuralComparison(otherKrimpCT, krimpCT); 
+						CTLengthDifferences diffs = Measures.lengthCodeDifferences(krimpCT, otherRealTransactions); 
+						
 						krimpCT.setTransactions(otherRealTransactions);
 						// WARNING!!! update usages is tricky
 						// The cover order is not modified, but the usages (and therefore the code length) are 
@@ -406,9 +413,6 @@ public class TestingMeasures {
 						
 						logger.debug("-------- NEW MEASURES --------");
 						
-						double keepingDistrib = Measures.structuralSimilarityKeepingDistribution(otherRealTransactions, otherKrimpCT, krimpCT); 
-						double woDistrib = Measures.structuralSimilarityWithoutKeepingDistribution(otherRealTransactions, otherKrimpCT, krimpCT); 
-						double CTSimilarity = Measures.CTStructuralComparison(otherKrimpCT, krimpCT); 
 						
 						
 						if(outputCodeTableCodes) {
@@ -416,7 +420,50 @@ public class TestingMeasures {
 						}
 						
 						if (outputComparisonResultsFile == null){						
-							System.out.println(otherCompressedSize+";"+othercomparisonSize+";"+otherCompressedSizeWithoutCT+";"+othercomparisonSizeWithoutCT);
+							// System.out.println(otherCompressedSize+";"+othercomparisonSize+";"+otherCompressedSizeWithoutCT+";"+othercomparisonSizeWithoutCT);
+							System.out.println("input;other;Conversion;refCompressionRatioOwnCT;evalCompressionRationOwnCT;relativeCompressionRatio(withCT);newRelativeCompressionRatio;keepingDistrib;woDistrib;CTsimilarity;CodeMean;CodeVariance");
+							
+							StringBuilder line = new StringBuilder(); 
+							if (inputRDF) {
+								line.append(firstRDFFile); 									
+							}
+							else if (inputCodeTableCodes) {
+								line.append(firstKRIMPFile); 									
+							}
+							line.append(";"); 
+							if (inputOtherRDFFile) {
+								line.append(otherRDFFile); 
+							}
+							else if (inputOtherCodeTable) {
+								line.append(otherKRIMPFile); 
+							}
+							line.append(";");
+							line.append(converter.getNeighborLevel().toString());
+							line.append(";");
+							// refCompressionRationOwnCT
+							line.append(compressedSize / normalSize); 
+							line.append(";"); 
+							// evalCompressionRatioOwnCT
+							line.append(otherCompressedSize / otherNormalSize); 
+							line.append(";"); 
+							// the old relative ratio
+							line.append(othercomparisonSize/otherCompressedSize); 
+							line.append(";"); 
+							// the new relative ratio
+							line.append(refKrimpSize/evalKrimpSize);
+							
+							line.append(";"); 
+							line.append(keepingDistrib);
+							line.append(";"); 
+							line.append(woDistrib);
+							line.append(";"); 
+							line.append(CTSimilarity);
+							line.append(";"); 
+							line.append(diffs.getMeanDifferences()); 
+							line.append(";");
+							line.append(diffs.getVarDifferences()); 
+							System.out.println(line); 
+							
 						}
 						else{
 							
