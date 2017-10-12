@@ -21,12 +21,12 @@ import com.irisa.jenautils.BaseRDF;
 import com.irisa.jenautils.BaseRDF.MODE;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
+import com.irisa.krimp.AbstractKrimpSlimAlgorithm.CANDIDATE_STRATEGY;
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.CodeTableSlim;
 import com.irisa.krimp.KrimpAlgorithm;
 import com.irisa.krimp.KrimpSlimAlgorithm;
 import com.irisa.krimp.KrimpSlimAlgorithmExperimental;
-import com.irisa.krimp.KrimpSlimAlgorithm.CANDIDATE_STRATEGY;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
@@ -312,7 +312,8 @@ public class SWPatterns {
 					KrimpSlimAlgorithmExperimental kAlgoSlimExperimental = new KrimpSlimAlgorithmExperimental(realtransactions); 
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, codes);
 					
-					kAlgoSlim.setCandidateStrategy(CANDIDATE_STRATEGY.USAGE);
+					kAlgoSlim.setCandidateStrategy(CANDIDATE_STRATEGY.GAIN);
+					kAlgoSlimExperimental.setCandidateStrategy(CANDIDATE_STRATEGY.GAIN);
 					
 					CodeTable krimpCTSlim = null;
 					CodeTable krimpCTSlimExperimental = null;

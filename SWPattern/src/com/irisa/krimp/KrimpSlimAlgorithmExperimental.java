@@ -13,7 +13,7 @@ import com.irisa.jenautils.Couple;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 
-public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
+public class KrimpSlimAlgorithmExperimental extends AbstractKrimpSlimAlgorithm {
 	
 	
 	private static boolean moreCandidates = true; 
@@ -21,15 +21,9 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 	private static Logger logger = Logger.getLogger(KrimpSlimAlgorithmExperimental.class);
 	
 	private LinkedList<Couple<KItemset, KItemset>> _topKCandidates = new LinkedList<Couple<KItemset, KItemset>>();
-	private int _numberOfUsedCandidates = 0;
-	
-	@Override
-	public int numberofUsedCandidates() {
-		return this._numberOfUsedCandidates;
-	}
 
 	public KrimpSlimAlgorithmExperimental(ItemsetSet transactions) {
-		super(transactions, new ItemsetSet());
+		super(transactions);
 	}
 
 	/**
@@ -90,37 +84,6 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 		logger.debug("KRIMP algorithm ended");
 		return result;
 	}
-	
-	public CodeTable postAcceptancePruning(CodeTable candidateTable, CodeTableSlim previousTable) throws LogicException {
-		
-		// CB: after the acceptance of the new code
-		// first we have to get the PruneSet => those codes whose usage has become lower 
-		// after adding the candidates
-		ItemsetSet pruneSet = pruneSet(candidateTable, previousTable);
-		
-
-		// names are taken from the paper 
-		CodeTable CTc = candidateTable;
-		double CTcSize = -1; 
-		CodeTableSlim CTp = null;
-		double CTpSize = -1; 
-		KItemset pruneCandidate = null;
-		
-		CTcSize = CTc.totalCompressedSize(); 
-		while (!pruneSet.isEmpty()) {
-			pruneCandidate = findLowestUsageCode (pruneSet, CTc);		
-			pruneSet.remove(pruneCandidate); 
-			CTp = new CodeTableSlim(CTc); 
-			CTp.removeCode(pruneCandidate);
-			CTpSize = CTp.totalCompressedSize(); 
-			if (CTpSize < CTcSize) {
-				pruneSet = pruneSet(CTp, CTc);
-				CTc = CTp; 
-				CTcSize = CTpSize; 
-			}			
-		}
-		return CTc; 
-	}
 
 	/**
 	 * 
@@ -129,23 +92,11 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 	 * @param testedCandidates
 	 * @return
 	 */
-	private KItemset generateCandidate(final CodeTable refCode, double standardSize , HashSet<KItemset> testedCandidates) {
+	protected KItemset generateCandidate(final CodeTable refCode, double standardSize , HashSet<KItemset> testedCandidates) {
 		
 		int maxNumberofCandidates = 100;
 		final CodeTableSlim codetable = new CodeTableSlim(refCode);
 		
-		Comparator<Couple<KItemset, KItemset>> gainComparator = new Comparator<Couple<KItemset, KItemset>>(){
-			@Override
-			public int compare(Couple<KItemset, KItemset> o1, Couple<KItemset, KItemset> o2) {
-				KItemset tmp1X = o1.getFirst();
-				KItemset tmp1Y = o1.getSecond();
-				int tmp1CombiUsage = codetable.estimateUsageCombination(tmp1X, tmp1Y);
-				KItemset tmp2X = o2.getFirst();
-				KItemset tmp2Y = o2.getSecond();
-				int tmp2CombiUsage = codetable.estimateUsageCombination(tmp2X, tmp2Y);
-				return - Double.compare(deltaSize(codetable, standardSize, tmp1X, tmp1Y, tmp1CombiUsage), deltaSize(codetable, standardSize, tmp2X, tmp2Y, tmp2CombiUsage));
-			}
-		};
 		Comparator<KItemset> usageComparator = new Comparator<KItemset>(){
 			@Override
 			public int compare(KItemset o1, KItemset o2) {
@@ -188,21 +139,28 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 //				TreeSet<Couple<KItemset, KItemset>> newCandidates = new TreeSet<Couple<KItemset, KItemset>>(gainComparator);
 				
 				moreCandidates = false;
-				int minSeenUsage = 0;
+				double maxSeenCriteria = 0.0;
+				int maxSeenUsage = 0;
 //				logger.debug("start candidates "+_topKCandidates.size()); 
 				for(int iX = 0; iX < codes.size(); iX++) {
 					
 					if (_topKCandidates.size() == maxNumberofCandidates) {
-						minSeenUsage = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+						int combiUsage = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+						if(getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE) {
+							maxSeenCriteria = combiUsage;
+						} else if(getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN) {
+							maxSeenCriteria = deltaSize(codetable, standardSize, _topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+						}
+						maxSeenUsage = combiUsage;
 					}
 					else {
-						minSeenUsage = 0; 
+						maxSeenCriteria = 0.0; 
 					}
 					
 					KItemset tmpX = codes.get(iX);
 					int currentXUsage = codetable.getUsage(tmpX);
 					
-					if (currentXUsage <= minSeenUsage) {
+					if (currentXUsage <= maxSeenCriteria) {
 						// it will not provide any good candidate by union usage(XUY)<=usage(X)
 						moreCandidates = (currentXUsage >0); 
 						break;
@@ -213,16 +171,22 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 					for(int iY = iX+1; iY < codes.size(); iY++) {
 						
 						if (_topKCandidates.size() == maxNumberofCandidates) {
-							minSeenUsage = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+							int combiUsage = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+							if(getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE) {
+								maxSeenCriteria = combiUsage;
+							} else if(getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN) {
+								maxSeenCriteria = deltaSize(codetable, standardSize, _topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+							}
+							maxSeenUsage = combiUsage;
 						}
 						else {
-							minSeenUsage = 0; 
+							maxSeenCriteria = 0; 
 						}
 						
 						KItemset tmpY = codes.get(iY);
 						int currentYUsage = codetable.getUsage(tmpY); 
 						
-						if (currentYUsage <= minSeenUsage) {
+						if (currentYUsage <= maxSeenUsage) {
 							moreCandidates = (currentYUsage>0); 
 							break; 
 						}
@@ -231,7 +195,8 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 						
 						int candidateUsage = codetable.estimateUsageCombination(tmpX, tmpY);
 						
-						if (candidateUsage >= minSeenUsage) {
+						if (( this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE && candidateUsage >= maxSeenCriteria) 
+								|| ( this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN && deltaSize(codetable, standardSize, tmpX, tmpY) >= maxSeenCriteria)) {
 							if (_topKCandidates.size() == maxNumberofCandidates) {
 								moreCandidates = true; 								
 								Couple<KItemset, KItemset> last = _topKCandidates.pollLast(); 
@@ -255,146 +220,6 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 		}
 		
 		return null;
-	}
-	
-	private double evaluateGainCandidate(CodeTableSlim codetable, double standardSize, KItemset tmpX, KItemset tmpY, double maxGain, HashSet<KItemset> testedCandidates) {
-		KItemset candidatePotential = new KItemset(tmpX);
-		candidatePotential.addAll(tmpY);
-		if(candidatePotential.size() <= codetable._index.getMaxSize()/* && result._index.getCodeSupport(candidatePotential) > 0*/) {
-			if( ! testedCandidates.contains(candidatePotential)
-					&& candidatePotential.size() > 1) {
-				int tmpCombiUsage = codetable.estimateUsageCombination(tmpX, tmpY); // xy'
-				if(tmpCombiUsage > 0) {
-					double deltaSize = deltaSize(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
-					//logger.debug("Testing potential candidate "+ candidatePotential +" deltaD: " + deltaD + " deltaCT: " + deltaCT);
-					if(deltaSize > maxGain ) {
-						return deltaSize;
-					}
-				}
-			}
-		}
-		return maxGain;
-	}
-	
-	private double deltaSize(CodeTableSlim codetable, double standardSize, KItemset tmpX, KItemset tmpY, int tmpCombiUsage) {
-		double deltaD = deltaDCTModified(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
-		double deltaCT = deltaCTModifiedD(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
-		return (deltaD + deltaCT);
-	}
-
-	private double deltaDCTModified(CodeTableSlim codetable, double standardSize, KItemset x, KItemset y, int tmpCombiUsage) {
-			int currentYUsage = codetable.getUsage(y); // y
-			int currentXUsage = codetable.getUsage(x); // x
-			KItemset candidatePotential = new KItemset(x);
-			candidatePotential.addAll(y);
-			long currentSumUsages = codetable._usageTotal; // s
-			long tmpSumUsages = currentSumUsages - tmpCombiUsage; // s'
-			int tmpXUsage = currentXUsage - tmpCombiUsage; // x'
-			int tmpYUsage = currentYUsage - tmpCombiUsage; // y'
-	
-			//		logger.debug("s: " + currentSumUsages + " x: " + currentXUsage + " y: " + currentYUsage + " xy': " + tmpCombiUsage + " s': " + tmpSumUsages + " x': " + tmpXUsage + " y': " + tmpYUsage);
-	
-			double sum = 0;
-			// Taking only into account the code that are going to be modified, according to the practical observation of the paper, it is summed up to this:
-			if(currentXUsage != tmpXUsage) {
-				if(currentXUsage != 0) {
-					sum += currentXUsage*Math.log(currentXUsage);
-				}
-				if(tmpXUsage != 0) {
-					sum -= tmpXUsage*Math.log(tmpXUsage);
-				}
-			}
-			if(currentYUsage != tmpYUsage) {
-				if(currentYUsage != 0) {
-					sum += currentYUsage*Math.log(currentYUsage);
-				}
-				if(tmpYUsage != 0) {
-					sum -= tmpYUsage*Math.log(tmpYUsage);
-				}
-			}
-	
-			double result = 0;
-			if(currentSumUsages != 0) {
-				result += currentSumUsages*Math.log(currentSumUsages);
-			}
-			if(tmpSumUsages != 0) {
-				result -= tmpSumUsages*Math.log(tmpSumUsages);
-			}
-			if(tmpCombiUsage != 0) {
-				result += tmpCombiUsage*Math.log(tmpCombiUsage);
-			}
-			result -= sum;
-//			logger.debug("currentSumUsages: " + currentSumUsages + " tmpSumUsages: " + tmpSumUsages + " tmpCombiUsage: " + tmpCombiUsage + " sum: " + sum);
-	
-			return result;
-	}
-
-	private double deltaCTModifiedD(CodeTableSlim codetable, double standardSize, KItemset x, KItemset y, int tmpCombiUsage) {
-			int currentYUsage = codetable.getUsage(y); // y
-			int currentXUsage = codetable.getUsage(x); // x
-			double standardXlength = codetable.codeLengthOfCodeAccordingST(x);
-			double standardYlength = codetable.codeLengthOfCodeAccordingST(y);
-			KItemset candidatePotential = new KItemset(x);
-			candidatePotential.addAll(y);
-			long currentSumUsages = codetable._usageTotal; // s
-			long tmpSumUsages = currentSumUsages - tmpCombiUsage; // s'
-			int tmpXUsage = currentXUsage - tmpCombiUsage; // x'
-			int tmpYUsage = currentYUsage - tmpCombiUsage; // y'
-			double newCodeStandardLength = codetable.codeLengthOfCodeAccordingST(candidatePotential); // L(XUY | ST)
-	
-			double sum1Usage = 0;
-			double sum2UsageLength = 0;
-			double sum3LengthUsage = 0;
-			double logX = 0;
-			if(currentXUsage != 0) {
-				logX = Math.log(currentXUsage);
-			}
-			double logY = 0;
-			if(currentYUsage != 0) {
-				logY = Math.log(currentYUsage);
-			}
-			double logXprime = 0;
-			if(tmpXUsage != 0) {
-				logXprime = Math.log(tmpXUsage);
-			}
-			double logYprime = 0;
-			if(tmpYUsage != 0) {
-				logYprime = Math.log(tmpYUsage);
-			}
-			if(currentXUsage != 0 && tmpXUsage != 0 && currentXUsage != tmpXUsage) {
-				sum1Usage += logXprime - logX;
-			}
-			if(currentYUsage != 0 && tmpYUsage != 0 && currentYUsage != tmpYUsage) {
-				sum1Usage += logYprime - logY;
-			}
-			
-			if(currentXUsage == 0 && currentXUsage != tmpXUsage) {
-				sum2UsageLength += logXprime - standardXlength;
-			}
-			if(currentYUsage == 0 && currentYUsage != tmpYUsage) {
-				sum2UsageLength += logYprime - standardYlength;
-			}
-			
-			if(tmpXUsage == 0 && currentXUsage != tmpXUsage) {
-				sum3LengthUsage += standardXlength - logX;
-			}
-			if(tmpYUsage == 0 && currentYUsage != tmpYUsage) {
-				sum3LengthUsage += standardYlength - logY;
-			}
-	
-			double result = 0;
-			if(tmpCombiUsage > 0) {
-				result += Math.log(tmpCombiUsage);
-			}
-			result -= newCodeStandardLength;
-			if(currentSumUsages != 0) {
-				result += codetable.getCodes().size()*Math.log(currentSumUsages);
-			}
-			if(tmpSumUsages != 0) {
-				result -= (codetable.getCodes().size()+1)*Math.log(tmpSumUsages);
-			}
-			result += sum1Usage + sum2UsageLength + sum3LengthUsage;
-			return result;
 	}
 
 }
