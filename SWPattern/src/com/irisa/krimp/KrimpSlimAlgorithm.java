@@ -266,15 +266,16 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 											if( candidateUsage > 0) { 
 												boolean newCandidateadded = false;
 												if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE && candidateUsage >= topCandidateCriteria) {
-													topCandidateCriteria = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+													topCandidateCriteria = codetable.estimateUsageCombination(tmpX, tmpY);
 													newCandidateadded = true;
 												}
 												if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN && candidateGain >= topCandidateCriteria) {
 													newCandidateadded = true;
-													topCandidateCriteria = deltaSize(codetable, standardSize, _topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+													topCandidateCriteria = deltaSize(codetable, standardSize, tmpX, tmpY);
 												}
 												if(newCandidateadded) {
 													_topKCandidates.addFirst(new Couple<KItemset, KItemset>(tmpX, tmpY));
+													bestUsage = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
 													_moreCandidates = true; // We could contribute
 												}
 											}
