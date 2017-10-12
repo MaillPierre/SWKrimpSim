@@ -131,13 +131,13 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 				KItemset tmp2X = o2.getFirst();
 				KItemset tmp2Y = o2.getSecond();
 				int tmp2CombiUsage = codetable.estimateUsageCombination(tmp2X, tmp2Y);
-				return Double.compare(deltaSize(codetable, standardSize, tmp1X, tmp1Y, tmp1CombiUsage), deltaSize(codetable, standardSize, tmp2X, tmp2Y, tmp2CombiUsage));
+				return - Double.compare(deltaSize(codetable, standardSize, tmp1X, tmp1Y, tmp1CombiUsage), deltaSize(codetable, standardSize, tmp2X, tmp2Y, tmp2CombiUsage));
 			}
 		};
 		Comparator<KItemset> usageComparator = new Comparator<KItemset>(){
 			@Override
 			public int compare(KItemset o1, KItemset o2) {
-				return Integer.compare(codetable.getUsage(o1), codetable.getUsage(o2));
+				return - Integer.compare(codetable.getUsage(o1), codetable.getUsage(o2));
 			}
 		};
 		

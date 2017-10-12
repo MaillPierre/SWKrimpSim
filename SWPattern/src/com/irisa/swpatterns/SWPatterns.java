@@ -26,6 +26,7 @@ import com.irisa.krimp.CodeTableSlim;
 import com.irisa.krimp.KrimpAlgorithm;
 import com.irisa.krimp.KrimpSlimAlgorithm;
 import com.irisa.krimp.KrimpSlimAlgorithmExperimental;
+import com.irisa.krimp.KrimpSlimAlgorithm.CANDIDATE_STRATEGY;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
@@ -310,6 +311,9 @@ public class SWPatterns {
 					KrimpSlimAlgorithm kAlgoSlim = new KrimpSlimAlgorithm(realtransactions);
 					KrimpSlimAlgorithmExperimental kAlgoSlimExperimental = new KrimpSlimAlgorithmExperimental(realtransactions); 
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, codes);
+					
+					kAlgoSlim.setCandidateStrategy(CANDIDATE_STRATEGY.GAIN);
+					
 					CodeTable krimpCTSlim;
 					CodeTable krimpCTSlimExperimental;
 					CodeTable krimpCT;
