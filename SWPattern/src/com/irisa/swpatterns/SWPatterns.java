@@ -314,23 +314,24 @@ public class SWPatterns {
 					
 					kAlgoSlim.setCandidateStrategy(CANDIDATE_STRATEGY.GAIN);
 					
-					CodeTable krimpCTSlim;
-					CodeTable krimpCTSlimExperimental;
-					CodeTable krimpCT;
-					long startSLIM; 
-					long endSLIM; 
-					long startSLIMExp; 
-					long endSLIMExp; 
-					long startKrimp; 
-					long endKrimp; 
+					CodeTable krimpCTSlim = null;
+					CodeTable krimpCTSlimExperimental = null;
+					CodeTable krimpCT = null;
+					long startSLIM = -1 ; 
+					long endSLIM= -1 ; 
+					long startSLIMExp= -1 ; 
+					long endSLIMExp= -1 ; 
+					long startKrimp= -1 ; 
+					long endKrimp= -1 ; 
 //					if(inputCodeTableCodes) {
 //						krimpCTSlim = new CodeTableSlim(realtransactions, analysis);
 //					} else {
-						logger.debug("KRIMP SLIM algorithm START");
-						startSLIM = System.nanoTime(); 
-						krimpCTSlim = kAlgoSlim.runAlgorithm();
-						endSLIM = System.nanoTime(); 
-						logger.debug("KRIMP SLIM algorithm STOP");
+					
+//						logger.debug("KRIMP SLIM algorithm START");
+//						startSLIM = System.nanoTime(); 
+//						krimpCTSlim = kAlgoSlim.runAlgorithm();
+//						endSLIM = System.nanoTime(); 
+//						logger.debug("KRIMP SLIM algorithm STOP");
 						logger.debug("KRIMP SLIM EXPERIMENTAL START");
 						startSLIMExp = System.nanoTime(); 
 						krimpCTSlimExperimental = kAlgoSlimExperimental.runAlgorithm();
@@ -347,17 +348,17 @@ public class SWPatterns {
 						Utils.printItemsetSet(krimpCTSlim.getCodes(), firstOutputKRIMPFile);
 					}
 					double normalSize = standardCT.totalCompressedSize();
-					double compressedSizeSlim = krimpCTSlim.totalCompressedSize();
+//					double compressedSizeSlim = krimpCTSlim.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
 					double compressedSizeExperimental = krimpCTSlimExperimental.totalCompressedSize(); 
 					logger.debug("-------- FIRST RESULT ---------");
 //					logger.debug(krimpCT);
 					//					logger.debug("First Code table: " + krimpCT);
 					logger.debug("First NormalLength: " + normalSize);
-					logger.debug("First CompressedLength SLIM: " + compressedSizeSlim);
+//					logger.debug("First CompressedLength SLIM: " + compressedSizeSlim);
 					logger.debug("First CompressedLength SLIMExperimental: " + compressedSizeExperimental);
 					logger.debug("First CompressedLength: " + compressedSize);
-					logger.debug("First Compression SLIM: " + (compressedSizeSlim / normalSize));
+//					logger.debug("First Compression SLIM: " + (compressedSizeSlim / normalSize));
 					logger.debug("First Compression SLIMExperimental: " + (compressedSizeExperimental / normalSize));
 					logger.debug("First Compression: " + (compressedSize / normalSize));
 					logger.debug("------------- TIMES ---------------");					
@@ -486,7 +487,7 @@ public class SWPatterns {
 								line.append(converter.getNeighborLevel().toString());
 								line.append(";");
 								// refCompressionRationOwnCT
-								line.append(compressedSizeSlim / normalSize); 
+//								line.append(compressedSizeSlim / normalSize); 
 								line.append(";"); 
 								// evalCompressionRatioOwnCT
 								line.append(otherCompressedSize / otherNormalSize); 
