@@ -19,8 +19,9 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	private static Logger logger = Logger.getLogger(KrimpSlimAlgorithm.class);
 	
 	private LinkedList<Couple<KItemset, KItemset>> _topKCandidates = new LinkedList<Couple<KItemset, KItemset>>();
-	private int _maxNumberofCandidates = 10;
+	private int _maxNumberofCandidates = 1000;
 	private CANDIDATE_STRATEGY _strat = CANDIDATE_STRATEGY.USAGE;
+	boolean _moreCandidates = true;
 	
 	public enum CANDIDATE_STRATEGY {
 		USAGE,
@@ -135,151 +136,161 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	 */
 	private KItemset generateCandidate(final CodeTable refCode, double standardSize , final HashSet<KItemset> testedCandidates) {
 		
-		final CodeTableSlim codetable = new CodeTableSlim(refCode);
-		
-		Comparator<Couple<KItemset, KItemset>> gainComparator = new Comparator<Couple<KItemset, KItemset>>(){
-			@Override
-			public int compare(Couple<KItemset, KItemset> o1, Couple<KItemset, KItemset> o2) {
-				KItemset tmp1X = o1.getFirst();
-				KItemset tmp1Y = o1.getSecond();
-				KItemset tmp2X = o2.getFirst();
-				KItemset tmp2Y = o2.getSecond();
-				double delta1 = deltaSize(codetable, standardSize, tmp1X, tmp1Y);
-				double delta2 = deltaSize(codetable, standardSize, tmp2X, tmp2Y);
-				if(delta1 != delta2) {
-					return - Double.compare(delta1, delta2);
-				} else {
-					return - Integer.compare((tmp1X.size() + tmp1Y.size()), (tmp2X.size() + tmp2Y.size()));
-				}
-			}
-		};
-		
-		Comparator<Couple<KItemset, KItemset>> usageCoupleComparator = new Comparator<Couple<KItemset, KItemset>>(){
-			@Override
-			public int compare(Couple<KItemset, KItemset> o1, Couple<KItemset, KItemset> o2) {
-				KItemset tmp1X = o1.getFirst();
-				KItemset tmp1Y = o1.getSecond();
-				int tmp1CombiUsage = codetable.estimateUsageCombination(tmp1X, tmp1Y);
-				KItemset tmp2X = o2.getFirst();
-				KItemset tmp2Y = o2.getSecond();
-				int tmp2CombiUsage = codetable.estimateUsageCombination(tmp2X, tmp2Y);
-				if(tmp1CombiUsage != tmp2CombiUsage) {
-					return - Integer.compare(tmp1CombiUsage, tmp2CombiUsage);
-				} else {
-					return - Integer.compare((tmp1X.size() + tmp1Y.size()), (tmp2X.size() + tmp2Y.size()));
-				}
-			}
-		};
-		
-		Comparator<KItemset> usageComparator = new Comparator<KItemset>(){
-			@Override
-			public int compare(KItemset o1, KItemset o2) {
-				if(codetable.getUsage(o1) != codetable.getUsage(o2)) {
-					return - Integer.compare(codetable.getUsage(o1), codetable.getUsage(o2));
-				} else {
-					return - Integer.compare(o1.size(), o2.size());
-				}
-			}
-		};
-		
-		Comparator<KItemset> itemsetComparator = null;
-		Comparator<Couple<KItemset, KItemset>> coupleComparator = null;
-		if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE) {
-			itemsetComparator = usageComparator;
-			coupleComparator = usageCoupleComparator;
-		} else if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN) {
-			itemsetComparator = usageComparator;
-			coupleComparator = gainComparator;
-		}
-		
-		Predicate<KItemset> zeroUsagePredicate = new Predicate<KItemset>() {
-			@Override
-			public boolean test(KItemset fi) {
-				return codetable.getUsage(fi) == 0;
-			}
-		};
-		
-		ItemsetSet codes = new ItemsetSet(codetable._codes);
-		codes.removeIf(zeroUsagePredicate);
-		codes.sort(itemsetComparator);
-		
-		boolean moreCandidates = true;
-		while(! this._topKCandidates.isEmpty() || moreCandidates) {
-			if(! this._topKCandidates.isEmpty()) {
-				logger.debug("topKcandidates: first " + codetable.estimateUsageCombination(this._topKCandidates.peekFirst().getFirst(), this._topKCandidates.peekFirst().getSecond()));
-				logger.debug("topKcandidates: Last " + codetable.estimateUsageCombination(this._topKCandidates.peekLast().getFirst(), this._topKCandidates.peekLast().getSecond()));
-				
-				logger.debug("codes: first " + codetable.getUsage(codes.peekFirst()));
-				logger.debug("codes: last " + codetable.getUsage(codes.peekLast()));
-				
-				logger.debug("Trying with top "+ this._topKCandidates.size() +" candidates");
-				Iterator<Couple<KItemset, KItemset>> itTopKCandidates = this._topKCandidates.iterator();
-				while(itTopKCandidates.hasNext()) {
-					Couple<KItemset, KItemset> coupleCandidate = itTopKCandidates.next();
-					KItemset tmpX = coupleCandidate.getFirst();
-					KItemset tmpY = coupleCandidate.getSecond();
-					KItemset candidate = new KItemset(tmpX);
-					candidate.addAll(tmpY);
-					if(! testedCandidates.contains(candidate)) {
-						if(codetable.estimateUsageCombination(tmpX, tmpY) > 0) {
-							return candidate;
-						}
+		if(! this._topKCandidates.isEmpty() || _moreCandidates) {
+			final CodeTableSlim codetable = new CodeTableSlim(refCode);
+			
+			Comparator<Couple<KItemset, KItemset>> gainComparator = new Comparator<Couple<KItemset, KItemset>>(){
+				@Override
+				public int compare(Couple<KItemset, KItemset> o1, Couple<KItemset, KItemset> o2) {
+					KItemset tmp1X = o1.getFirst();
+					KItemset tmp1Y = o1.getSecond();
+					KItemset tmp2X = o2.getFirst();
+					KItemset tmp2Y = o2.getSecond();
+					double delta1 = deltaSize(codetable, standardSize, tmp1X, tmp1Y);
+					double delta2 = deltaSize(codetable, standardSize, tmp2X, tmp2Y);
+					if(delta1 != delta2) {
+						return - Double.compare(delta1, delta2);
+					} else {
+						return - Integer.compare((tmp1X.size() + tmp1Y.size()), (tmp2X.size() + tmp2Y.size()));
 					}
 				}
-				
-				// No candidate were found
+			};
+			
+			Comparator<Couple<KItemset, KItemset>> usageCoupleComparator = new Comparator<Couple<KItemset, KItemset>>(){
+				@Override
+				public int compare(Couple<KItemset, KItemset> o1, Couple<KItemset, KItemset> o2) {
+					KItemset tmp1X = o1.getFirst();
+					KItemset tmp1Y = o1.getSecond();
+					int tmp1CombiUsage = codetable.estimateUsageCombination(tmp1X, tmp1Y);
+					KItemset tmp2X = o2.getFirst();
+					KItemset tmp2Y = o2.getSecond();
+					int tmp2CombiUsage = codetable.estimateUsageCombination(tmp2X, tmp2Y);
+					if(tmp1CombiUsage != tmp2CombiUsage) {
+						return - Integer.compare(tmp1CombiUsage, tmp2CombiUsage);
+					} else {
+						return - Integer.compare((tmp1X.size() + tmp1Y.size()), (tmp2X.size() + tmp2Y.size()));
+					}
+				}
+			};
+			
+			Comparator<KItemset> usageComparator = new Comparator<KItemset>(){
+				@Override
+				public int compare(KItemset o1, KItemset o2) {
+					if(codetable.getUsage(o1) != codetable.getUsage(o2)) {
+						return - Integer.compare(codetable.getUsage(o1), codetable.getUsage(o2));
+					} else {
+						return - Integer.compare(o1.size(), o2.size());
+					}
+				}
+			};
+			
+			Comparator<KItemset> itemsetComparator = null;
+			Comparator<Couple<KItemset, KItemset>> coupleComparator = null;
+			if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE) {
+				itemsetComparator = usageComparator;
+				coupleComparator = usageCoupleComparator;
+			} else if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN) {
+				itemsetComparator = usageComparator;
+				coupleComparator = gainComparator;
 			}
 			
-			if(moreCandidates){
-				logger.debug("Generating more candidates");
-				LinkedList<Couple<KItemset, KItemset>> newCandidates = new LinkedList<Couple<KItemset, KItemset>>();
-				
-				moreCandidates = false;
-				double minSeenCriteria = 0.0;
-				if(! _topKCandidates.isEmpty()) { // usage of the worst candidate in the top k list
-					if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE) {
-						minSeenCriteria = codetable.estimateUsageCombination(_topKCandidates.peekLast().getFirst(), _topKCandidates.peekLast().getSecond());
-					} else if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN) {
-						minSeenCriteria = deltaSize(codetable, standardSize, _topKCandidates.peekLast().getFirst(), _topKCandidates.peekLast().getSecond());
-					}
+			Predicate<KItemset> zeroUsagePredicate = new Predicate<KItemset>() {
+				@Override
+				public boolean test(KItemset fi) {
+					return codetable.getUsage(fi) == 0;
 				}
-								
-				for(int iX = 0; iX < codes.size(); iX++) {
-					KItemset tmpX = codes.get(iX);
-					int currentXUsage = codetable.getUsage(tmpX);
-					if(currentXUsage > 0) {
-						for(int iY = iX+1; iY < codes.size(); iY++) {
-							KItemset tmpY = codes.get(iY);
-							if(codetable.haveCommonSupport(tmpX, tmpY)) {
-								int currentYUsage = codetable.getUsage(tmpY);
-								if(currentYUsage > 0 /*&& currentYUsage >= bestUsage*/) {
-									KItemset candidatePotential = new KItemset(tmpX);
-									candidatePotential.addAll(tmpY);
-									if(candidatePotential.size() <= codetable._index.getMaxSize()
-											&& ! testedCandidates.contains(candidatePotential)
-											&& ! this._topKCandidates.contains(new Couple<KItemset, KItemset>(tmpX, tmpY))
-											&& candidatePotential.size() > 1) {
-										int candidateUsage = codetable.estimateUsageCombination(tmpX, tmpY);
-										if( candidateUsage > 0 && candidateUsage >= minSeenCriteria) {
-											newCandidates.add(new Couple<KItemset, KItemset>(tmpX, tmpY));
-											moreCandidates = true;
+			};
+			
+			ItemsetSet codes = new ItemsetSet(codetable._codes);
+			codes.removeIf(zeroUsagePredicate);
+			codes.sort(itemsetComparator);
+			
+			while(! this._topKCandidates.isEmpty() || _moreCandidates) {
+				if(! this._topKCandidates.isEmpty()) {
+					logger.debug("topKcandidates: first " + codetable.estimateUsageCombination(this._topKCandidates.peekFirst().getFirst(), this._topKCandidates.peekFirst().getSecond()));
+					logger.debug("topKcandidates: Last " + codetable.estimateUsageCombination(this._topKCandidates.peekLast().getFirst(), this._topKCandidates.peekLast().getSecond()));
+					
+					logger.debug("codes: first " + codetable.getUsage(codes.peekFirst()));
+					logger.debug("codes: last " + codetable.getUsage(codes.peekLast()));
+					
+					logger.debug("Trying with top "+ this._topKCandidates.size() +" candidates");
+					Iterator<Couple<KItemset, KItemset>> itTopKCandidates = this._topKCandidates.iterator();
+					while(itTopKCandidates.hasNext()) {
+						Couple<KItemset, KItemset> coupleCandidate = itTopKCandidates.next();
+						KItemset tmpX = coupleCandidate.getFirst();
+						KItemset tmpY = coupleCandidate.getSecond();
+						KItemset candidate = new KItemset(tmpX);
+						candidate.addAll(tmpY);
+						if(! testedCandidates.contains(candidate)) {
+							if(codetable.estimateUsageCombination(tmpX, tmpY) > 0) {
+								return candidate;
+							}
+						}
+					}
+					
+					// No candidate were found
+				}
+				
+				if(_moreCandidates){
+					logger.debug("Generating more candidates");
+					
+					_moreCandidates = false;
+					int bestUsage = 0;
+					double topCandidateCriteria = 0.0;
+					if(! _topKCandidates.isEmpty()) { // usage of the worst candidate in the top k list
+						bestUsage = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+						if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE) {
+							topCandidateCriteria = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+						} else if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN) {
+							topCandidateCriteria = deltaSize(codetable, standardSize, _topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+						}
+					}
+									
+					for(int iX = 0; iX < codes.size(); iX++) {
+						KItemset tmpX = codes.get(iX);
+						int currentXUsage = codetable.getUsage(tmpX);
+						if(currentXUsage > 0 && currentXUsage >= bestUsage) {
+							for(int iY = iX+1; iY < codes.size(); iY++) {
+								KItemset tmpY = codes.get(iY);
+								if(codetable.haveCommonSupport(tmpX, tmpY)) {
+									int currentYUsage = codetable.getUsage(tmpY);
+									if(currentYUsage > 0 && currentYUsage >= bestUsage) {
+										KItemset candidatePotential = new KItemset(tmpX);
+										candidatePotential.addAll(tmpY);
+										if(candidatePotential.size() <= codetable._index.getMaxSize()
+												&& ! testedCandidates.contains(candidatePotential)
+												&& ! this._topKCandidates.contains(new Couple<KItemset, KItemset>(tmpX, tmpY))
+												&& candidatePotential.size() > 1) {
+											int candidateUsage = codetable.estimateUsageCombination(tmpX, tmpY);
+											double candidateGain = deltaSize(codetable, standardSize, tmpX, tmpY);
+											if( candidateUsage > 0) { 
+												boolean newCandidateadded = false;
+												if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE && candidateUsage >= topCandidateCriteria) {
+													topCandidateCriteria = codetable.estimateUsageCombination(_topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+													newCandidateadded = true;
+												}
+												if(this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN && candidateGain >= topCandidateCriteria) {
+													newCandidateadded = true;
+													topCandidateCriteria = deltaSize(codetable, standardSize, _topKCandidates.peekFirst().getFirst(), _topKCandidates.peekFirst().getSecond());
+												}
+												if(newCandidateadded) {
+													_topKCandidates.addFirst(new Couple<KItemset, KItemset>(tmpX, tmpY));
+													_moreCandidates = true; // We could contribute
+												}
+											}
 										}
 									}
 								}
 							}
 						}
 					}
-				}
-
-				this._topKCandidates.clear();
-				this._topKCandidates.addAll(newCandidates);
-				this._topKCandidates.sort(coupleComparator);
-				while(this._topKCandidates.size() > _maxNumberofCandidates) {
-					this._topKCandidates.removeLast();
+	
+					while(this._topKCandidates.size() > _maxNumberofCandidates) {
+						this._topKCandidates.removeLast();
+					}
 				}
 			}
 		}
-		
 		logger.debug("No candidate proposed");
 		return null;
 	}
