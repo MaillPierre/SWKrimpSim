@@ -29,6 +29,13 @@ public class KrimpAlgorithm {
 		this._transactions = new ItemsetSet(transactions);
 		this._candidateCodes = new ItemsetSet(candidates);
 	}
+	
+	public int numberofUsedCandidates() {
+		if(this._candidateCodes != null) {
+			return this._candidateCodes.size();
+		}
+		return 0;
+	}
 
 	public CodeTable runAlgorithm(boolean pruning) throws LogicException {
 		logger.debug("Starting KRIMP algorithm");

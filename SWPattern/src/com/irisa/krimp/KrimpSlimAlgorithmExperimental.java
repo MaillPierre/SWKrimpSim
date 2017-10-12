@@ -21,6 +21,12 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 	private static Logger logger = Logger.getLogger(KrimpSlimAlgorithmExperimental.class);
 	
 	private LinkedList<Couple<KItemset, KItemset>> _topKCandidates = new LinkedList<Couple<KItemset, KItemset>>();
+	private int _numberOfUsedCandidates = 0;
+	
+	@Override
+	public int numberofUsedCandidates() {
+		return this._numberOfUsedCandidates;
+	}
 
 	public KrimpSlimAlgorithmExperimental(ItemsetSet transactions) {
 		super(transactions, new ItemsetSet());
@@ -57,9 +63,11 @@ public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 		double resultSize = result.totalCompressedSize();
 		double standardSize = resultSize;
 		HashSet<KItemset> testedCandidates = new HashSet<KItemset>();
+		_numberOfUsedCandidates = 0;
 		
 		KItemset candidate = generateCandidate(result, standardSize, testedCandidates);
 		while(candidate != null) {
+			_numberOfUsedCandidates++;
 			testedCandidates.add(candidate);
 //			logger.debug("Trying to add: "+candidate);
 			CodeTableSlim tmpCT = new CodeTableSlim(result);

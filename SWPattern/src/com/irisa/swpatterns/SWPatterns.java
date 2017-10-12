@@ -312,7 +312,7 @@ public class SWPatterns {
 					KrimpSlimAlgorithmExperimental kAlgoSlimExperimental = new KrimpSlimAlgorithmExperimental(realtransactions); 
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, codes);
 					
-					kAlgoSlim.setCandidateStrategy(CANDIDATE_STRATEGY.GAIN);
+					kAlgoSlim.setCandidateStrategy(CANDIDATE_STRATEGY.USAGE);
 					
 					CodeTable krimpCTSlim = null;
 					CodeTable krimpCTSlimExperimental = null;
@@ -327,11 +327,11 @@ public class SWPatterns {
 //						krimpCTSlim = new CodeTableSlim(realtransactions, analysis);
 //					} else {
 					
-//						logger.debug("KRIMP SLIM algorithm START");
-//						startSLIM = System.nanoTime(); 
-//						krimpCTSlim = kAlgoSlim.runAlgorithm();
-//						endSLIM = System.nanoTime(); 
-//						logger.debug("KRIMP SLIM algorithm STOP");
+						logger.debug("KRIMP SLIM algorithm START");
+						startSLIM = System.nanoTime(); 
+						krimpCTSlim = kAlgoSlim.runAlgorithm();
+						endSLIM = System.nanoTime(); 
+						logger.debug("KRIMP SLIM algorithm STOP");
 						logger.debug("KRIMP SLIM EXPERIMENTAL START");
 						startSLIMExp = System.nanoTime(); 
 						krimpCTSlimExperimental = kAlgoSlimExperimental.runAlgorithm();
@@ -348,19 +348,22 @@ public class SWPatterns {
 						Utils.printItemsetSet(krimpCTSlim.getCodes(), firstOutputKRIMPFile);
 					}
 					double normalSize = standardCT.totalCompressedSize();
-//					double compressedSizeSlim = krimpCTSlim.totalCompressedSize();
+					double compressedSizeSlim = krimpCTSlim.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
 					double compressedSizeExperimental = krimpCTSlimExperimental.totalCompressedSize(); 
 					logger.debug("-------- FIRST RESULT ---------");
 //					logger.debug(krimpCT);
 					//					logger.debug("First Code table: " + krimpCT);
 					logger.debug("First NormalLength: " + normalSize);
-//					logger.debug("First CompressedLength SLIM: " + compressedSizeSlim);
+					logger.debug("First CompressedLength SLIM: " + compressedSizeSlim);
 					logger.debug("First CompressedLength SLIMExperimental: " + compressedSizeExperimental);
 					logger.debug("First CompressedLength: " + compressedSize);
-//					logger.debug("First Compression SLIM: " + (compressedSizeSlim / normalSize));
+					logger.debug("First Compression SLIM: " + (compressedSizeSlim / normalSize));
 					logger.debug("First Compression SLIMExperimental: " + (compressedSizeExperimental / normalSize));
 					logger.debug("First Compression: " + (compressedSize / normalSize));
+					logger.debug("SLIM candidates: " + kAlgoSlim.numberofUsedCandidates());
+					logger.debug("SLIM Exp : " + kAlgoSlimExperimental.numberofUsedCandidates());
+					logger.debug("KRIMP: " + kAlgo.numberofUsedCandidates());
 					logger.debug("------------- TIMES ---------------");					
 					logger.debug("Time SLIM: "+((double)(endSLIM-startSLIM)/1000000)+" ms.");
 					logger.debug("Time SLIMExp: "+((double)(endSLIMExp-startSLIMExp)/1000000)+" ms.");

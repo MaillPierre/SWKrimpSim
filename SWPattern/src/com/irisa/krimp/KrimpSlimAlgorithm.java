@@ -21,7 +21,8 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	private LinkedList<Couple<KItemset, KItemset>> _topKCandidates = new LinkedList<Couple<KItemset, KItemset>>();
 	private int _maxNumberofCandidates = 1000;
 	private CANDIDATE_STRATEGY _strat = CANDIDATE_STRATEGY.USAGE;
-	boolean _moreCandidates = true;
+	private boolean _moreCandidates = true;
+	private int _numberOfUsedCandidates = 0;
 	
 	public enum CANDIDATE_STRATEGY {
 		USAGE,
@@ -34,6 +35,11 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	
 	public void setCandidateStrategy(CANDIDATE_STRATEGY strat) {
 		this._strat = strat;
+	}
+	
+	@Override
+	public int numberofUsedCandidates() {
+		return this._numberOfUsedCandidates;
 	}
 
 	public KrimpSlimAlgorithm(ItemsetSet transactions) {
@@ -66,6 +72,7 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 	public CodeTable runAlgorithm() throws LogicException {
 		logger.debug("Starting KRIMP SLIM algorithm");
 		logger.debug(this._transactions.size() + " transactions");
+		_numberOfUsedCandidates = 0;
 
 		CodeTable result = CodeTable.createStandardCodeTable( _transactions); // CT ←Standard Code Table(D)
 		double resultSize = result.totalCompressedSize();
@@ -74,8 +81,9 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 		
 		KItemset candidate = generateCandidate(result, standardSize, testedCandidates);
 		while(candidate != null) {
+			_numberOfUsedCandidates++;
 			testedCandidates.add(candidate);
-			logger.debug("Trying to add: "+candidate);
+//			logger.debug("Trying to add: "+candidate);
 			CodeTableSlim tmpCT = new CodeTableSlim(result);
 			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
 				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
@@ -207,13 +215,13 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 			
 			while(! this._topKCandidates.isEmpty() || _moreCandidates) {
 				if(! this._topKCandidates.isEmpty()) {
-					logger.debug("topKcandidates: first " + codetable.estimateUsageCombination(this._topKCandidates.peekFirst().getFirst(), this._topKCandidates.peekFirst().getSecond()));
-					logger.debug("topKcandidates: Last " + codetable.estimateUsageCombination(this._topKCandidates.peekLast().getFirst(), this._topKCandidates.peekLast().getSecond()));
+//					logger.debug("topKcandidates: first " + codetable.estimateUsageCombination(this._topKCandidates.peekFirst().getFirst(), this._topKCandidates.peekFirst().getSecond()));
+//					logger.debug("topKcandidates: Last " + codetable.estimateUsageCombination(this._topKCandidates.peekLast().getFirst(), this._topKCandidates.peekLast().getSecond()));
+//					
+//					logger.debug("codes: first " + codetable.getUsage(codes.peekFirst()));
+//					logger.debug("codes: last " + codetable.getUsage(codes.peekLast()));
 					
-					logger.debug("codes: first " + codetable.getUsage(codes.peekFirst()));
-					logger.debug("codes: last " + codetable.getUsage(codes.peekLast()));
-					
-					logger.debug("Trying with top "+ this._topKCandidates.size() +" candidates");
+//					logger.debug("Trying with top "+ this._topKCandidates.size() +" candidates");
 					Iterator<Couple<KItemset, KItemset>> itTopKCandidates = this._topKCandidates.iterator();
 					while(itTopKCandidates.hasNext()) {
 						Couple<KItemset, KItemset> coupleCandidate = itTopKCandidates.next();
@@ -232,7 +240,7 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 				}
 				
 				if(_moreCandidates){
-					logger.debug("Generating more candidates");
+//					logger.debug("Generating more candidates");
 					
 					_moreCandidates = false;
 					int bestUsage = 0;
@@ -298,27 +306,8 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 				}
 			}
 		}
-		logger.debug("No candidate proposed");
+//		logger.debug("No candidate proposed");
 		return null;
-	}
-	
-	private double evaluateGainCandidate(CodeTableSlim codetable, double standardSize, KItemset tmpX, KItemset tmpY, double maxGain, HashSet<KItemset> testedCandidates) {
-		KItemset candidatePotential = new KItemset(tmpX);
-		candidatePotential.addAll(tmpY);
-		if(candidatePotential.size() <= codetable._index.getMaxSize()/* && result._index.getCodeSupport(candidatePotential) > 0*/) {
-			if( ! testedCandidates.contains(candidatePotential)
-					&& candidatePotential.size() > 1) {
-				int tmpCombiUsage = codetable.estimateUsageCombination(tmpX, tmpY); // xy'
-				if(tmpCombiUsage > 0) {
-					double deltaSize = deltaSize(codetable, standardSize, tmpX, tmpY, tmpCombiUsage);
-					//logger.debug("Testing potential candidate "+ candidatePotential +" deltaD: " + deltaD + " deltaCT: " + deltaCT);
-					if(deltaSize > maxGain ) {
-						return deltaSize;
-					}
-				}
-			}
-		}
-		return maxGain;
 	}
 
 	private double deltaSize(CodeTableSlim codetable, double standardSize, KItemset tmpX, KItemset tmpY) {
