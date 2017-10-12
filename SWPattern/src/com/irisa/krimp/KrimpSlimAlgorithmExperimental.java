@@ -13,13 +13,13 @@ import com.irisa.jenautils.Couple;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 
-public class KrimpSlimAlgorithm extends KrimpAlgorithm {
+public class KrimpSlimAlgorithmExperimental extends KrimpAlgorithm {
 	
-	private static Logger logger = Logger.getLogger(KrimpSlimAlgorithm.class);
+	private static Logger logger = Logger.getLogger(KrimpSlimAlgorithmExperimental.class);
 	
 	private LinkedList<Couple<KItemset, KItemset>> _topKCandidates = new LinkedList<Couple<KItemset, KItemset>>();
 
-	public KrimpSlimAlgorithm(ItemsetSet transactions) {
+	public KrimpSlimAlgorithmExperimental(ItemsetSet transactions) {
 		super(transactions, new ItemsetSet());
 	}
 
@@ -68,7 +68,9 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 					//					logger.debug("--> Added:"+candidate);
 					result = postAcceptancePruning(tmpCT, result);
 					// we have to update the size 
-					resultSize = result.totalCompressedSize(); 				
+					resultSize = result.totalCompressedSize(); 		
+					
+					_topKCandidates.clear(); 
 				}
 			}
 			candidate = generateCandidate(result, standardSize, testedCandidates);

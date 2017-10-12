@@ -25,6 +25,7 @@ import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.CodeTableSlim;
 import com.irisa.krimp.KrimpAlgorithm;
 import com.irisa.krimp.KrimpSlimAlgorithm;
+import com.irisa.krimp.KrimpSlimAlgorithmExperimental;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
@@ -307,44 +308,58 @@ public class SWPatterns {
 					CodeTable standardCT = CodeTable.createStandardCodeTable(realtransactions, analysis );
 	
 					KrimpSlimAlgorithm kAlgoSlim = new KrimpSlimAlgorithm(realtransactions);
+					KrimpSlimAlgorithmExperimental kAlgoSlimExperimental = new KrimpSlimAlgorithmExperimental(realtransactions); 
 					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, codes);
 					CodeTable krimpCTSlim;
+					CodeTable krimpCTSlimExperimental;
 					CodeTable krimpCT;
+					long startSLIM; 
+					long endSLIM; 
+					long startSLIMExp; 
+					long endSLIMExp; 
+					long startKrimp; 
+					long endKrimp; 
 //					if(inputCodeTableCodes) {
 //						krimpCTSlim = new CodeTableSlim(realtransactions, analysis);
 //					} else {
-					logger.debug("KRIMP SLIM algorithm START");
+						logger.debug("KRIMP SLIM algorithm START");
+						startSLIM = System.nanoTime(); 
 						krimpCTSlim = kAlgoSlim.runAlgorithm();
+						endSLIM = System.nanoTime(); 
 						logger.debug("KRIMP SLIM algorithm STOP");
+						logger.debug("KRIMP SLIM EXPERIMENTAL START");
+						startSLIMExp = System.nanoTime(); 
+						krimpCTSlimExperimental = kAlgoSlimExperimental.runAlgorithm();
+						endSLIMExp = System.nanoTime(); 
+						logger.debug("KRIMP SLIM EXPERIMENTAL STOP");
 						logger.debug("KRIMP algorithm START");
+						startKrimp = System.nanoTime(); 
 						krimpCT = kAlgo.runAlgorithm(true);
+						endKrimp = System.nanoTime(); 
 						logger.debug("KRIMP algorithm STOP");
 //					}
-
-					CodeTable krimpCTSlimVerify = new CodeTable(realtransactions, krimpCTSlim.getCodes(), analysis); 
-						
+					
 					if(outputCodeTableCodes) {
 						Utils.printItemsetSet(krimpCTSlim.getCodes(), firstOutputKRIMPFile);
 					}
 					double normalSize = standardCT.totalCompressedSize();
 					double compressedSizeSlim = krimpCTSlim.totalCompressedSize();
-					double compressedSizeSlimVerify = krimpCTSlimVerify.totalCompressedSize();
 					double compressedSize = krimpCT.totalCompressedSize();
-					
-					logger.debug("-------------- KRIMP SLIM ---------------");
-					logger.debug(krimpCTSlim);
-					logger.debug("-------------- KRIMP ---------------");
-					logger.debug(krimpCT);
-					
+					double compressedSizeExperimental = krimpCTSlimExperimental.totalCompressedSize(); 
 					logger.debug("-------- FIRST RESULT ---------");
-					logger.debug("Number of transactions: " + analysis.getNumberOfTransactions() + " Number of items: " + analysis.getNumberOfItems() + " Biggest transaction: " + analysis.getMaxSize());
+//					logger.debug(krimpCT);
+					//					logger.debug("First Code table: " + krimpCT);
 					logger.debug("First NormalLength: " + normalSize);
 					logger.debug("First CompressedLength SLIM: " + compressedSizeSlim);
-					logger.debug("First CompressedLength SLIM verify: " + compressedSizeSlimVerify);
+					logger.debug("First CompressedLength SLIMExperimental: " + compressedSizeExperimental);
 					logger.debug("First CompressedLength: " + compressedSize);
 					logger.debug("First Compression SLIM: " + (compressedSizeSlim / normalSize));
-					logger.debug("First Compression SLIM Verify: " + (compressedSizeSlimVerify / normalSize));
+					logger.debug("First Compression SLIMExperimental: " + (compressedSizeExperimental / normalSize));
 					logger.debug("First Compression: " + (compressedSize / normalSize));
+					logger.debug("------------- TIMES ---------------");					
+					logger.debug("Time SLIM: "+((double)(endSLIM-startSLIM)/1000000)+" ms.");
+					logger.debug("Time SLIMExp: "+((double)(endSLIMExp-startSLIMExp)/1000000)+" ms.");
+					logger.debug("Time KRIMP: "+((double)(endKrimp-startKrimp)/1000000)+" ms.");
 	
 					if(otherInput) {
 	
