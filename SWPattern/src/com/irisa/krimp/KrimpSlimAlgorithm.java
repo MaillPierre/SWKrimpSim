@@ -280,9 +280,15 @@ public class KrimpSlimAlgorithm extends KrimpAlgorithm {
 												}
 											}
 										}
+									} else {
+										_moreCandidates = (currentYUsage > 0);
+										break;
 									}
 								}
 							}
+						} else {
+							_moreCandidates = (currentXUsage > 0);
+							break;
 						}
 					}
 	
