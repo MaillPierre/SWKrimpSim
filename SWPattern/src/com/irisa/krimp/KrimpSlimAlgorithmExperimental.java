@@ -16,7 +16,7 @@ import com.irisa.krimp.data.KItemset;
 public class KrimpSlimAlgorithmExperimental extends AbstractKrimpSlimAlgorithm {
 	
 	
-	private static boolean moreCandidates = true; 
+	private boolean moreCandidates = true; 
 	
 	private static Logger logger = Logger.getLogger(KrimpSlimAlgorithmExperimental.class);
 	
@@ -49,40 +49,44 @@ public class KrimpSlimAlgorithmExperimental extends AbstractKrimpSlimAlgorithm {
 	 * @return
 	 * @throws LogicException
 	 */
-	public CodeTable runAlgorithm() throws LogicException {
-		logger.debug("Starting KRIMP SLIM algorithm");
-		logger.debug(this._transactions.size() + " transactions");
-
-		CodeTable result = CodeTable.createStandardCodeTable( _transactions); // CT ←Standard Code Table(D)
-		double resultSize = result.totalCompressedSize();
-		double standardSize = resultSize;
-		HashSet<KItemset> testedCandidates = new HashSet<KItemset>();
-		_numberOfUsedCandidates = 0;
-		
-		KItemset candidate = generateCandidate(result, standardSize, testedCandidates);
-		while(candidate != null) {
-			_numberOfUsedCandidates++;
-			testedCandidates.add(candidate);
-//			logger.debug("Trying to add: "+candidate);
-			CodeTableSlim tmpCT = new CodeTableSlim(result);
-			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
-				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
-				double candidateSize = tmpCT.totalCompressedSize();
-				//				logger.debug("candidateSize: "+candidateSize +" resultSize: "+resultSize); 
-				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
-					//					logger.debug("--> Added:"+candidate);
-					result = postAcceptancePruning(tmpCT, result);
-					// we have to update the size 
-					resultSize = result.totalCompressedSize(); 		
-					
-					_topKCandidates.clear(); 
-					moreCandidates = true; 
-				}
-			}
-			candidate = generateCandidate(result, standardSize, testedCandidates);
-		}
-		logger.debug("KRIMP algorithm ended");
-		return result;
+//	public CodeTable runAlgorithm() throws LogicException {
+//		logger.debug("Starting KRIMP SLIM algorithm");
+//		logger.debug(this._transactions.size() + " transactions");
+//
+//		CodeTable result = CodeTable.createStandardCodeTable( _transactions); // CT ←Standard Code Table(D)
+//		double resultSize = result.totalCompressedSize();
+//		double standardSize = resultSize;
+//		HashSet<KItemset> testedCandidates = new HashSet<KItemset>();
+//		_numberOfUsedCandidates = 0;
+//		
+//		KItemset candidate = generateCandidate(result, standardSize, testedCandidates);
+//		while(candidate != null) {
+//			_numberOfUsedCandidates++;
+//			testedCandidates.add(candidate);
+////			logger.debug("Trying to add: "+candidate);
+//			CodeTableSlim tmpCT = new CodeTableSlim(result);
+//			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
+//				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
+//				double candidateSize = tmpCT.totalCompressedSize();
+//				//				logger.debug("candidateSize: "+candidateSize +" resultSize: "+resultSize); 
+//				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
+//					//					logger.debug("--> Added:"+candidate);
+//					result = postAcceptancePruning(tmpCT, result);
+//					// we have to update the size 
+//					resultSize = result.totalCompressedSize(); 		
+//					
+//					_topKCandidates.clear(); 
+//					moreCandidates = true; 
+//				}
+//			}
+//			candidate = generateCandidate(result, standardSize, testedCandidates);
+//		}
+//		logger.debug("KRIMP algorithm ended");
+//		return result;
+//	}
+	
+	protected KItemset generateCandidate(final CodeTable refCode, double standardSize , HashSet<KItemset> testedCandidates) {
+		return generateCandidate(refCode, standardSize, 0, testedCandidates);
 	}
 
 	/**
@@ -92,7 +96,7 @@ public class KrimpSlimAlgorithmExperimental extends AbstractKrimpSlimAlgorithm {
 	 * @param testedCandidates
 	 * @return
 	 */
-	protected KItemset generateCandidate(final CodeTable refCode, double standardSize , HashSet<KItemset> testedCandidates) {
+	protected KItemset generateCandidate(final CodeTable refCode, double standardSize , int minSup, HashSet<KItemset> testedCandidates) {
 		
 		int maxNumberofCandidates = 100;
 		final CodeTableSlim codetable = new CodeTableSlim(refCode);
@@ -125,9 +129,11 @@ public class KrimpSlimAlgorithmExperimental extends AbstractKrimpSlimAlgorithm {
 //				logger.debug("Last:" +codetable.estimateUsageCombination(_topKCandidates.peekLast().getFirst(), _topKCandidates.peekLast().getSecond()));
 				if(codetable.estimateUsageCombination(tmpX, tmpY) > 0) {
 					KItemset candidate = new KItemset(tmpX);
-					candidate.addAll(this._topKCandidates.peekFirst().getSecond());
-					this._topKCandidates.removeFirst();
-					return candidate;
+					candidate.addAll(tmpY);
+					if(codetable._index.getCodeSupport(candidate) >= minSup) {
+						this._topKCandidates.removeFirst();
+						return candidate;
+					}
 				} else {
 //					logger.debug("Removed top K " + this._topKCandidates.getFirst());
 					this._topKCandidates.removeFirst();
@@ -194,22 +200,26 @@ public class KrimpSlimAlgorithmExperimental extends AbstractKrimpSlimAlgorithm {
 						// we estimate this candidate 
 						
 						int candidateUsage = codetable.estimateUsageCombination(tmpX, tmpY);
+						KItemset newCandidate = new KItemset(tmpX);
+						newCandidate.addAll(tmpY);
 						
-						if (( this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE && candidateUsage >= maxSeenCriteria) 
-								|| ( this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN && deltaSize(codetable, standardSize, tmpX, tmpY) >= maxSeenCriteria)) {
-							if (_topKCandidates.size() == maxNumberofCandidates) {
-								moreCandidates = true; 								
-								Couple<KItemset, KItemset> last = _topKCandidates.pollLast(); 
-//								logger.debug("getting rid of element with "+codetable.estimateUsageCombination(last.getFirst(),last.getSecond()) +" when min: "+minSeenUsage);
+						if(codetable._index.getCodeSupport(newCandidate) >= minSup) {	
+							if (( this.getCandidateStrategy() == CANDIDATE_STRATEGY.USAGE && candidateUsage >= maxSeenCriteria) 
+									|| ( this.getCandidateStrategy() == CANDIDATE_STRATEGY.GAIN && deltaSize(codetable, standardSize, tmpX, tmpY) >= maxSeenCriteria)) {
+								if (_topKCandidates.size() == maxNumberofCandidates) {
+									moreCandidates = true; 								
+									Couple<KItemset, KItemset> last = _topKCandidates.pollLast(); 
+	//								logger.debug("getting rid of element with "+codetable.estimateUsageCombination(last.getFirst(),last.getSecond()) +" when min: "+minSeenUsage);
+									
+								}
 								
-							}
-							
-							if (_topKCandidates.size() < maxNumberofCandidates) 
-							{
-//								logger.debug("adding an element with: "+codetable.estimateUsageCombination(tmpX, tmpY));
-								
-								if (candidateUsage > 0) 
-									_topKCandidates.add(new Couple<KItemset, KItemset>(tmpX, tmpY) ); 
+								if (_topKCandidates.size() < maxNumberofCandidates) 
+								{
+	//								logger.debug("adding an element with: "+codetable.estimateUsageCombination(tmpX, tmpY));
+									
+									if (candidateUsage > 0) 
+										_topKCandidates.add(new Couple<KItemset, KItemset>(tmpX, tmpY) ); 
+								}
 							}
 						}
 					}
@@ -220,6 +230,11 @@ public class KrimpSlimAlgorithmExperimental extends AbstractKrimpSlimAlgorithm {
 		}
 		
 		return null;
+	}
+
+	@Override
+	public void setMoreCandidates(boolean moreCand) {
+		this.moreCandidates = moreCand;
 	}
 
 }

@@ -33,6 +33,8 @@ public abstract class AbstractKrimpSlimAlgorithm extends KrimpAlgorithm {
 	public int numberofUsedCandidates() {
 		return this._numberOfUsedCandidates;
 	}
+	
+	public abstract void setMoreCandidates(boolean moreCand);
 
 	public AbstractKrimpSlimAlgorithm(ItemsetSet transactions) {
 		super(transactions, new ItemsetSet());
@@ -72,32 +74,53 @@ public abstract class AbstractKrimpSlimAlgorithm extends KrimpAlgorithm {
 		double standardSize = resultSize;
 		HashSet<KItemset> testedCandidates = new HashSet<KItemset>();
 		
-		KItemset candidate = generateCandidate(result, standardSize, testedCandidates);
-		while(candidate != null) {
-			_numberOfUsedCandidates++;
-			testedCandidates.add(candidate);
-//			logger.debug("Trying to add: "+candidate);
-			CodeTable tmpCT = new CodeTable(result);
-			if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
-				tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
-				double candidateSize = tmpCT.totalCompressedSize();
-				if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
-					result = postAcceptancePruning(tmpCT, result);
-					// we have to update the size 
-					resultSize = result.totalCompressedSize(); 		
-					
-					if(result.contains(candidate)) {
-						_topKCandidates.clear(); 		
+		LinkedList<Integer> minSuppBins = new LinkedList<Integer>();
+		int minSuppStep = this._transactions.size() / 10;
+		int tmpMinSupp = this._transactions.size();
+		minSuppBins.add(this._transactions.size());
+		for(int i = 0; i < 11; i++) {
+			tmpMinSupp -= minSuppStep;
+			if(tmpMinSupp < 0) {
+				minSuppBins.add(1);
+				break;
+			} else {
+				minSuppBins.add(tmpMinSupp);
+			}
+		}
+
+		for(int i = 0; i < minSuppBins.size(); i++) {
+			setMoreCandidates(true);
+			tmpMinSupp = minSuppBins.get(i);
+			logger.debug("minSupp : " + tmpMinSupp);
+			KItemset candidate = generateCandidate(result, standardSize, tmpMinSupp, testedCandidates);
+			while(candidate != null) {
+				_numberOfUsedCandidates++;
+				testedCandidates.add(candidate);
+//				logger.debug("Trying to add: "+candidate + " minSupp: " + tmpMinSupp);
+				CodeTable tmpCT = new CodeTable(result);
+				if(candidate.size() > 1 && ! tmpCT.contains(candidate)) { // F ∈ Fo \ I
+					tmpCT.addCode(candidate); // CTc ←(CT ∪ F)in Standard Cover Order
+					double candidateSize = tmpCT.totalCompressedSize();
+					if(candidateSize < resultSize) { // if L(D,CTc)< L(D,CT) then
+						result = postAcceptancePruning(tmpCT, result);
+						// we have to update the size 
+						resultSize = result.totalCompressedSize(); 		
+						
+//						if(result.contains(candidate)) {
+							_topKCandidates.clear();
+							setMoreCandidates(true);
+//						}
 					}
 				}
+				candidate = generateCandidate(result, standardSize, tmpMinSupp, testedCandidates);
 			}
-			candidate = generateCandidate(result, standardSize, testedCandidates);
 		}
 		logger.debug("KRIMP algorithm ended");
 		return result;
 	}
 	
 	protected abstract KItemset generateCandidate(final CodeTable refCode, double standardSize , final HashSet<KItemset> testedCandidates);
+	protected abstract KItemset generateCandidate(final CodeTable refCode, double standardSize , int minSup, final HashSet<KItemset> testedCandidates);
 
 	double deltaSize(CodeTableSlim codetable, double standardSize, KItemset tmpX, KItemset tmpY) {
 		int tmpCombiUsage = codetable.estimateUsageCombination(tmpX, tmpY);
