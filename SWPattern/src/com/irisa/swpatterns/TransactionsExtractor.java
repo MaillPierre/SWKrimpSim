@@ -53,6 +53,7 @@ public class TransactionsExtractor {
 		PropertyAndType,
 		PropertyAndOther
 	}
+	
 	private Neighborhood _neighborLevel = Neighborhood.PropertyAndType;
 	
 	private int _pathsLength = 0;
@@ -65,6 +66,14 @@ public class TransactionsExtractor {
 
 	public static void setQueryLimit(int queryLimit) {
 		TransactionsExtractor.queryLimit = queryLimit;
+	}
+	
+	public boolean isKnownIndividual(Resource indiv) {
+		return _individuals.contains(indiv);
+	}
+	
+	public void addKnownIndividual(Resource indiv) {
+		_individuals.add(indiv);
 	}
 
 	public AttributeIndex getIndex() {
@@ -314,8 +323,8 @@ public class TransactionsExtractor {
 		Iterator<Resource> itIndiv = indivSet.iterator();
 		while(itIndiv.hasNext()) {
 			Resource currIndiv = itIndiv.next();
-			if(! currIndiv.isAnon() && ! this._individuals.contains(currIndiv)) {
-				this._individuals.add(currIndiv);
+			if(! currIndiv.isAnon() && ! isKnownIndividual(currIndiv)) {
+				addKnownIndividual(currIndiv);
 				results.add(extractTransactionsForIndividual(baseRDF, onto, currIndiv));
 			}
 		}
