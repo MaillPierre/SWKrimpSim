@@ -16,17 +16,14 @@ Uses SMPF for the some of the frequent itemsets algorithms.
 Includes JenaUtils classes.
 
 FOR TEST: 
-To get all option, launch with -help
-Launching with one RDF File: -inputRDF <file>
-with two RDF files to be compared:  -inputRDF <file1> -inputOtherRDFFile <file2>
-with one transactions file:  -inputTransaction <file1>
-with two transactions files to be compared:  -inputTransaction <file1> -inputOtherTransaction <file2>
-output the index: -outputConversionIndex <file>
-output the code table: -outputCodeTable
+- To get all option, launch with -help
+- Launching with one RDF File: -inputRDF <file>
+- with two RDF files to be compared:  -inputRDF <file1> -inputOtherRDFFile <file2>
+- with one transactions file:  -inputTransaction <file1>
+- with two transactions files to be compared:  -inputTransaction <file1> -inputOtherTransaction <file2>
+- output the index: -outputConversionIndex <file>
+- output the code table: -outputCodeTable
 
-
-TODO :
-- How do we make it independent of the size of the databases? How to handle the newly appearing singletons? Many questions ... , but we are tired, we leave it for monday :) 
 
 TESTS :
 - Comparison with different scales of data
@@ -41,6 +38,7 @@ DONE :
 	- Compression rate of a Codetable
 	- KRIMP (22/06/2017)
 	- Pruning (27/06/2017)
+	- KRIMPSLIM (in a dedicated branch for now)
 - Conversion from RDF to transaction possible: instance-based, containing either:
 	- instance type and property
 	- instance type, property and other resource type if existing
