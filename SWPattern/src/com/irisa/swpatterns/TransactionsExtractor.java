@@ -294,6 +294,7 @@ public class TransactionsExtractor {
 //			indivResult.addAll(this.extractPathFragmentAttributesForIndividual(baseRDF, onto, currIndiv));
 //		}
 		
+		logger.debug(currIndiv + " = " + indivResult);
 		return indivResult;
 	}
 	

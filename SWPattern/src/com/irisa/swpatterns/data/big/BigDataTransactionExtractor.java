@@ -87,10 +87,15 @@ public class BigDataTransactionExtractor {
 	}
 	
 	public LabeledTransactions extractTransactionsFromFile(String filename) {
+		logger.debug("big data loading START");
+		
+		logger.debug("Jena loading ...");
 		// First, line by line, fill the indexes
 		Model model = ModelFactory.createDefaultModel(); // TMP
 		model.read(filename); // TMP
+		logger.debug("Jena loading ended");
 		
+		logger.debug("Iterating over " + model.size() + " statements");
 			// Filling the indexes
 		StmtIterator itStat = model.listStatements();
 		while(itStat.hasNext()) {
@@ -100,32 +105,34 @@ public class BigDataTransactionExtractor {
 			RDFNode obj = stat.getObject();
 			
 			if(prop.equals(RDF.type)) { // Instantiation triple
-				if(! subj.isAnon() && ! (obj.isAnon() || obj.isLiteral())) { // checking basic RDF rule respect
+				if(! subj.isAnon() && ! (obj.isLiteral())) { // checking basic RDF rule respect
 					Resource objRes = obj.asResource();
 					RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
 					addComponentToIndexes(subj, compoType);
 				}
-			} else if(! (_onto.isOntologyPropertyVocabulary(prop)) || ( _onto.isOntologyClassVocabulary(prop))) { // Not ontology stuff
+			} else if(! _onto.isOntologyPropertyVocabulary(prop) && ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
 				
-				if(! subj.isAnon()) { // Do we care about anonymous nodes ?
 					RDFPatternResource compoPropOut = AttributeIndex.getInstance().getComponent(prop, Type.OUT_PROPERTY);
 					addComponentToIndexes(subj, compoPropOut);
-					if((! (obj.isLiteral() || obj.isAnon())) && obj.isURIResource()){ // Object is neither a literal nor anonymous, it is an URI
+					
+					if(! obj.isLiteral()){ // Object is not a literal 
 						Resource objRes = obj.asResource();
-						RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(objRes, Type.IN_PROPERTY);
-						addComponentToIndexes(subj, compoPropIn);
-						
-						if(this.getNeighborLevel() == Neighborhood.PropertyAndType) { // Filling the co-occuring indexes
-							addConnection(subj, objRes, prop);
+						if(! _onto.isOntologyClassVocabulary(objRes)) { // Object is not Ontology stuff
+							RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(prop, Type.IN_PROPERTY);
+							addComponentToIndexes(objRes, compoPropIn);
+	
+							if(this.getNeighborLevel() == Neighborhood.PropertyAndType) { // Filling the co-occuring indexes
+								addConnection(subj, objRes, prop);
+							}
 						}
 					}
-				}
 			}
 		}
+		logger.debug("End of iterations");
 		
+		logger.debug("Building property-class items over " + this._connectedResources.size() + " connexions");
 		// If conversion in property-class, generate the property-class items from the co-occuring indexes and the type index
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
-			// OUT_PROPERTY_TYPE
 			Iterator<Entry<Couple<Resource, Resource>, HashSet<Property>>> itConnected = this._connectedResources.entrySet().iterator();
 			while(itConnected.hasNext()) {
 				Entry<Couple<Resource, Resource>, HashSet<Property>> entry = itConnected.next();
@@ -137,27 +144,33 @@ public class BigDataTransactionExtractor {
 				while(itProp.hasNext()) {
 					Property prop = itProp.next();
 					
-					Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
-					while(itObjType.hasNext()) {
-						RDFPatternComponent compoObjType = itObjType.next();
-						Resource objType = ((RDFPatternResource) compoObjType).getResource();
-						
-						RDFPatternComponent compoOut = AttributeIndex.getInstance().getComponent(prop, objType, Type.OUT_NEIGHBOUR_TYPE);
-						addComponentToIndexes(subj, compoOut);
+					if(this._buildingTransactionsTypeItems.get(obj) != null) {
+						Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
+						while(itObjType.hasNext()) {
+							RDFPatternComponent compoObjType = itObjType.next();
+							Resource objType = ((RDFPatternResource) compoObjType).getResource();
+							
+							RDFPatternComponent compoOut = AttributeIndex.getInstance().getComponent(prop, objType, Type.OUT_NEIGHBOUR_TYPE);
+							addComponentToIndexes(subj, compoOut);
+						}
 					}
 					
-					Iterator<RDFPatternComponent> itSubjType = this._buildingTransactionsTypeItems.get(subj).iterator();
-					while(itSubjType.hasNext()) {
-						RDFPatternComponent compoSubjType = itSubjType.next();
-						Resource subjType = ((RDFPatternResource) compoSubjType).getResource();
-						
-						RDFPatternComponent compoIn = AttributeIndex.getInstance().getComponent(prop, subjType, Type.IN_NEIGHBOUR_TYPE);
-						addComponentToIndexes(obj, compoIn);
+					if(this._buildingTransactionsTypeItems.get(subj) != null) {
+						Iterator<RDFPatternComponent> itSubjType = this._buildingTransactionsTypeItems.get(subj).iterator();
+						while(itSubjType.hasNext()) {
+							RDFPatternComponent compoSubjType = itSubjType.next();
+							Resource subjType = ((RDFPatternResource) compoSubjType).getResource();
+							
+							RDFPatternComponent compoIn = AttributeIndex.getInstance().getComponent(prop, subjType, Type.IN_NEIGHBOUR_TYPE);
+							addComponentToIndexes(obj, compoIn);
+						}	
 					}
 				}
 			}
 		}
+		logger.debug("Property-class items built");
 		
+		logger.debug("Union of all tmp transactions");
 		// Union of the transactions
 		LabeledTransactions result = new LabeledTransactions();
 		Iterator<Resource> itIndiv = this._individuals.iterator();
@@ -165,12 +178,20 @@ public class BigDataTransactionExtractor {
 			Resource indiv = itIndiv.next();
 			
 			LabeledTransaction indivTrans = new LabeledTransaction();
-			indivTrans.addAll(this._buildingTransactionsTypeItems.get(indiv));
-			indivTrans.addAll(this._buildingTransactionsPropertyItems.get(indiv));
-			indivTrans.addAll(this._buildingtransactionsPropertyClassItems.get(indiv));
+			if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
+				indivTrans.addAll(this._buildingTransactionsTypeItems.get(indiv));
+			}
+			if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
+				indivTrans.addAll(this._buildingTransactionsPropertyItems.get(indiv));
+			}
+			if(this._buildingtransactionsPropertyClassItems.containsKey(indiv)) {
+				indivTrans.addAll(this._buildingtransactionsPropertyClassItems.get(indiv));
+			}
 			
+			logger.debug(indiv + " = " + indivTrans);
 			result.add(indivTrans);
 		}
+		logger.debug("All transactions united, " + result.size() + " for " + AttributeIndex.getInstance().size() + " attributes");
 		
 		return result;
 	}
