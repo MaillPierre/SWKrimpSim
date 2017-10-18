@@ -30,6 +30,7 @@ import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.Global;
+import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
@@ -93,6 +94,22 @@ public class AttributeIndex {
 	
 	public RDFPatternComponent getComponent(int item) {
 		return _itemAttributeIndex.get(item);
+	}
+	
+	public RDFPatternResource getComponent(Resource res, Type type) {
+		RDFPatternResource compo = new RDFPatternResource(res, type);
+		if(! contains(compo)){
+			add(compo);
+		}
+		return compo;
+	}
+	
+	public RDFPatternPathFragment getComponent(Resource res1, Resource res2, Type type) {
+		RDFPatternPathFragment compo = new RDFPatternPathFragment(res1, res2, type);
+		if(! contains(compo)){
+			add(compo);
+		}
+		return compo;
 	}
 	
 	public void add(RDFPatternComponent attribute) {

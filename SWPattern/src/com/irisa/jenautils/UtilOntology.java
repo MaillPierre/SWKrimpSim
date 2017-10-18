@@ -466,11 +466,21 @@ public class UtilOntology {
 	{
 		return compLine.contains(r);
 	}
-	
+
+	/**
+	 * Is not a class used to define smthg in an ontology
+	 * @param r
+	 * @return
+	 */
 	public boolean isOntologyClassVocabulary(Resource r) {
 		return this._ontologyClassVocabulary.contains(r);
 	}
 	
+	/**
+	 * Is not a property used to define smthg in an ontology
+	 * @param r
+	 * @return
+	 */
 	public boolean isOntologyPropertyVocabulary(Resource r) {
 		return this._ontologyPropertyVocabulary.contains(r);
 	}

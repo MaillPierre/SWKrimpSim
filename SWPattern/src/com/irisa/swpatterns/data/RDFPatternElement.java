@@ -7,6 +7,7 @@ import com.irisa.jenautils.Couple;
 
 /**
  * Encapsulate elements from Jena, either a resource or a couple of resources
+ * Should never be instantiated (<- TBD)
  * @author pmaillot
  *
  */
