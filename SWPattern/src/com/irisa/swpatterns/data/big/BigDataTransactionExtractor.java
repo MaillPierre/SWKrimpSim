@@ -5,7 +5,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import org.apache.jena.graph.Triple;
+import org.apache.jena.rdf.model.AnonId;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -13,6 +17,12 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFParser;
+import org.apache.jena.riot.lang.PipedRDFIterator;
+import org.apache.jena.riot.lang.PipedRDFStream;
+import org.apache.jena.riot.lang.PipedTriplesStream;
+import org.apache.jena.riot.system.StreamRDFBase;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
@@ -92,25 +102,53 @@ public class BigDataTransactionExtractor {
 		logger.debug("Jena loading ...");
 		// First, line by line, fill the indexes
 		Model model = ModelFactory.createDefaultModel(); // TMP
-		model.read(filename); // TMP
+//		model.read(filename); // TMP
+		PipedRDFIterator<Triple> dataIt = new PipedRDFIterator<Triple>();
+		PipedTriplesStream dataSteam = new PipedTriplesStream(dataIt);
+		ExecutorService executor=Executors.newSingleThreadExecutor();
+		Runnable parser=new Runnable(){
+			@Override public void run(){
+				RDFParser.source(filename).parse(dataSteam);
+		}};
+		executor.submit(parser);
+		
+//		dataSteam.start();
 		logger.debug("Jena loading ended");
 		
-		logger.debug("Iterating over " + model.size() + " statements");
+//		logger.debug("Iterating over " + model.size() + " statements");
 			// Filling the indexes
-		StmtIterator itStat = model.listStatements();
-		while(itStat.hasNext()) {
-			Statement stat = itStat.next();
-			Property prop = stat.getPredicate();
-			Resource subj = stat.getSubject();
-			RDFNode obj = stat.getObject();
-			
-			if(prop.equals(RDF.type)) { // Instantiation triple
-				if(! subj.isAnon() && ! (obj.isLiteral())) { // checking basic RDF rule respect
-					Resource objRes = obj.asResource();
-					RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
-					addComponentToIndexes(subj, compoType);
+//		StmtIterator itStat = model.listStatements();
+//		while(itStat.hasNext()) {
+		while(dataIt.hasNext()) {
+//			Statement stat = itStat.next();
+			Triple stat = dataIt.next();
+			Property prop = null;//stat.getPredicate();
+			Resource subj = null;stat.getSubject();
+			RDFNode obj = null;//stat.getObject();
+			if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
+				subj = model.createResource(stat.getSubject().getURI());
+			}
+			if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
+				prop = model.createProperty(stat.getPredicate().getURI());
+			}
+			if(stat.getObject() != null) {
+				if(stat.getObject().isLiteral()) {
+					obj = model.createTypedLiteral(stat.getObject().getLiteralValue(), stat.getObject().getLiteralDatatype());
+				} else if(stat.getObject().isURI()) {
+					obj = model.createResource(stat.getObject().getURI());
+				} else if(stat.getObject().isBlank()) {
+					obj = model.createResource(new AnonId(stat.getObject().getBlankNodeId())); 
 				}
-			} else if(! _onto.isOntologyPropertyVocabulary(prop) && ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
+			}
+			
+			if(subj != null && prop != null && obj != null) {
+				if(prop.equals(RDF.type)) { // Instantiation triple
+					if(! subj.isAnon() && ! (obj.isLiteral())) { // checking basic RDF rule respect
+						Resource objRes = obj.asResource();
+						RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
+						addComponentToIndexes(subj, compoType);
+					}
+				} else if(! _onto.isOntologyPropertyVocabulary(prop) && ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
 				
 					RDFPatternResource compoPropOut = AttributeIndex.getInstance().getComponent(prop, Type.OUT_PROPERTY);
 					addComponentToIndexes(subj, compoPropOut);
@@ -126,9 +164,12 @@ public class BigDataTransactionExtractor {
 							}
 						}
 					}
+				}
 			}
 		}
 		logger.debug("End of iterations");
+//		dataSteam.finish();
+		model.close();
 		
 		logger.debug("Building property-class items over " + this._connectedResources.size() + " connexions");
 		// If conversion in property-class, generate the property-class items from the co-occuring indexes and the type index

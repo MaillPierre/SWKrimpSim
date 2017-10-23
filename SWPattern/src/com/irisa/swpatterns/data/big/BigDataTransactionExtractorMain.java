@@ -242,10 +242,10 @@ public class BigDataTransactionExtractorMain {
 //						converter.setPathsLength(Integer.valueOf(pathOption));
 //					}
 	
-					BaseRDF baseRDF = new BaseRDF(firstRDFFile, MODE.LOCAL);
+//					BaseRDF baseRDF = new BaseRDF(firstRDFFile, MODE.LOCAL);
 	
 //					logger.debug("initOnto");
-					onto.init(baseRDF);
+//					onto.init(baseRDF);
 	
 					logger.debug("Extracting transactions from RDF file with conversion " + converter.getNeighborLevel());
 
@@ -254,7 +254,7 @@ public class BigDataTransactionExtractorMain {
 					
 					// Extracting transactions
 					LabeledTransactions transactionsBigData;
-					LabeledTransactions transactionsNormal;
+//					LabeledTransactions transactionsNormal;
 					if(inputConversionIndex) {
 						index.readAttributeIndex(inputConversionIndexFile);
 					}
@@ -270,10 +270,10 @@ public class BigDataTransactionExtractorMain {
 						if(outputTransaction) {
 							index.printTransactionsItems(transactionsBigData, firstOutputTransactionFile);
 						}
-						transactionsNormal = normalConverter.extractTransactions(baseRDF, onto);
-						if(outputTransaction) {
-							index.printTransactionsItems(transactionsNormal, firstOutputTransactionFile + ".normal");
-						}
+//						transactionsNormal = normalConverter.extractTransactions(baseRDF, onto);
+//						if(outputTransaction) {
+//							index.printTransactionsItems(transactionsNormal, firstOutputTransactionFile + ".normal");
+//						}
 //					}
 					
 	
@@ -290,7 +290,7 @@ public class BigDataTransactionExtractorMain {
 					}
 					logger.debug("Nb items: " + index.size());
 	
-					baseRDF.close();
+//					baseRDF.close();
 	
 				} else {
 					realtransactions = new ItemsetSet(Utils.readTransactionFile(cmd.getOptionValue(inputTransactionOption)));
