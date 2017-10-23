@@ -19,8 +19,10 @@ log4j.appender.F1.MaxBackupIndex=100
 # Config pour n'avoir que les logs de l'application en temps normal
 log4j.logger.org.apache.http = FATAL
 log4j.logger.org.apache.jena.riot.web = FATAL
+log4j.logger.org.apache.jena.riot = ERROR
 log4j.logger.org.apache.jena.shared = FATAL
 log4j.logger.org.apache.jena.util = FATAL
 log4j.logger.org.apache.jena.riot.system.stream = FATAL
 log4j.logger.com.irisa.jenautils = DEBUG
-log4j.logger.com.irisa.rdftotransaction = DEBUG
+log4j.logger.com.irisa.krimp = TRACE
+log4j.logger.com.irisa.swpatterns = TRACE

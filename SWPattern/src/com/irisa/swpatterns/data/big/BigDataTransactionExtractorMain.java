@@ -215,6 +215,9 @@ public class BigDataTransactionExtractorMain {
 				
 				String inputConversionIndexFile = cmd.getOptionValue(inputConversionIndexOption);
 				String outputConversionIndexFile = cmd.getOptionValue(outputConversionIndexOption);
+				if(! cmd.hasOption(outputConversionIndexOption)) {
+					outputConversionIndexFile = "conversionIndex.attr";
+				}
 				
 				// RDF handling options
 				String limitString = cmd.getOptionValue("limit");
@@ -253,7 +256,7 @@ public class BigDataTransactionExtractorMain {
 					AttributeIndex index = AttributeIndex.getInstance();
 					
 					// Extracting transactions
-					LabeledTransactions transactionsBigData;
+					ItemsetSet transactionsBigData;
 //					LabeledTransactions transactionsNormal;
 					if(inputConversionIndex) {
 						index.readAttributeIndex(inputConversionIndexFile);
@@ -268,7 +271,11 @@ public class BigDataTransactionExtractorMain {
 						transactionsBigData = converter.extractTransactionsFromFile(firstRDFFile);
 						// Printing transactions for both files
 						if(outputTransaction) {
-							index.printTransactionsItems(transactionsBigData, firstOutputTransactionFile);
+//							index.printTransactionsItems(transactionsBigData, firstOutputTransactionFile);
+							Utils.printItemsetSet(transactionsBigData, firstOutputTransactionFile);
+							logger.debug("Transactions printed to " + firstOutputTransactionFile);
+							AttributeIndex.getInstance().printAttributeIndex(outputConversionIndexFile);
+							logger.debug("Index printed to " + outputConversionIndexFile);
 						}
 //						transactionsNormal = normalConverter.extractTransactions(baseRDF, onto);
 //						if(outputTransaction) {
@@ -277,19 +284,23 @@ public class BigDataTransactionExtractorMain {
 //					}
 					
 	
-					realtransactions = index.convertToTransactions(transactionsBigData);
-					if(! inputCandidatesCodes) {
-						codes = new ItemsetSet(fsExtractor.computeItemsets(transactionsBigData, index));
-					} else {
-						codes = Utils.readItemsetSetFile(cmd.getOptionValue(inputCandidatesOption));
-					}
-					logger.debug("Nb transactions: " + realtransactions.size());
-	
-					if(outputCandidatesCodes) {
-						index.printTransactionsItems(transactionsBigData, firstOutputCandidateFile);
-					}
+//					realtransactions = index.convertToTransactions(transactionsBigData);
+//					realtransactions = converter.extractTransactionsFromFile(firstRDFFile);
+					logger.debug("Nb transactions: " + transactionsBigData.size());
 					logger.debug("Nb items: " + index.size());
+					
+					
+					
+//					if(! inputCandidatesCodes) {
+//						codes = new ItemsetSet(fsExtractor.computeItemsets(transactionsBigData, index));
+//					} else {
+//						codes = Utils.readItemsetSetFile(cmd.getOptionValue(inputCandidatesOption));
+//					}
 	
+//					if(outputCandidatesCodes) {
+//						index.printTransactionsItems(transactionsBigData, firstOutputCandidateFile);
+//					}
+//	
 //					baseRDF.close();
 	
 				} else {
@@ -301,182 +312,182 @@ public class BigDataTransactionExtractorMain {
 					}
 					logger.debug("Nb Lines: " + realtransactions.size());
 				}
-				ItemsetSet realcodes = new ItemsetSet(codes);
+//				ItemsetSet realcodes = new ItemsetSet(codes);
 	
-				try {
-					DataIndexes analysis = new DataIndexes(realtransactions);
-					CodeTable standardCT = CodeTable.createStandardCodeTable(realtransactions, analysis );
-	
-					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes);
-					CodeTable krimpCT;
-					if(inputCodeTableCodes) {
-						ItemsetSet KRIMPcodes = Utils.readItemsetSetFile(firstKRIMPFile);
-						krimpCT = new CodeTable(realtransactions, KRIMPcodes, analysis);
-					} else {
-						krimpCT = kAlgo.runAlgorithm(activatePruning);
-					}
-					
-					if(outputCodeTableCodes) {
-						Utils.printItemsetSet(krimpCT.getCodes(), firstOutputKRIMPFile);
-					}
-					double normalSize = standardCT.totalCompressedSize();
-					double compressedSize = krimpCT.totalCompressedSize();
-					logger.debug("-------- FIRST RESULT ---------");
-//					logger.debug(krimpCT);
-					//					logger.debug("First Code table: " + krimpCT);
-					logger.debug("First NormalLength: " + normalSize);
-					logger.debug("First CompressedLength: " + compressedSize);
-					logger.debug("First Compression: " + (compressedSize / normalSize));
-	
-					if(otherInput) {
-	
-						ItemsetSet otherRealTransactions;
-						BaseRDF otherBase = new BaseRDF(otherRDFFile, MODE.LOCAL);
-						logger.debug("processing base of " + otherBase.size() + " triples.");
-						onto.init(otherBase);
-						if(! inputOtherTransaction) {
-							LabeledTransactions otherTransactions;
-//							if(cmd.hasOption("class")) {
-//								Resource classRes = onto.getModel().createResource(className);
-//								otherTransactions = converter.extractTransactionsForClass(otherBase,  onto, classRes);
-//							} else if(cmd.hasOption("path")) {
-//								otherTransactions = converter.extractPathAttributes(otherBase,  onto);
-//							} else {
-								otherTransactions = converter.extractTransactionsFromFile(otherRDFFile);
+//				try {
+//					DataIndexes analysis = new DataIndexes(realtransactions);
+//					CodeTable standardCT = CodeTable.createStandardCodeTable(realtransactions, analysis );
+//	
+//					KrimpAlgorithm kAlgo = new KrimpAlgorithm(realtransactions, realcodes);
+//					CodeTable krimpCT;
+//					if(inputCodeTableCodes) {
+//						ItemsetSet KRIMPcodes = Utils.readItemsetSetFile(firstKRIMPFile);
+//						krimpCT = new CodeTable(realtransactions, KRIMPcodes, analysis);
+//					} else {
+//						krimpCT = kAlgo.runAlgorithm(activatePruning);
+//					}
+//					
+//					if(outputCodeTableCodes) {
+//						Utils.printItemsetSet(krimpCT.getCodes(), firstOutputKRIMPFile);
+//					}
+//					double normalSize = standardCT.totalCompressedSize();
+//					double compressedSize = krimpCT.totalCompressedSize();
+//					logger.debug("-------- FIRST RESULT ---------");
+////					logger.debug(krimpCT);
+//					//					logger.debug("First Code table: " + krimpCT);
+//					logger.debug("First NormalLength: " + normalSize);
+//					logger.debug("First CompressedLength: " + compressedSize);
+//					logger.debug("First Compression: " + (compressedSize / normalSize));
+//	
+//					if(otherInput) {
+//	
+//						ItemsetSet otherRealTransactions;
+//						BaseRDF otherBase = new BaseRDF(otherRDFFile, MODE.LOCAL);
+//						logger.debug("processing base of " + otherBase.size() + " triples.");
+//						onto.init(otherBase);
+//						if(! inputOtherTransaction) {
+//							LabeledTransactions otherTransactions;
+////							if(cmd.hasOption("class")) {
+////								Resource classRes = onto.getModel().createResource(className);
+////								otherTransactions = converter.extractTransactionsForClass(otherBase,  onto, classRes);
+////							} else if(cmd.hasOption("path")) {
+////								otherTransactions = converter.extractPathAttributes(otherBase,  onto);
+////							} else {
+//								otherTransactions = converter.extractTransactionsFromFile(otherRDFFile);
+////							}
+//							logger.debug("Other RDF transactions: " + otherTransactions.size() + " transactions");
+//		
+//							otherRealTransactions = AttributeIndex.getInstance().convertToTransactions(otherTransactions);
+//							if(outputTransaction) {
+//								AttributeIndex.getInstance().printTransactionsItems(otherTransactions, otherOutputTransactionFile);
 //							}
-							logger.debug("Other RDF transactions: " + otherTransactions.size() + " transactions");
-		
-							otherRealTransactions = AttributeIndex.getInstance().convertToTransactions(otherTransactions);
-							if(outputTransaction) {
-								AttributeIndex.getInstance().printTransactionsItems(otherTransactions, otherOutputTransactionFile);
-							}
-						} else {
-							otherRealTransactions = new ItemsetSet(Utils.readTransactionFile(otherTransactionFile));
-						}
-						logger.debug("Other final transactions: " + otherRealTransactions.size() + " transactions");
-						
-						DataIndexes otherAnalysis = new DataIndexes(otherRealTransactions);
-						standardCT = CodeTable.createStandardCodeTable(otherRealTransactions, otherAnalysis );
-						CodeTable otherKrimpCT ;
-						if(! inputOtherCodeTable) {
-							ItemsetSet otherCandidates;
-							if(inputOtherCandidatesCodes) {
-								otherCandidates = Utils.readItemsetSetFile(otherCandidatesFile);
-							} else {
-								otherCandidates = new ItemsetSet(fsExtractor.computeItemsets(otherRealTransactions));
-							}
-							if(outputCandidatesCodes) {
-								Utils.printItemsetSet(otherCandidates, otherOutputCandidateFile);
-							}
-							
-							KrimpAlgorithm otherKrimpAlgo = new KrimpAlgorithm(otherRealTransactions, otherCandidates);
-							otherKrimpCT = otherKrimpAlgo.runAlgorithm(activatePruning);
-						} else {
-							otherKrimpCT = new CodeTable(otherRealTransactions, Utils.readItemsetSetFile(otherKRIMPFile), otherAnalysis);
-						}
-						
-						CodeTable otherComparisonResult = new CodeTable( otherRealTransactions, krimpCT.getCodes(), otherAnalysis);
-						double otherNormalSize = standardCT.totalCompressedSize();
-						double otherCompressedSize = otherKrimpCT.totalCompressedSize();
-						double otherCompressedSizeWithoutCT = otherKrimpCT.encodedTransactionSetCodeLength();
-						double othercomparisonSize = otherComparisonResult.totalCompressedSize();
-						double othercomparisonSizeWithoutCT = otherComparisonResult.encodedTransactionSetCodeLength();
-						//	logger.debug("First Code table: " + krimpCT);
-						logger.debug("-------- OTHER RESULT ---------");
-						logger.debug("Other NormalLength: " + otherNormalSize);
-						logger.debug("Other CompressedLength: " + otherCompressedSize);
-						logger.debug("Other Compression: " + (otherCompressedSize / otherNormalSize));
-						logger.debug("Second Compression with first CT: " + (othercomparisonSize / otherNormalSize));
-						logger.debug("Compression ratio: "+(othercomparisonSize/otherCompressedSize));
-						logger.debug("-------- NEW FORMULATION --------");
-						double evalKrimpSize = otherKrimpCT.codificationLength(otherRealTransactions); 
-						krimpCT.setTransactions(otherRealTransactions);
-						// WARNING!!! update usages is tricky
-						// The cover order is not modified, but the usages (and therefore the code length) are 
-						// This is done on purpose, trying to use the set of codes as efficiently as possible
-						krimpCT.updateUsages();
-						double refKrimpSize = krimpCT.codificationLength(otherRealTransactions); 
-						
-						logger.debug("Size of eval database using its Krimp CT: "+evalKrimpSize);
-						logger.debug("Size of eval database using the Reference Krimp CT: "+refKrimpSize);
-						logger.debug("Compression ratio: "+(refKrimpSize/evalKrimpSize));
-						
+//						} else {
+//							otherRealTransactions = new ItemsetSet(Utils.readTransactionFile(otherTransactionFile));
+//						}
+//						logger.debug("Other final transactions: " + otherRealTransactions.size() + " transactions");
+//						
+//						DataIndexes otherAnalysis = new DataIndexes(otherRealTransactions);
+//						standardCT = CodeTable.createStandardCodeTable(otherRealTransactions, otherAnalysis );
+//						CodeTable otherKrimpCT ;
+//						if(! inputOtherCodeTable) {
+//							ItemsetSet otherCandidates;
+//							if(inputOtherCandidatesCodes) {
+//								otherCandidates = Utils.readItemsetSetFile(otherCandidatesFile);
+//							} else {
+//								otherCandidates = new ItemsetSet(fsExtractor.computeItemsets(otherRealTransactions));
+//							}
+//							if(outputCandidatesCodes) {
+//								Utils.printItemsetSet(otherCandidates, otherOutputCandidateFile);
+//							}
+//							
+//							KrimpAlgorithm otherKrimpAlgo = new KrimpAlgorithm(otherRealTransactions, otherCandidates);
+//							otherKrimpCT = otherKrimpAlgo.runAlgorithm(activatePruning);
+//						} else {
+//							otherKrimpCT = new CodeTable(otherRealTransactions, Utils.readItemsetSetFile(otherKRIMPFile), otherAnalysis);
+//						}
+//						
+//						CodeTable otherComparisonResult = new CodeTable( otherRealTransactions, krimpCT.getCodes(), otherAnalysis);
+//						double otherNormalSize = standardCT.totalCompressedSize();
+//						double otherCompressedSize = otherKrimpCT.totalCompressedSize();
+//						double otherCompressedSizeWithoutCT = otherKrimpCT.encodedTransactionSetCodeLength();
+//						double othercomparisonSize = otherComparisonResult.totalCompressedSize();
+//						double othercomparisonSizeWithoutCT = otherComparisonResult.encodedTransactionSetCodeLength();
+//						//	logger.debug("First Code table: " + krimpCT);
 //						logger.debug("-------- OTHER RESULT ---------");
-//						logger.debug(otherKrimpCT);
-						
-						if(outputCodeTableCodes) {
-							Utils.printItemsetSet(otherKrimpCT.getCodes(), otherOutputKRIMPFile);
-						}
-						
-						if (outputComparisonResultsFile == null){						
-							System.out.println(otherCompressedSize+";"+othercomparisonSize+";"+otherCompressedSizeWithoutCT+";"+othercomparisonSizeWithoutCT);
-						}
-						else{
-							
-							File outputFile = new File (outputComparisonResultsFile); 
-							
-							if (!outputFile.exists()) {
-								logger.debug("creating a new file ..."); 
-								outputFile.createNewFile(); 
-								try (FileWriter fw = new FileWriter(outputFile); 
-										PrintWriter out = new PrintWriter(fw)) {									
-									out.println("input;other;Conversion;refCompressionRatioOwnCT;evalCompressionRationOwnCT;relativeCompressionRatio(withCT);newRelativeCompressionRatio");
-									out.flush();
-								}
-								catch( Exception e) {
-									e.printStackTrace();
-								}
-							}
-							else {
-								logger.debug("the file existed before ..."); 
-							}
-							
-							try (FileWriter fw = new FileWriter(outputComparisonResultsFile, true); 
-									PrintWriter out = new PrintWriter(fw)) {
-															
-								StringBuilder line = new StringBuilder(); 
-								if (inputRDF) {
-									line.append(firstRDFFile); 									
-								}
-								else if (inputCodeTableCodes) {
-									line.append(firstKRIMPFile); 									
-								}
-								line.append(";"); 
-								if (inputOtherRDFFile) {
-									line.append(otherRDFFile); 
-								}
-								else if (inputOtherCodeTable) {
-									line.append(otherKRIMPFile); 
-								}
-								line.append(";");
-								line.append(converter.getNeighborLevel().toString());
-								line.append(";");
-								// refCompressionRationOwnCT
-								line.append(compressedSize / normalSize); 
-								line.append(";"); 
-								// evalCompressionRatioOwnCT
-								line.append(otherCompressedSize / otherNormalSize); 
-								line.append(";"); 
-								// the old relative ratio
-								line.append(othercomparisonSize/otherCompressedSize); 
-								line.append(";"); 
-								// the new relative ratio
-								line.append(refKrimpSize/evalKrimpSize);
-								out.println(line); 
-								out.flush();
-							}							
-						}
-	
-					}
-	
-					// Printing conversion index
-					if(outputConversionIndex) {
-						AttributeIndex.getInstance().printAttributeIndex(outputConversionIndexFile);
-					}
-					
-				} catch (Exception e) {
-					logger.fatal("RAAAH", e);
-				}
+//						logger.debug("Other NormalLength: " + otherNormalSize);
+//						logger.debug("Other CompressedLength: " + otherCompressedSize);
+//						logger.debug("Other Compression: " + (otherCompressedSize / otherNormalSize));
+//						logger.debug("Second Compression with first CT: " + (othercomparisonSize / otherNormalSize));
+//						logger.debug("Compression ratio: "+(othercomparisonSize/otherCompressedSize));
+//						logger.debug("-------- NEW FORMULATION --------");
+//						double evalKrimpSize = otherKrimpCT.codificationLength(otherRealTransactions); 
+//						krimpCT.setTransactions(otherRealTransactions);
+//						// WARNING!!! update usages is tricky
+//						// The cover order is not modified, but the usages (and therefore the code length) are 
+//						// This is done on purpose, trying to use the set of codes as efficiently as possible
+//						krimpCT.updateUsages();
+//						double refKrimpSize = krimpCT.codificationLength(otherRealTransactions); 
+//						
+//						logger.debug("Size of eval database using its Krimp CT: "+evalKrimpSize);
+//						logger.debug("Size of eval database using the Reference Krimp CT: "+refKrimpSize);
+//						logger.debug("Compression ratio: "+(refKrimpSize/evalKrimpSize));
+//						
+////						logger.debug("-------- OTHER RESULT ---------");
+////						logger.debug(otherKrimpCT);
+//						
+//						if(outputCodeTableCodes) {
+//							Utils.printItemsetSet(otherKrimpCT.getCodes(), otherOutputKRIMPFile);
+//						}
+//						
+//						if (outputComparisonResultsFile == null){						
+//							System.out.println(otherCompressedSize+";"+othercomparisonSize+";"+otherCompressedSizeWithoutCT+";"+othercomparisonSizeWithoutCT);
+//						}
+//						else{
+//							
+//							File outputFile = new File (outputComparisonResultsFile); 
+//							
+//							if (!outputFile.exists()) {
+//								logger.debug("creating a new file ..."); 
+//								outputFile.createNewFile(); 
+//								try (FileWriter fw = new FileWriter(outputFile); 
+//										PrintWriter out = new PrintWriter(fw)) {									
+//									out.println("input;other;Conversion;refCompressionRatioOwnCT;evalCompressionRationOwnCT;relativeCompressionRatio(withCT);newRelativeCompressionRatio");
+//									out.flush();
+//								}
+//								catch( Exception e) {
+//									e.printStackTrace();
+//								}
+//							}
+//							else {
+//								logger.debug("the file existed before ..."); 
+//							}
+//							
+//							try (FileWriter fw = new FileWriter(outputComparisonResultsFile, true); 
+//									PrintWriter out = new PrintWriter(fw)) {
+//															
+//								StringBuilder line = new StringBuilder(); 
+//								if (inputRDF) {
+//									line.append(firstRDFFile); 									
+//								}
+//								else if (inputCodeTableCodes) {
+//									line.append(firstKRIMPFile); 									
+//								}
+//								line.append(";"); 
+//								if (inputOtherRDFFile) {
+//									line.append(otherRDFFile); 
+//								}
+//								else if (inputOtherCodeTable) {
+//									line.append(otherKRIMPFile); 
+//								}
+//								line.append(";");
+//								line.append(converter.getNeighborLevel().toString());
+//								line.append(";");
+//								// refCompressionRationOwnCT
+//								line.append(compressedSize / normalSize); 
+//								line.append(";"); 
+//								// evalCompressionRatioOwnCT
+//								line.append(otherCompressedSize / otherNormalSize); 
+//								line.append(";"); 
+//								// the old relative ratio
+//								line.append(othercomparisonSize/otherCompressedSize); 
+//								line.append(";"); 
+//								// the new relative ratio
+//								line.append(refKrimpSize/evalKrimpSize);
+//								out.println(line); 
+//								out.flush();
+//							}							
+//						}
+//	
+//					}
+//	
+//					// Printing conversion index
+//					if(outputConversionIndex) {
+//						AttributeIndex.getInstance().printAttributeIndex(outputConversionIndexFile);
+//					}
+//					
+//				} catch (Exception e) {
+//					logger.fatal("RAAAH", e);
+//				}
 				onto.close();
 			}
 		} catch (Exception e) {

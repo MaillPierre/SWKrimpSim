@@ -29,6 +29,8 @@ import org.apache.log4j.Logger;
 import com.irisa.exception.LogicException;
 import com.irisa.jenautils.Couple;
 import com.irisa.jenautils.UtilOntology;
+import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.KItemset;
 import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.LabeledTransaction;
@@ -96,7 +98,7 @@ public class BigDataTransactionExtractor {
 		this._noOutBool = noOutBool;
 	}
 	
-	public LabeledTransactions extractTransactionsFromFile(String filename) {
+	public ItemsetSet extractTransactionsFromFile(String filename) {
 		logger.debug("big data loading START");
 		
 		logger.debug("Jena loading ...");
@@ -169,10 +171,12 @@ public class BigDataTransactionExtractor {
 		}
 		logger.debug("End of iterations");
 //		dataSteam.finish();
+		executor.shutdown();
 		model.close();
 		
 		logger.debug("Building property-class items over " + this._connectedResources.size() + " connexions");
 		// If conversion in property-class, generate the property-class items from the co-occuring indexes and the type index
+		int nbConnexion = 0;
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			Iterator<Entry<Couple<Resource, Resource>, HashSet<Property>>> itConnected = this._connectedResources.entrySet().iterator();
 			while(itConnected.hasNext()) {
@@ -207,32 +211,45 @@ public class BigDataTransactionExtractor {
 						}	
 					}
 				}
+				
+				if(nbConnexion % 10000 == 0) {
+					logger.debug("Property-class connexion n°" + nbConnexion);
+				}
+				nbConnexion++;
 			}
 		}
 		logger.debug("Property-class items built");
 		
-		logger.debug("Union of all tmp transactions");
+		logger.debug("Union of all tmp transactions for " + this._individuals.size() + " individuals");
 		// Union of the transactions
-		LabeledTransactions result = new LabeledTransactions();
+		ItemsetSet result = new ItemsetSet();
 		Iterator<Resource> itIndiv = this._individuals.iterator();
+		int nbtreatedIndiv = 0;
 		while(itIndiv.hasNext()) {
 			Resource indiv = itIndiv.next();
 			
-			LabeledTransaction indivTrans = new LabeledTransaction();
+			KItemset indivTrans = new KItemset();
 			if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
-				indivTrans.addAll(this._buildingTransactionsTypeItems.get(indiv));
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
+				this._buildingTransactionsTypeItems.remove(indiv);
 			}
 			if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
-				indivTrans.addAll(this._buildingTransactionsPropertyItems.get(indiv));
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
+				this._buildingTransactionsPropertyItems.remove(indiv);
 			}
 			if(this._buildingtransactionsPropertyClassItems.containsKey(indiv)) {
-				indivTrans.addAll(this._buildingtransactionsPropertyClassItems.get(indiv));
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingtransactionsPropertyClassItems.get(indiv)));
+				this._buildingtransactionsPropertyClassItems.remove(indiv);
 			}
 			
-			logger.debug(indiv + " = " + indivTrans);
 			result.add(indivTrans);
+			
+			if(nbtreatedIndiv % 100000 == 0) {
+				logger.debug("Individual n°" + nbtreatedIndiv);
+			}
+			nbtreatedIndiv++;
 		}
-		logger.debug("All transactions united, " + result.size() + " for " + AttributeIndex.getInstance().size() + " attributes");
+		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
 		
 		return result;
 	}
