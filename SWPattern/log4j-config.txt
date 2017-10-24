@@ -24,5 +24,5 @@ log4j.logger.org.apache.jena.shared = FATAL
 log4j.logger.org.apache.jena.util = FATAL
 log4j.logger.org.apache.jena.riot.system.stream = FATAL
 log4j.logger.com.irisa.jenautils = DEBUG
-log4j.logger.com.irisa.krimp = TRACE
-log4j.logger.com.irisa.swpatterns = TRACE
+log4j.logger.com.irisa.krimp = DEBUG
+log4j.logger.com.irisa.swpatterns = DEBUG

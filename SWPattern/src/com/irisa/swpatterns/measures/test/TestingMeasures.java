@@ -261,8 +261,8 @@ public class TestingMeasures {
 					if(cmd.hasOption("class")) {
 						Resource classRes = onto.getModel().createResource(className);
 						transactions = converter.extractTransactionsForClass(baseRDF, onto, classRes);
-					} else if(cmd.hasOption("path")) {
-						transactions = converter.extractPathAttributes(baseRDF, onto);
+//					} else if(cmd.hasOption("path")) {
+//						transactions = converter.extractPathAttributes(baseRDF, onto);
 					} else {
 						transactions = converter.extractTransactions(baseRDF, onto);
 					}
@@ -339,8 +339,8 @@ public class TestingMeasures {
 							if(cmd.hasOption("class")) {
 								Resource classRes = onto.getModel().createResource(className);
 								otherTransactions = converter.extractTransactionsForClass(otherBase,  onto, classRes);
-							} else if(cmd.hasOption("path")) {
-								otherTransactions = converter.extractPathAttributes(otherBase,  onto);
+//							} else if(cmd.hasOption("path")) {
+//								otherTransactions = converter.extractPathAttributes(otherBase,  onto);
 							} else {
 								otherTransactions = converter.extractTransactions(otherBase,  onto);
 							}

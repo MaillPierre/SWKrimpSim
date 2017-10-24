@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import com.irisa.swpatterns.data.RDFPatternComponent.Type;
+import org.apache.jena.rdf.model.Resource;
 
 /**
  * Set of RDFPattern component, represents one transaction line
@@ -18,18 +18,33 @@ import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 public class LabeledTransaction extends HashSet<RDFPatternComponent> {
 	
 	private int _support = 0;
+	private Resource _source = null;
+	
 	public LabeledTransaction() {
 		super();
 	}
 	
+	public LabeledTransaction(Resource source) {
+		super();
+		this._source = source;
+	}
+	
 	public LabeledTransaction(Collection<RDFPatternComponent> compos, int support) {
+		this(compos, null, support);
+	}
+	
+	public LabeledTransaction(Collection<RDFPatternComponent> compos, Resource source, int support) {
 		super(compos);
 		setSupport(support);
+		this._source = source;
 	}
 	
 	public LabeledTransaction(LabeledTransaction _attributes) {
 		super(_attributes);
 		setSupport(_attributes.getSupport());
+		if(_attributes.hasSource() && this.hasSource() && this.getSource() != _attributes.getSource()) {
+			this._source = null;
+		}
 	}
 
 	public int getSupport() {
@@ -56,6 +71,18 @@ public class LabeledTransaction extends HashSet<RDFPatternComponent> {
 	 */
 	public Iterator<RDFPatternComponent> getSortedIterator() {
 		return getSortedIterator(RDFPatternComponent.getComparator());
+	}
+	
+	public boolean hasSource() {
+		return this._source != null;
+	}
+
+	public Resource getSource() {
+		return _source;
+	}
+
+	public void setSource(Resource _source) {
+		this._source = _source;
 	}
 
 }

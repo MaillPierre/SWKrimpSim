@@ -189,6 +189,18 @@ public class AttributeIndex {
 	 * @throws Exception 
 	 */
 	public void printTransactionsItems(LinkedList<LabeledTransaction> transactions, String output) throws Exception {
+		printTransactionsItems(transactions, true, output);
+	}
+
+	/**
+	 * Print the transaction in the format expected by SPMF (int separated by spaces). Will update the attribute/item indexes
+	 * @param transactions
+	 * @param output
+	 * @param debug Should the resource à the origin of the transactino appear ?
+	 * @return
+	 * @throws Exception 
+	 */
+	protected void printTransactionsItems(LinkedList<LabeledTransaction> transactions, boolean debug, String output) throws Exception {
 
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
@@ -198,6 +210,10 @@ public class AttributeIndex {
 			Iterator<LabeledTransaction> itResult = transactions.iterator();
 			while(itResult.hasNext()) {
 				LabeledTransaction resultLine = itResult.next();
+				if(debug && resultLine.hasSource()) {
+					printer.print(resultLine.getSource());
+				}
+				
 				// Ecriture des attributs types
 				Iterator<RDFPatternComponent> itTypes = resultLine.getSortedIterator();
 				while(itTypes.hasNext()) {

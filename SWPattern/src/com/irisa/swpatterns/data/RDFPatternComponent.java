@@ -27,20 +27,20 @@ public abstract class RDFPatternComponent {
 		IN_NEIGHBOUR_TYPE, // Property and type of the subject of an in-going triple
 		IN_NEIGHBOUR, // Property and subject of an in-going triple
 		// For Paths
-		NODE1, // First node of a path
-		NODE1TYPE, // Type of the first node of a path
-		RELATION1, // First relation of a path
-		NODE2, // Second node of a path
-		NODE2TYPE, // Type of the second node of a path
-		RELATION2, // Second relation of a path
-		NODE3, // Third node of a path
-		NODE3TYPE, // Type of the third node of a path
-		RELATION3, // Third relation of a path
-		NODE4, // Fourth node of a path
-		NODE4TYPE, // Type of the fourth node of a path
-		RELATION4, // Fourth relation of a path
-		NODE5, // Fifth node of a path
-		NODE5TYPE, // Type of the fifth node of a path
+//		NODE1, // First node of a path
+//		NODE1TYPE, // Type of the first node of a path
+//		RELATION1, // First relation of a path
+//		NODE2, // Second node of a path
+//		NODE2TYPE, // Type of the second node of a path
+//		RELATION2, // Second relation of a path
+//		NODE3, // Third node of a path
+//		NODE3TYPE, // Type of the third node of a path
+//		RELATION3, // Third relation of a path
+//		NODE4, // Fourth node of a path
+//		NODE4TYPE, // Type of the fourth node of a path
+//		RELATION4, // Fourth relation of a path
+//		NODE5, // Fifth node of a path
+//		NODE5TYPE, // Type of the fifth node of a path
 	};
 	
 	protected RDFPatternElement _element = null; 
@@ -104,13 +104,13 @@ public abstract class RDFPatternComponent {
 
 	@Override
 	public int hashCode() {
-		return this.getElement().toString().hashCode() + this.getType().toString().hashCode();
+		return toString().hashCode();
 	}
 	
 	@Override
 	public boolean equals(Object o) {
 		if(o instanceof RDFPatternComponent) {
-			return ((RDFPatternComponent) o).getElement().toString().equals(this.getElement().toString()) && ((RDFPatternComponent) o).getType().toString().equals(this.getType().toString());
+			return ((RDFPatternComponent) o).getElement().toString().equals(this.getElement().toString()) && ((RDFPatternComponent) o).getType().equals(this.getType());
 		}
 		return false;
 	}
@@ -149,63 +149,63 @@ public abstract class RDFPatternComponent {
 					return 1;
 				} else if(o2.getType() == Type.IN_NEIGHBOUR) {
 					return -1;
-				} else if(o1.getType() == Type.NODE1) {
-					return 1;
-				} else if(o2.getType() == Type.NODE1) {
-					return -1;
-				} else if(o1.getType() == Type.NODE1TYPE) {
-					return 1;
-				} else if(o2.getType() == Type.NODE1TYPE) {
-					return -1;
-				} else if(o1.getType() == Type.RELATION1) {
-					return 1;
-				} else if(o2.getType() == Type.RELATION1) {
-					return -1;
-				} else if(o1.getType() == Type.NODE2) {
-					return 1;
-				} else if(o2.getType() == Type.NODE2) {
-					return -1;
-				} else if(o1.getType() == Type.NODE2TYPE) {
-					return 1;
-				} else if(o2.getType() == Type.NODE2TYPE) {
-					return -1;
-				} else if(o1.getType() == Type.RELATION2) {
-					return 1;
-				} else if(o2.getType() == Type.RELATION2) {
-					return -1;
-				} else if(o1.getType() == Type.NODE3) {
-					return 1;
-				} else if(o2.getType() == Type.NODE3) {
-					return -1;
-				} else if(o1.getType() == Type.NODE3TYPE) {
-					return 1;
-				} else if(o2.getType() == Type.NODE3TYPE) {
-					return -1;
-				} else if(o1.getType() == Type.RELATION3) {
-					return 1;
-				} else if(o2.getType() == Type.RELATION3) {
-					return -1;
-				} else if(o1.getType() == Type.NODE4) {
-					return 1;
-				} else if(o2.getType() == Type.NODE4) {
-					return -1;
-				} else if(o1.getType() == Type.NODE4TYPE) {
-					return 1;
-				} else if(o2.getType() == Type.NODE4TYPE) {
-					return -1;
-				} else if(o1.getType() == Type.RELATION4) {
-					return 1;
-				} else if(o2.getType() == Type.RELATION4) {
-					return -1;
-				} else if(o1.getType() == Type.NODE5) {
-					return 1;
-				} else if(o2.getType() == Type.NODE5) {
-					return -1;
-				} else if(o1.getType() == Type.NODE5TYPE) {
-					return 1;
-				} else if(o2.getType() == Type.NODE5TYPE) {
-					return -1;
-				}
+				} //else if(o1.getType() == Type.NODE1) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE1) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE1TYPE) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE1TYPE) {
+//					return -1;
+//				} else if(o1.getType() == Type.RELATION1) {
+//					return 1;
+//				} else if(o2.getType() == Type.RELATION1) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE2) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE2) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE2TYPE) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE2TYPE) {
+//					return -1;
+//				} else if(o1.getType() == Type.RELATION2) {
+//					return 1;
+//				} else if(o2.getType() == Type.RELATION2) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE3) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE3) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE3TYPE) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE3TYPE) {
+//					return -1;
+//				} else if(o1.getType() == Type.RELATION3) {
+//					return 1;
+//				} else if(o2.getType() == Type.RELATION3) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE4) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE4) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE4TYPE) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE4TYPE) {
+//					return -1;
+//				} else if(o1.getType() == Type.RELATION4) {
+//					return 1;
+//				} else if(o2.getType() == Type.RELATION4) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE5) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE5) {
+//					return -1;
+//				} else if(o1.getType() == Type.NODE5TYPE) {
+//					return 1;
+//				} else if(o2.getType() == Type.NODE5TYPE) {
+//					return -1;
+//				}
 				return -1;
 			}
 		};

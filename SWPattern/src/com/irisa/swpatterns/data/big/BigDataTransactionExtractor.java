@@ -1,9 +1,9 @@
 package com.irisa.swpatterns.data.big;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,14 +15,9 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.rdf.model.StmtIterator;
-import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.lang.PipedRDFIterator;
-import org.apache.jena.riot.lang.PipedRDFStream;
 import org.apache.jena.riot.lang.PipedTriplesStream;
-import org.apache.jena.riot.system.StreamRDFBase;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
@@ -34,7 +29,6 @@ import com.irisa.krimp.data.KItemset;
 import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.LabeledTransaction;
-import com.irisa.swpatterns.data.LabeledTransactions;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 import com.irisa.swpatterns.data.RDFPatternResource;
@@ -145,7 +139,7 @@ public class BigDataTransactionExtractor {
 			
 			if(subj != null && prop != null && obj != null) {
 				if(prop.equals(RDF.type)) { // Instantiation triple
-					if(! subj.isAnon() && ! (obj.isLiteral())) { // checking basic RDF rule respect
+					if(! (obj.isLiteral())) { // checking basic RDF rule respect
 						Resource objRes = obj.asResource();
 						RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
 						addComponentToIndexes(subj, compoType);
@@ -184,6 +178,7 @@ public class BigDataTransactionExtractor {
 				Couple<Resource, Resource> resCouple = entry.getKey();
 				Resource subj = resCouple.getFirst();
 				Resource obj = resCouple.getSecond();
+				logger.trace("Examining connexion between " + subj + " and " + obj + " with " + entry.getValue());
 				
 				Iterator<Property> itProp = entry.getValue().iterator();
 				while(itProp.hasNext()) {
@@ -255,6 +250,7 @@ public class BigDataTransactionExtractor {
 	}
 	
 	private void addComponentToIndexes(Resource res, RDFPatternComponent compo) {
+		logger.trace("Adding component " + compo + " for resource " + res);
 		if(!this._individuals.contains(res)) {
 			this._individuals.add(res);
 		}
@@ -262,20 +258,20 @@ public class BigDataTransactionExtractor {
 		case OUT_PROPERTY:
 		case IN_PROPERTY:
 			if(! this._buildingTransactionsPropertyItems.containsKey(res)) { 
-				this._buildingTransactionsPropertyItems.put(res, new LabeledTransaction());
+				this._buildingTransactionsPropertyItems.put(res, new LabeledTransaction(res));
 			}
 			this._buildingTransactionsPropertyItems.get(res).add(compo);
 		break;
 		case TYPE:
 			if(! this._buildingTransactionsTypeItems.containsKey(res)) { 
-				this._buildingTransactionsTypeItems.put(res, new LabeledTransaction());
+				this._buildingTransactionsTypeItems.put(res, new LabeledTransaction(res));
 			}
 			this._buildingTransactionsTypeItems.get(res).add(compo);
 		break;
 		case OUT_NEIGHBOUR_TYPE:
 		case IN_NEIGHBOUR_TYPE:
 			if(! this._buildingtransactionsPropertyClassItems.containsKey(res)) {
-				this._buildingtransactionsPropertyClassItems.put(res, new LabeledTransaction());
+				this._buildingtransactionsPropertyClassItems.put(res, new LabeledTransaction(res));
 			}
 			this._buildingtransactionsPropertyClassItems.get(res).add(compo);
 		break;
@@ -285,6 +281,7 @@ public class BigDataTransactionExtractor {
 	}
 	
 	private void addConnection(Resource subj, Resource obj, Property prop) {
+		logger.trace("Connexion between " + subj + " and " + obj + " with " + prop);
 		Couple<Resource, Resource> couple = new Couple<Resource, Resource>(subj, obj);
 		if(! this._connectedResources.containsKey(couple)) {
 			this._connectedResources.put(couple, new HashSet<Property>());
