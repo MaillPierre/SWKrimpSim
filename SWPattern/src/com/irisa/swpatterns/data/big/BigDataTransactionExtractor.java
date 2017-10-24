@@ -176,7 +176,7 @@ public class BigDataTransactionExtractor {
 		
 		logger.debug("Building property-class items over " + this._connectedResources.size() + " connexions");
 		// If conversion in property-class, generate the property-class items from the co-occuring indexes and the type index
-		int nbConnexion = 0;
+		int nbConnexion = 1;
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			Iterator<Entry<Couple<Resource, Resource>, HashSet<Property>>> itConnected = this._connectedResources.entrySet().iterator();
 			while(itConnected.hasNext()) {
@@ -224,7 +224,7 @@ public class BigDataTransactionExtractor {
 		// Union of the transactions
 		ItemsetSet result = new ItemsetSet();
 		Iterator<Resource> itIndiv = this._individuals.iterator();
-		int nbtreatedIndiv = 0;
+		int nbtreatedIndiv = 1;
 		while(itIndiv.hasNext()) {
 			Resource indiv = itIndiv.next();
 			

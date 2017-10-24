@@ -280,7 +280,7 @@ public class Utils {
 		}
 	}
 	
-	public static void printTransaction(ItemsetSet transactions, String output) {
+	public static void printTransactions(ItemsetSet transactions, String output) {
 		printItemsetSet(transactions, output, true);
 	}
 

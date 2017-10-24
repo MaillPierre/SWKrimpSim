@@ -272,7 +272,7 @@ public class BigDataTransactionExtractorMain {
 						// Printing transactions for both files
 						if(outputTransaction) {
 //							index.printTransactionsItems(transactionsBigData, firstOutputTransactionFile);
-							Utils.printItemsetSet(transactionsBigData, firstOutputTransactionFile);
+							Utils.printTransactions(transactionsBigData, firstOutputTransactionFile);
 							logger.debug("Transactions printed to " + firstOutputTransactionFile);
 							AttributeIndex.getInstance().printAttributeIndex(outputConversionIndexFile);
 							logger.debug("Index printed to " + outputConversionIndexFile);
