@@ -110,7 +110,6 @@ public class TestingMeasures {
 		options.addOption("noOut", false, "Not taking OUT properties into account for RDF conversion.");
 		options.addOption("noIn", false, "Not taking IN properties into account for RDF conversion.");
 		options.addOption("noTypes", false, "Not taking TYPES into account for RDF conversion.");
-		options.addOption("path", true, "Extract paths of length N. (Here be dragons)");
 		options.addOption("help", false, "Display this help.");
 	
 		// Setting up options and constants etc.
@@ -222,7 +221,6 @@ public class TestingMeasures {
 				String classRegex = cmd.getOptionValue("classPattern");
 				// Other encoding options
 				String className = cmd.getOptionValue("class");
-				String pathOption = cmd.getOptionValue("path");
 			
 				
 				if(! inputTransaction) {
@@ -236,10 +234,6 @@ public class TestingMeasures {
 						UtilOntology.setClassRegex(classRegex);
 					} else {
 						UtilOntology.setClassRegex(null);
-					}
-	
-					if(pathOption != null) {
-						converter.setPathsLength(Integer.valueOf(pathOption));
 					}
 	
 					BaseRDF baseRDF = new BaseRDF(firstRDFFile, MODE.LOCAL);
@@ -261,8 +255,6 @@ public class TestingMeasures {
 					if(cmd.hasOption("class")) {
 						Resource classRes = onto.getModel().createResource(className);
 						transactions = converter.extractTransactionsForClass(baseRDF, onto, classRes);
-					} else if(cmd.hasOption("path")) {
-						transactions = converter.extractPathAttributes(baseRDF, onto);
 					} else {
 						transactions = converter.extractTransactions(baseRDF, onto);
 					}
@@ -339,8 +331,6 @@ public class TestingMeasures {
 							if(cmd.hasOption("class")) {
 								Resource classRes = onto.getModel().createResource(className);
 								otherTransactions = converter.extractTransactionsForClass(otherBase,  onto, classRes);
-							} else if(cmd.hasOption("path")) {
-								otherTransactions = converter.extractPathAttributes(otherBase,  onto);
 							} else {
 								otherTransactions = converter.extractTransactions(otherBase,  onto);
 							}
