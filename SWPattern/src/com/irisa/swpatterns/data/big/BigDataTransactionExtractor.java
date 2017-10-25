@@ -3,7 +3,6 @@ package com.irisa.swpatterns.data.big;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -224,20 +223,23 @@ public class BigDataTransactionExtractor {
 			Resource indiv = itIndiv.next();
 			
 			KItemset indivTrans = new KItemset();
+			indivTrans.setLabel(indiv.toString());
 			if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
 				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
 				this._buildingTransactionsTypeItems.remove(indiv);
-			}
-			if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
-				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
-				this._buildingTransactionsPropertyItems.remove(indiv);
-			}
-			if(this._buildingtransactionsPropertyClassItems.containsKey(indiv)) {
-				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingtransactionsPropertyClassItems.get(indiv)));
-				this._buildingtransactionsPropertyClassItems.remove(indiv);
+				if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
+					indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
+					this._buildingTransactionsPropertyItems.remove(indiv);
+				}
+				if(this._buildingtransactionsPropertyClassItems.containsKey(indiv)) {
+					indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingtransactionsPropertyClassItems.get(indiv)));
+					this._buildingtransactionsPropertyClassItems.remove(indiv);
+				}
 			}
 			
-			result.add(indivTrans);
+			if(! indivTrans.isEmpty()) {
+				result.add(indivTrans);
+			}
 			
 			if(nbtreatedIndiv % 100000 == 0) {
 				logger.debug("Individual n°" + nbtreatedIndiv);

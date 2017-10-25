@@ -165,15 +165,16 @@ public class AttributeIndex {
 	}
 	
 	public KItemset convertToTransaction(LabeledTransaction t ) {
-		LinkedList<Integer> result = new LinkedList<Integer>();
+		LinkedList<Integer> resultTmp = new LinkedList<Integer>();
 		Iterator<RDFPatternComponent> itCompo = t.getSortedIterator();
 		while(itCompo.hasNext()) {
 			RDFPatternComponent compo = itCompo.next();
 			
-			result.add(this.getItem(compo));
+			resultTmp.add(this.getItem(compo));
 		}
-		Collections.sort(result);
-		return new KItemset(result, t.getSupport());
+		KItemset result = new KItemset(resultTmp, t.getSupport());
+		result.setLabel(t.getSource().toString());
+		return result;
 	}
 	
 	public int size() {

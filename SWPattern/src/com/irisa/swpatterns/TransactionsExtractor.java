@@ -1,13 +1,10 @@
 package com.irisa.swpatterns;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.function.Consumer;
 
-import org.apache.commons.math3.stat.descriptive.AggregateSummaryStatistics;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.rdf.model.Resource;
@@ -54,8 +51,6 @@ public class TransactionsExtractor {
 		PropertyAndOther
 	}
 	private Neighborhood _neighborLevel = Neighborhood.PropertyAndType;
-	
-	private int _pathsLength = 0;
 	
 	private static Logger logger = Logger.getLogger(TransactionsExtractor.class);
 	
@@ -177,6 +172,8 @@ public class TransactionsExtractor {
 
 	private LabeledTransaction extractTypeAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 		LabeledTransaction indivResult = new LabeledTransaction();
+		indivResult.setSource(currIndiv);
+		
 		String typeTripQueryString = "SELECT DISTINCT ?t WHERE { <" + currIndiv + "> a ?t }";
 		QueryResultIterator itTypeResult = new QueryResultIterator(typeTripQueryString, baseRDF);
 		try {
@@ -201,6 +198,7 @@ public class TransactionsExtractor {
 	private LabeledTransaction extractOutPropertyAttributeForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 
 		LabeledTransaction indivResult = new LabeledTransaction();
+		indivResult.setSource(currIndiv);
 		
 		String outTripQueryString = "SELECT DISTINCT ?p "; 
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType || this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
@@ -265,6 +263,7 @@ public class TransactionsExtractor {
 	
 	public LabeledTransaction extractTransactionsForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 		LabeledTransaction indivResult = new LabeledTransaction();
+		indivResult.setSource(currIndiv);
 
 		// QUERY types triples
 		if(! _noTypeBool) {
@@ -380,6 +379,7 @@ public class TransactionsExtractor {
 	private LabeledTransaction extractInPropertyAttributesForIndividual(BaseRDF baseRDF, UtilOntology onto, Resource currIndiv) {
 
 		LabeledTransaction indivResult = new LabeledTransaction();
+		indivResult.setSource(currIndiv);
 		
 		String inTripQueryString = "SELECT DISTINCT ?p "; 
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType 

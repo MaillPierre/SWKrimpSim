@@ -45,6 +45,7 @@ public class LabeledTransaction extends HashSet<RDFPatternComponent> {
 		if(_attributes.hasSource() && this.hasSource() && this.getSource() != _attributes.getSource()) {
 			this._source = null;
 		}
+		this.setSource(_attributes.getSource());
 	}
 
 	public int getSupport() {

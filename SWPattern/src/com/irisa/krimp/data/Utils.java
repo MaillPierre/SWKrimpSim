@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 
 import org.apache.commons.csv.CSVFormat;
@@ -19,6 +20,8 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.log4j.Logger;
+
+import com.irisa.exception.LogicException;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
@@ -33,66 +36,6 @@ public class Utils {
 	public static ItemsetSet readItemsetSetFile(String filename) {
 		return new ItemsetSet(Utils.readItemsetFile(filename));
 	}
-	
-//	public static Itemsets readItemsetFile(String filename) {
-//		Itemsets result = new Itemsets(filename);
-//		
-//		// scan the database
-//		BufferedReader reader;
-//		try {
-//			reader = new BufferedReader(new FileReader(filename));
-//			String line;
-//			// for each line (transaction) until the end of file
-//			while (((line = reader.readLine()) != null)){ 
-//				LinkedList<Integer> itemsetLine = new LinkedList<Integer>();
-//				int lineSupport = 0;
-//				// if the line is  a comment, is  empty or is a
-//				// kind of metadata
-//				if (line.isEmpty() == true ||
-//						line.charAt(0) == '#' || line.charAt(0) == '%'
-//								|| line.charAt(0) == '@') {
-//					continue;
-//				}
-//				
-//				// split the transaction into items
-//				String[] lineSplited = line.split(" ");
-//				// for each item in the
-//				// transaction
-//				boolean nextIsSupport = false;
-//				for (String itemString : lineSplited) { 
-//					try {
-//						if(itemString.isEmpty()) {
-//							continue;
-//						} else if(itemString.equals("#SUP:")) {
-//						nextIsSupport = true;
-//					} else {
-//						// convert item to integer
-//							Integer item = Integer.parseInt(itemString);
-//						if(nextIsSupport) {
-//							lineSupport = item;
-//						} else {
-//							itemsetLine.add(item);
-//						}
-//					}
-//					} catch (NumberFormatException e) {
-//						logger.error(itemString, e);
-//					}
-//				}
-//				Collections.sort(itemsetLine);
-//				result.addItemset(new Itemset(itemsetLine, lineSupport), itemsetLine.size());
-//			}
-//			// close the input file
-//			reader.close();
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		return result;
-//	}
 	
 	public static Itemsets readItemsetFile(String filename) {
 		Itemsets result = new Itemsets(filename);
@@ -236,13 +179,22 @@ public class Utils {
 	public static void printItemsetSet(ItemsetSet transactions, String output) {
 		printItemsetSet(transactions, output, false);
 	}
+	
+	public static void printDebugTransactions(ItemsetSet transactions, String output) {
+		printItemsetSet(transactions, output, true, true);
+	}
 
 	/**
 	 * Print the transaction in the format expected by SPMF (int separated by spaces).
 	 * @param transactions
 	 * @param output
+	 * @param noSupport Make appear #SUPP or not
 	 */
 	protected static void printItemsetSet(ItemsetSet transactions, String output, boolean noSupport) {
+		printItemsetSet(transactions, output, noSupport, false);
+	}
+	
+	protected static void printItemsetSet(ItemsetSet transactions, String output, boolean noSupport, boolean debug) {
 
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
@@ -252,8 +204,13 @@ public class Utils {
 			Iterator<KItemset> itResult = transactions.iterator();
 			while(itResult.hasNext()) {
 				KItemset resultLine = itResult.next();
+				if(debug) {
+					assert (!resultLine.getLabel().isEmpty()): new LogicException("their should be a label here");
+					printer.print(resultLine.getLabel());
+				}
+				TreeSet<Integer> sortedResultLine = new TreeSet<Integer>(resultLine);
 				// Ecriture des attributs types
-				resultLine.forEach(new Consumer<Integer>() {
+				sortedResultLine.forEach(new Consumer<Integer>() {
 
 					@Override
 					public void accept(Integer item) {
