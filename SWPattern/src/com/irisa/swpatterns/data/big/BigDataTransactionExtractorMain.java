@@ -127,10 +127,10 @@ public class BigDataTransactionExtractorMain {
 				cmd.hasOption(outputConversionIndexOption);
 				boolean classPattern = cmd.hasOption("classPattern");
 				
-				UtilOntology onto = new UtilOntology();
+//				UtilOntology onto = new UtilOntology();
 				BigDataTransactionExtractor converter = new BigDataTransactionExtractor();
-				TransactionsExtractor normalConverter = new TransactionsExtractor();
-				SWFrequentItemsetExtractor fsExtractor = new SWFrequentItemsetExtractor();
+//				TransactionsExtractor normalConverter = new TransactionsExtractor();
+//				SWFrequentItemsetExtractor fsExtractor = new SWFrequentItemsetExtractor();
 				ItemsetSet realtransactions ;
 				// Boolean options
 				boolean activatePruning = cmd.hasOption("pruning"); 
@@ -138,24 +138,24 @@ public class BigDataTransactionExtractorMain {
 				converter.noInTriples(cmd.hasOption("noIn") || converter.noInTriples());
 				converter.setNoOutTriples(cmd.hasOption("noOut") || converter.noOutTriples());
 					// Algorithm are excluding each other
-				if(cmd.hasOption("FPGrowth")) {
-					fsExtractor.setAlgoFPGrowth();
-				}
-				else if(cmd.hasOption("FPClose")) {
-					fsExtractor.setAlgoFPClose();
-				}
-				else if(cmd.hasOption("FPMax")) {
-					fsExtractor.setAlgoFPMax();
-				}
-				else if(cmd.hasOption("FIN")) {
-					fsExtractor.setAlgoFIN();
-				}
-				else if(cmd.hasOption("Relim")) {
-					fsExtractor.setAlgoRelim();
-				}
-				else if(cmd.hasOption("PrePost")) {
-					fsExtractor.setAlgoPrePost();
-				}
+//				if(cmd.hasOption("FPGrowth")) {
+//					fsExtractor.setAlgoFPGrowth();
+//				}
+//				else if(cmd.hasOption("FPClose")) {
+//					fsExtractor.setAlgoFPClose();
+//				}
+//				else if(cmd.hasOption("FPMax")) {
+//					fsExtractor.setAlgoFPMax();
+//				}
+//				else if(cmd.hasOption("FIN")) {
+//					fsExtractor.setAlgoFIN();
+//				}
+//				else if(cmd.hasOption("Relim")) {
+//					fsExtractor.setAlgoRelim();
+//				}
+//				else if(cmd.hasOption("PrePost")) {
+//					fsExtractor.setAlgoPrePost();
+//				}
 				// Encoding options
 				if(cmd.hasOption(PropertiesConversionOption)) {
 					converter.setNeighborLevel(Neighborhood.Property);
@@ -166,7 +166,7 @@ public class BigDataTransactionExtractorMain {
 				if(cmd.hasOption(PropertiesAndOthersConversionOption)) {
 					converter.setNeighborLevel(Neighborhood.PropertyAndOther);
 				}
-				normalConverter.setNeighborLevel(converter.getNeighborLevel());
+//				normalConverter.setNeighborLevel(converter.getNeighborLevel());
 				logger.debug("Pruning activated: "+activatePruning);
 				
 				// NO MODE cmd.hasOption() past this point
@@ -216,9 +216,9 @@ public class BigDataTransactionExtractorMain {
 						UtilOntology.setClassRegex(null);
 					}
 		
-					BaseRDF baseRDF = new BaseRDF(firstRDFFile, MODE.LOCAL);
+//					BaseRDF baseRDF = new BaseRDF(firstRDFFile, MODE.LOCAL);
 	
-					onto.init(baseRDF);
+//					onto.init(baseRDF);
 	
 					logger.debug("Extracting transactions from RDF file with conversion " + converter.getNeighborLevel());
 
@@ -227,17 +227,17 @@ public class BigDataTransactionExtractorMain {
 					
 					// Extracting transactions
 					ItemsetSet transactionsBigData;
-					LabeledTransactions transactionsNormal;
+//					LabeledTransactions transactionsNormal;
 					if(inputConversionIndex) {
 						index.readAttributeIndex(inputConversionIndexFile);
 					}
 	
 						transactionsBigData = converter.extractTransactionsFromFile(firstRDFFile);
-						transactionsNormal = normalConverter.extractTransactions(baseRDF, onto);
+//						transactionsNormal = normalConverter.extractTransactions(baseRDF, onto);
 						// Printing transactions for both files
 						if(outputTransaction) {
-							Utils.printDebugTransactions(index.convertToTransactions(transactionsNormal), firstOutputTransactionFile + ".normal");
-							Utils.printDebugTransactions(transactionsBigData, firstOutputTransactionFile);
+//							Utils.printDebugTransactions(index.convertToTransactions(transactionsNormal), firstOutputTransactionFile + ".normal");
+							Utils.printTransactions(transactionsBigData, firstOutputTransactionFile);
 							logger.debug("Transactions printed to " + firstOutputTransactionFile);
 							AttributeIndex.getInstance().printAttributeIndex(outputConversionIndexFile);
 							logger.debug("Index printed to " + outputConversionIndexFile);
@@ -246,13 +246,13 @@ public class BigDataTransactionExtractorMain {
 					logger.debug("Nb transactions: " + transactionsBigData.size());
 					logger.debug("Nb items: " + index.size());
 					
-					baseRDF.close();
+//					baseRDF.close();
 	
 				} else {
 					realtransactions = new ItemsetSet(Utils.readTransactionFile(cmd.getOptionValue(inputTransactionOption)));
 					logger.debug("Nb Lines: " + realtransactions.size());
 				}
-				onto.close();
+//				onto.close();
 			}
 		} catch (Exception e) {
 			logger.fatal("Failed on " + Arrays.toString(args), e);
