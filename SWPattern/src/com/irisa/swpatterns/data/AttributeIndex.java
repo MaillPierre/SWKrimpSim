@@ -30,6 +30,7 @@ import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.Global;
+import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
@@ -93,6 +94,22 @@ public class AttributeIndex {
 	
 	public RDFPatternComponent getComponent(int item) {
 		return _itemAttributeIndex.get(item);
+	}
+	
+	public RDFPatternResource getComponent(Resource res, Type type) {
+		RDFPatternResource compo = new RDFPatternResource(res, type);
+		if(! contains(compo)){
+			add(compo);
+		}
+		return compo;
+	}
+	
+	public RDFPatternPathFragment getComponent(Resource res1, Resource res2, Type type) {
+		RDFPatternPathFragment compo = new RDFPatternPathFragment(res1, res2, type);
+		if(! contains(compo)){
+			add(compo);
+		}
+		return compo;
 	}
 	
 	public void add(RDFPatternComponent attribute) {
@@ -172,6 +189,18 @@ public class AttributeIndex {
 	 * @throws Exception 
 	 */
 	public void printTransactionsItems(LinkedList<LabeledTransaction> transactions, String output) throws Exception {
+		printTransactionsItems(transactions, true, output);
+	}
+
+	/**
+	 * Print the transaction in the format expected by SPMF (int separated by spaces). Will update the attribute/item indexes
+	 * @param transactions
+	 * @param output
+	 * @param debug Should the resource à the origin of the transactino appear ?
+	 * @return
+	 * @throws Exception 
+	 */
+	protected void printTransactionsItems(LinkedList<LabeledTransaction> transactions, boolean debug, String output) throws Exception {
 
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
@@ -181,6 +210,10 @@ public class AttributeIndex {
 			Iterator<LabeledTransaction> itResult = transactions.iterator();
 			while(itResult.hasNext()) {
 				LabeledTransaction resultLine = itResult.next();
+				if(debug && resultLine.hasSource()) {
+					printer.print(resultLine.getSource());
+				}
+				
 				// Ecriture des attributs types
 				Iterator<RDFPatternComponent> itTypes = resultLine.getSortedIterator();
 				while(itTypes.hasNext()) {
