@@ -299,7 +299,16 @@ public class Utils {
 	 * @param output
 	 */
 	public static void printItemsetSet(ItemsetSet transactions, String output) {
-		printItemsetSet(transactions, output, false, false);
+		printItemsetSet(transactions, output, false, true);
+	}
+
+	/**
+	 * Print the codetable in the format expected by SPMF (int separated by spaces) plus an item giving the usage of patterns.
+	 * @param transactions
+	 * @param output
+	 */
+	public static void printCodeTable(ItemsetSet ct, String output) {
+		printItemsetSet(ct, output, false, false);
 	}
 
 	/**
@@ -467,9 +476,7 @@ public class Utils {
 			String analysisName = argv[1];
 			String outputName = argv[2];
 			ItemsetSet ct = readVreekenEtAlCodeTable(ctName, analysisName);
-			printItemsetSet(ct, outputName);
-			ItemsetSet resultCheck = readItemsetSetFile(outputName);
-			logger.debug(resultCheck);
+			printCodeTable(ct, outputName);
 		} else {
 			logger.fatal("This program needs 3 arguments: <Vreeken et al. CT filename> <Vreeken et al. database analysis> <Output file>");
 		}
