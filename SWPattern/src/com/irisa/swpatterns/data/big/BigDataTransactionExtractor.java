@@ -49,7 +49,6 @@ public class BigDataTransactionExtractor {
 	private HashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
 	private HashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new HashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
 	
-	private HashMap<Couple<Resource, Resource>, HashSet<Property>> _connectedResources = new HashMap<Couple<Resource, Resource>, HashSet<Property>>(); // Co-occuring property resources to generate PROPERTY_TYPE later
 	private HashMap<Resource, LabeledTransaction> _buildingtransactionsPropertyClassItems = new HashMap<Resource, LabeledTransaction>();
 
 	public boolean isKnownIndividual(Resource indiv) {
@@ -96,9 +95,8 @@ public class BigDataTransactionExtractor {
 		logger.debug("big data loading START");
 		
 		logger.debug("Jena loading ...");
-		// First, line by line, fill the indexes
-		Model model = ModelFactory.createDefaultModel(); // TMP
-//		model.read(filename); // TMP
+//		// First, line by line, fill the indexes
+		Model model = ModelFactory.createDefaultModel(); 
 		PipedRDFIterator<Triple> dataIt = new PipedRDFIterator<Triple>();
 		PipedTriplesStream dataSteam = new PipedTriplesStream(dataIt);
 		ExecutorService executor=Executors.newSingleThreadExecutor();
@@ -108,19 +106,17 @@ public class BigDataTransactionExtractor {
 		}};
 		executor.submit(parser);
 		
-//		dataSteam.start();
 		logger.debug("Jena loading ended");
 		
-//		logger.debug("Iterating over " + model.size() + " statements");
 			// Filling the indexes
 		int nbtriples = 1;
+		int nbMaxtriples = 0;
 		while(dataIt.hasNext()) {
-//			Statement stat = itStat.next();
 			try {
 			Triple stat = dataIt.next();
-			Property prop = null;//stat.getPredicate();
-			Resource subj = null;stat.getSubject();
-			RDFNode obj = null;//stat.getObject();
+			Property prop = null;
+			Resource subj = null;
+			RDFNode obj = null;
 			if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
 				subj = model.createResource(stat.getSubject().getURI());
 			}
@@ -154,10 +150,6 @@ public class BigDataTransactionExtractor {
 						if(! _onto.isOntologyClassVocabulary(objRes)) { // Object is not Ontology stuff
 							RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(prop, Type.IN_PROPERTY);
 							addComponentToIndexes(objRes, compoPropIn);
-	
-							if(this.getNeighborLevel() == Neighborhood.PropertyAndType) { // Filling the co-occuring indexes
-								addConnection(subj, objRes, prop);
-							}
 						}
 					}
 				}
@@ -166,32 +158,59 @@ public class BigDataTransactionExtractor {
 				logger.debug("Reaching " + nbtriples + " triples, loading...");
 			}
 			nbtriples++;
+			nbMaxtriples++;
 			Thread.sleep(0);
 			} catch(Exception e) { // Catching the neurotic Jena parser exceptions
 				logger.error("Exception during this line treatment: ", e);
 			}
 		}
-		logger.debug("End of iterations");
+		logger.debug("Property based items built");
 		executor.shutdown();
-		model.close();
+		logger.debug("End of first reading");
 		
-		logger.debug("Building property-class items over " + this._connectedResources.size() + " connexions");
-		// If conversion in property-class, generate the property-class items from the co-occuring indexes and the type index
-		int nbConnexion = 1;
-		Set<Entry<Couple<Resource, Resource>, HashSet<Property>>> entries = new HashSet<>(this._connectedResources.entrySet());
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
-			Iterator<Entry<Couple<Resource, Resource>, HashSet<Property>>> itConnected = entries.iterator();
-			while(itConnected.hasNext()) {
-				Entry<Couple<Resource, Resource>, HashSet<Property>> entry = itConnected.next();
-				Couple<Resource, Resource> resCouple = entry.getKey();
-				Resource subj = resCouple.getFirst();
-				Resource obj = resCouple.getSecond();
-				logger.trace("Examining connexion between " + subj + " and " + obj + " with " + entry.getValue());
+			logger.debug("Second reading of the file fo the property-class conversion");
+			
+			// First, line by line, fill the indexes
+			PipedRDFIterator<Triple> dataItSecond = new PipedRDFIterator<Triple>();
+			PipedTriplesStream dataSteamSecond = new PipedTriplesStream(dataItSecond);
+			ExecutorService executorSecond=Executors.newSingleThreadExecutor();
+			Thread parserSecond=new Thread(){
+				@Override public void run(){
+					RDFParser.source(filename).parse(dataSteamSecond);
+			}};
+			executorSecond.submit(parserSecond);
+			
+				// Filling the indexes
+			nbtriples = 1;
+			while(dataItSecond.hasNext()) {
+				try {
+				Triple stat = dataItSecond.next();
+				Property prop = null;
+				Resource subj = null;
+				RDFNode obj = null;
+				if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
+					subj = model.createResource(stat.getSubject().getURI());
+				}
+				if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
+					prop = model.createProperty(stat.getPredicate().getURI());
+				}
+				if(stat.getObject() != null) {
+					if(stat.getObject().isLiteral()) {
+						obj = model.createTypedLiteral(stat.getObject().getLiteralValue(), stat.getObject().getLiteralDatatype());
+					} else if(stat.getObject().isURI()) {
+						obj = model.createResource(stat.getObject().getURI());
+					} else if(stat.getObject().isBlank()) {
+						obj = model.createResource(new AnonId(stat.getObject().getBlankNodeId())); 
+					}
+				}
 				
-				Iterator<Property> itProp = entry.getValue().iterator();
-				while(itProp.hasNext()) {
-					Property prop = itProp.next();
-					
+				if(subj != null 
+						&& prop != null 
+						&& obj != null 
+						&& obj.isResource() 
+						&& ! _onto.isOntologyPropertyVocabulary(prop) 
+						&& ! _onto.isOntologyClassVocabulary(obj.asResource())) {
 					if(this._buildingTransactionsTypeItems.get(obj) != null) {
 						Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
 						while(itObjType.hasNext()) {
@@ -210,19 +229,26 @@ public class BigDataTransactionExtractor {
 							Resource subjType = ((RDFPatternResource) compoSubjType).getResource();
 							
 							RDFPatternComponent compoIn = AttributeIndex.getInstance().getComponent(prop, subjType, Type.IN_NEIGHBOUR_TYPE);
-							addComponentToIndexes(obj, compoIn);
+							addComponentToIndexes(obj.asResource(), compoIn);
 						}	
 					}
 				}
-				
-				if(nbConnexion % 10000 == 0) {
-					logger.debug("Property-class connexion n°" + nbConnexion);
+				if(nbtriples % 1000000 == 0) {
+					logger.debug("Reaching " + nbtriples + " triples over " + nbMaxtriples + ", loading...");
 				}
-				nbConnexion++;
-				this._connectedResources.remove(resCouple);
+				nbtriples++;
+				Thread.sleep(0);
+				} catch(Exception e) { // Catching the neurotic Jena parser exceptions
+					logger.error("Exception during this line treatment: ", e);
+				}
 			}
+			logger.debug("End of second reading");
+			executorSecond.shutdown();
+			logger.debug("Property-class based items built");
 		}
-		logger.debug("Property-class items built");
+		model.close();
+		
+//		
 		
 		logger.debug("Union of all tmp transactions for " + this._individuals.size() + " individuals");
 		// Union of the transactions
@@ -290,15 +316,6 @@ public class BigDataTransactionExtractor {
 		default:
 			throw new LogicException("Unexpected element \""+ compo +"\" to add to the indexes for resource " + res );
 		}
-	}
-	
-	private void addConnection(Resource subj, Resource obj, Property prop) {
-		logger.trace("Connexion between " + subj + " and " + obj + " with " + prop);
-		Couple<Resource, Resource> couple = new Couple<Resource, Resource>(subj, obj);
-		if(! this._connectedResources.containsKey(couple)) {
-			this._connectedResources.put(couple, new HashSet<Property>());
-		}
-		this._connectedResources.get(couple).add(prop);
 	}
 	
 }
