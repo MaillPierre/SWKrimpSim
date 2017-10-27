@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -101,7 +102,7 @@ public class BigDataTransactionExtractor {
 		PipedRDFIterator<Triple> dataIt = new PipedRDFIterator<Triple>();
 		PipedTriplesStream dataSteam = new PipedTriplesStream(dataIt);
 		ExecutorService executor=Executors.newSingleThreadExecutor();
-		Runnable parser=new Runnable(){
+		Thread parser=new Thread(){
 			@Override public void run(){
 				RDFParser.source(filename).parse(dataSteam);
 		}};
@@ -112,10 +113,10 @@ public class BigDataTransactionExtractor {
 		
 //		logger.debug("Iterating over " + model.size() + " statements");
 			// Filling the indexes
-//		StmtIterator itStat = model.listStatements();
-//		while(itStat.hasNext()) {
+		int nbtriples = 1;
 		while(dataIt.hasNext()) {
 //			Statement stat = itStat.next();
+			try {
 			Triple stat = dataIt.next();
 			Property prop = null;//stat.getPredicate();
 			Resource subj = null;stat.getSubject();
@@ -161,17 +162,25 @@ public class BigDataTransactionExtractor {
 					}
 				}
 			}
+			if(nbtriples % 1000000 == 0) {
+				logger.debug("Reaching " + nbtriples + " triples, loading...");
+			}
+			nbtriples++;
+			Thread.sleep(0);
+			} catch(Exception e) { // Catching the neurotic Jena parser exceptions
+				logger.error("Exception during this line treatment: ", e);
+			}
 		}
 		logger.debug("End of iterations");
-//		dataSteam.finish();
 		executor.shutdown();
 		model.close();
 		
 		logger.debug("Building property-class items over " + this._connectedResources.size() + " connexions");
 		// If conversion in property-class, generate the property-class items from the co-occuring indexes and the type index
 		int nbConnexion = 1;
+		Set<Entry<Couple<Resource, Resource>, HashSet<Property>>> entries = new HashSet<>(this._connectedResources.entrySet());
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
-			Iterator<Entry<Couple<Resource, Resource>, HashSet<Property>>> itConnected = this._connectedResources.entrySet().iterator();
+			Iterator<Entry<Couple<Resource, Resource>, HashSet<Property>>> itConnected = entries.iterator();
 			while(itConnected.hasNext()) {
 				Entry<Couple<Resource, Resource>, HashSet<Property>> entry = itConnected.next();
 				Couple<Resource, Resource> resCouple = entry.getKey();
@@ -210,6 +219,7 @@ public class BigDataTransactionExtractor {
 					logger.debug("Property-class connexion n°" + nbConnexion);
 				}
 				nbConnexion++;
+				this._connectedResources.remove(resCouple);
 			}
 		}
 		logger.debug("Property-class items built");

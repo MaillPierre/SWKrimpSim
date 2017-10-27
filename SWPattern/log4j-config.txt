@@ -22,5 +22,6 @@ log4j.logger.org.apache.jena.riot.web = FATAL
 log4j.logger.org.apache.jena.shared = FATAL
 log4j.logger.org.apache.jena.util = FATAL
 log4j.logger.org.apache.jena.riot.system.stream = FATAL
+log4j.logger.org.apache.jena.riot = FATAL
 log4j.logger.com.irisa.jenautils = DEBUG
 log4j.logger.com.irisa.rdftotransaction = DEBUG
