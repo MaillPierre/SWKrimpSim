@@ -35,7 +35,56 @@ public class Utils {
 	private static HashSet<Integer> itemNumberSet = new HashSet<Integer>();
 
 	public static ItemsetSet readItemsetSetFile(String filename) {
-		return new ItemsetSet(Utils.readItemsetFile(filename));
+		ItemsetSet result = new ItemsetSet();
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(filename));
+
+			CSVParser parser = new CSVParser(reader, CSVFormat.TDF.withDelimiter(' '));
+			for (CSVRecord line : parser) {
+				boolean withSupport = false;
+				boolean withUsage = false;
+				KItemset itemsetLine = new KItemset();
+				int support = 1;
+				int usage = 0;
+				if (line.get(0).equals('#') 
+						|| line.get(0).equals('%')
+						|| line.get(0).equals('@')) {
+					continue;
+				}
+				for(int i = 0; i < line.size(); i++) {
+					if( withSupport || withUsage) {
+						if(withSupport) {
+							support = Integer.valueOf(line.get(i));
+						}
+						withSupport = false;
+						if(withUsage) {
+							usage = Integer.valueOf(line.get(i));
+						}
+						withUsage = false;
+					} else if(line.get(i).equals("#SUP:")) {
+						withSupport = true;
+						continue;
+					} else if(line.get(i).equals("#USG:")) {
+						withUsage = true;
+						continue;
+					} else {
+						try {
+							itemsetLine.add(Integer.valueOf(line.get(i)));
+						} catch(NumberFormatException e) {
+							logger.fatal(filename + " " + line + " (" + i + "): " + line.get(i), e);
+						}
+					}
+				}
+				itemsetLine.setSupport(support);
+				itemsetLine.setUsage(usage);
+				result.add(itemsetLine);
+			}
+			parser.close();
+		} catch (IOException e) {
+			logger.fatal(e);
+		}
+
+		return result;
 	}
 
 	//	public static Itemsets readItemsetFile(String filename) {
@@ -106,18 +155,30 @@ public class Utils {
 			CSVParser parser = new CSVParser(reader, CSVFormat.TDF.withDelimiter(' '));
 			for (CSVRecord line : parser) {
 				boolean withSupport = false;
+				boolean withUsage = false;
 				LinkedList<Integer> itemsetLine = new LinkedList<Integer>();
 				int support = 1;
+				int usage = 0;
 				if (line.get(0).equals('#') 
 						|| line.get(0).equals('%')
 						|| line.get(0).equals('@')) {
 					continue;
 				}
 				for(int i = 0; i < line.size(); i++) {
-					if( i == line.size()-1 && withSupport) {
-						support = Integer.valueOf(line.get(i));
+					if( withSupport || withUsage) {
+						if(withSupport) {
+							support = Integer.valueOf(line.get(i));
+						}
+						withSupport = false;
+						if(withUsage) {
+							usage = Integer.valueOf(line.get(i));
+						}
+						withUsage = false;
 					} else if(line.get(i).equals("#SUP:")) {
 						withSupport = true;
+						continue;
+					} else if(line.get(i).equals("#USG:")) {
+						withUsage = true;
 						continue;
 					} else {
 						try {
@@ -238,7 +299,7 @@ public class Utils {
 	 * @param output
 	 */
 	public static void printItemsetSet(ItemsetSet transactions, String output) {
-		printItemsetSet(transactions, output, false);
+		printItemsetSet(transactions, output, false, false);
 	}
 
 	/**
@@ -247,6 +308,9 @@ public class Utils {
 	 * @param output
 	 */
 	protected static void printItemsetSet(ItemsetSet transactions, String output, boolean noSupport) {
+		printItemsetSet(transactions, output, noSupport, true);
+	}
+	protected static void printItemsetSet(ItemsetSet transactions, String output, boolean noSupport, boolean noUsage) {
 
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
@@ -273,6 +337,10 @@ public class Utils {
 				if(! noSupport) {
 					printer.print((Object)"#SUP:");
 					printer.print(resultLine.getSupport());
+				}
+				if(! noUsage) {
+					printer.print((Object)"#USG:");
+					printer.print(resultLine.getUsage());
 				}
 				printer.println();
 			}
@@ -310,8 +378,11 @@ public class Utils {
 						String usageSupport = lineCT.get(i).replaceAll("\\(", "").replaceAll("\\)", "");
 						String[] usTab = usageSupport.trim().split(",");
 						String supportString = usTab[1];
+						String usageString = usTab[0];
 						int support = Integer.parseInt(supportString);
+						int usage = Integer.parseInt(usageString);
 						pattern.setSupport(support);
+						pattern.setUsage(usage);
 					} else if(! lineCT.get(i).isEmpty()){ // As long if its not a wandering space or the usage/support brackets, we take
 						pattern.add(Integer.parseInt(lineCT.get(i)));
 					} 
@@ -363,6 +434,7 @@ public class Utils {
 			}
 			
 			ourPattern.setSupport(vreekenPattern.getSupport());
+			ourPattern.setUsage(vreekenPattern.getUsage());
 			result.add(ourPattern);
 		}
 		logger.trace("Codetable converted");
@@ -396,6 +468,8 @@ public class Utils {
 			String outputName = argv[2];
 			ItemsetSet ct = readVreekenEtAlCodeTable(ctName, analysisName);
 			printItemsetSet(ct, outputName);
+			ItemsetSet resultCheck = readItemsetSetFile(outputName);
+			logger.debug(resultCheck);
 		} else {
 			logger.fatal("This program needs 3 arguments: <Vreeken et al. CT filename> <Vreeken et al. database analysis> <Output file>");
 		}

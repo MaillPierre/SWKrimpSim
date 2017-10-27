@@ -13,6 +13,7 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 public class KItemset extends HashSet<Integer> {
 	
 	private int _support = 0;
+	private int _usage = 0;
 
 	public KItemset() {
 	}
@@ -108,6 +109,14 @@ public class KItemset extends HashSet<Integer> {
 	
 	public Itemset toSMPFItemset() {
 		return new Itemset(this.getItemList(), this.getSupport());
+	}
+
+	public int getUsage() {
+		return _usage;
+	}
+
+	public void setUsage(int usage) {
+		this._usage = usage;
 	}
 
 }

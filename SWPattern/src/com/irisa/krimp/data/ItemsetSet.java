@@ -66,6 +66,8 @@ public class ItemsetSet extends LinkedList<KItemset> {
 			KItemset is = itIs.next();
 			r.append(is.toString());
 			r.append(" (");
+			r.append(is.getUsage());
+			r.append(",");
 			r.append(is.getSupport());
 			r.append(")\n");
 		}
