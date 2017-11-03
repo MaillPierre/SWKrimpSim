@@ -3,8 +3,6 @@ package com.irisa.swpatterns.data.big;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,7 +20,6 @@ import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
-import com.irisa.jenautils.Couple;
 import com.irisa.jenautils.UtilOntology;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
@@ -100,6 +97,9 @@ public class BigDataTransactionExtractor {
 		PipedRDFIterator<Triple> dataIt = new PipedRDFIterator<Triple>();
 		PipedTriplesStream dataSteam = new PipedTriplesStream(dataIt);
 		ExecutorService executor=Executors.newSingleThreadExecutor();
+		int nbtriples = 1;
+		int nbMaxtriples = 0;
+		try {
 		Thread parser=new Thread(){
 			@Override public void run(){
 				RDFParser.source(filename).parse(dataSteam);
@@ -109,8 +109,6 @@ public class BigDataTransactionExtractor {
 		logger.debug("Jena loading ended");
 		
 			// Filling the indexes
-		int nbtriples = 1;
-		int nbMaxtriples = 0;
 		while(dataIt.hasNext()) {
 			try {
 			Triple stat = dataIt.next();
@@ -165,16 +163,19 @@ public class BigDataTransactionExtractor {
 			}
 		}
 		logger.debug("Property based items built");
-		executor.shutdown();
+		} finally {
+			executor.shutdown();
+		}
 		logger.debug("End of first reading");
 		
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			logger.debug("Second reading of the file fo the property-class conversion");
-			
 			// First, line by line, fill the indexes
 			PipedRDFIterator<Triple> dataItSecond = new PipedRDFIterator<Triple>();
 			PipedTriplesStream dataSteamSecond = new PipedTriplesStream(dataItSecond);
 			ExecutorService executorSecond=Executors.newSingleThreadExecutor();
+			
+			try {
 			Thread parserSecond=new Thread(){
 				@Override public void run(){
 					RDFParser.source(filename).parse(dataSteamSecond);
@@ -243,7 +244,9 @@ public class BigDataTransactionExtractor {
 				}
 			}
 			logger.debug("End of second reading");
-			executorSecond.shutdown();
+			} finally {
+				executorSecond.shutdown();
+			}
 			logger.debug("Property-class based items built");
 		}
 		model.close();

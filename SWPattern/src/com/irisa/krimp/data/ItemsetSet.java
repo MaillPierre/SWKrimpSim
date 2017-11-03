@@ -72,7 +72,7 @@ public class ItemsetSet extends LinkedList<KItemset> {
 	}
 	
 	/**
-	 * Refers to the attributeIndex singleton
+	 * Process the whole dataset
 	 * @return density value
 	 */
 	public double density() {
@@ -90,7 +90,6 @@ public class ItemsetSet extends LinkedList<KItemset> {
 	}
 	
 	public String toString() {
-		// Copied from smpf code, just to see ...
 		StringBuilder r = new StringBuilder ();
 		Iterator<KItemset> itIs = this.iterator();
 		while(itIs.hasNext()) {
