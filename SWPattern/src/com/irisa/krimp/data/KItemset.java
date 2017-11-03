@@ -15,6 +15,7 @@ public class KItemset extends HashSet<Integer> {
 	
 	private int _support = 0;
 	private String _label = "";
+	private int _usage = 0;
 
 	public KItemset() {
 	}

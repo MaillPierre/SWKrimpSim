@@ -1,11 +1,14 @@
 package com.irisa.krimp.data;
 
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import com.irisa.swpatterns.data.AttributeIndex;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
@@ -58,6 +61,34 @@ public class ItemsetSet extends LinkedList<KItemset> {
 //		}
 	}
 	
+	public double averageSize() {
+		int sumSize = 0;
+		
+		for( KItemset t : this) {
+			sumSize += t.size();
+		}
+		
+		return (double)sumSize/(double)this.size();
+	}
+	
+	/**
+	 * Refers to the attributeIndex singleton
+	 * @return density value
+	 */
+	public double density() {
+		int sumSize = 0;
+		BitSet itemset = new BitSet();
+		
+		for( KItemset t : this) {
+			sumSize += t.size();
+			for( int item : t ) {
+				itemset.set(item);
+			}
+		}
+		
+		return (double)sumSize/((double)this.size()*(double)itemset.cardinality());
+	}
+	
 	public String toString() {
 		// Copied from smpf code, just to see ...
 		StringBuilder r = new StringBuilder ();
@@ -66,6 +97,8 @@ public class ItemsetSet extends LinkedList<KItemset> {
 			KItemset is = itIs.next();
 			r.append(is.toString());
 			r.append(" (");
+			r.append(is.getUsage());
+			r.append(",");
 			r.append(is.getSupport());
 			r.append(")\n");
 		}

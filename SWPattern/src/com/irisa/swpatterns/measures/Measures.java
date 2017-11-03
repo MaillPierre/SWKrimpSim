@@ -90,6 +90,45 @@ public class Measures {
 		return refKrimpSize / evalKrimpSize; 		
 	}
 	
+	/** 
+	 * 
+	 * Calculate the Structural similarity between D1 and D2 through their codetables, including the information 
+	 * derived from the new data distribution (through their code lengths). 
+	 * Without Keeping the distribution means that the usages of the codeTable CT2 are updated, 
+	 * not keeping the original distribution of the data implicitly. This is important for pure structural inclusion scenarios.
+	 * Besides, this version takes into account also the implications of the new data distribution in terms of 
+	 * code lengths.   
+	 * 
+	 *  None of the CTs is altered (CT2 is cloned). Both CTs have to have the same "vocabulary"/items. 
+	 *  
+	 *  This is the measure proposed in our original submission, and corresponds also to the way Jilles et al. measure 
+	 *  is calculated
+	 * 
+	 * @param D1 The database to be compared
+	 * @param CT1 The codetable obtained from D1
+	 * @param CT2 The codetable of the original KB (against which we compare D1)
+	 * @return
+	 */
+	
+	public static double structuralSimilarityWithoutKeepingDistributionUsingLengths (ItemsetSet D1, CodeTable CT1, CodeTable CT2 ) {
+
+		// first we get the size of the database D1 codified with its own CT
+		double evalKrimpSize = CT1.codificationLength(D1);
+		
+		// we clone the CT2
+		// the usages are updated in the init() method
+		// we reuse as much as possible the information already calculated in the previous CTs
+		CodeTable tempCT = new CodeTable (CT2); 
+		tempCT.setTransactions(D1);
+		tempCT.updateUsages();
+		
+		double refKrimpSize = tempCT.codificationLength(D1); 
+		
+		assert evalKrimpSize > 0.0; 
+		
+		
+		return (refKrimpSize + tempCT.codeTableCodeLength()) / (evalKrimpSize + CT1.codeTableCodeLength()); 		
+	}
 	
 	
 	/** 
