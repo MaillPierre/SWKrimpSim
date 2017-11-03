@@ -10,7 +10,6 @@ import org.apache.jena.ext.com.google.common.collect.Lists;
 
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
-@SuppressWarnings("serial")
 public class KItemset extends HashSet<Integer> {
 	
 	private int _support = 0;
@@ -24,7 +23,6 @@ public class KItemset extends HashSet<Integer> {
 		super(arg0);
 		if(arg0 instanceof KItemset) {
 			this._support = ((KItemset) arg0).getSupport();
-			this.setLabel(((KItemset) arg0).getLabel());
 		}
 	}
 	public KItemset(Collection<? extends Integer> arg0, int supp) {
@@ -46,14 +44,6 @@ public class KItemset extends HashSet<Integer> {
 			add(smpf.get(i));
 		}
 		this._support = smpf.getAbsoluteSupport();
-	}
-	
-	public String getLabel() {
-		return this._label;
-	}
-	
-	public void setLabel(String label) {
-		this._label = label;
 	}
 	
 	public int getSupport() {
@@ -120,6 +110,22 @@ public class KItemset extends HashSet<Integer> {
 	
 	public Itemset toSMPFItemset() {
 		return new Itemset(this.getItemList(), this.getSupport());
+	}
+
+	public int getUsage() {
+		return _usage;
+	}
+
+	public void setUsage(int usage) {
+		this._usage = usage;
+	}
+
+	public String getLabel() {
+		return _label;
+	}
+
+	public void setLabel(String _label) {
+		this._label = _label;
 	}
 
 }
