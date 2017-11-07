@@ -24,4 +24,4 @@ log4j.logger.org.apache.jena.util = FATAL
 log4j.logger.org.apache.jena.riot.system.stream = FATAL
 log4j.logger.org.apache.jena.riot = FATAL
 log4j.logger.com.irisa.jenautils = DEBUG
-log4j.logger.com.irisa.rdftotransaction = DEBUG
+log4j.logger.com.irisa.swpatterns = DEBUG
