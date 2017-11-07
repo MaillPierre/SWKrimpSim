@@ -1,13 +1,11 @@
 package com.irisa.swpatterns.data.big;
 
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.jena.ext.com.google.common.util.concurrent.UncaughtExceptionHandlers;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.AnonId;
 import org.apache.jena.rdf.model.Model;
@@ -15,10 +13,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
-import org.apache.jena.riot.RiotException;
-import org.apache.jena.riot.RiotParseException;
 import org.apache.jena.riot.lang.PipedRDFIterator;
 import org.apache.jena.riot.lang.PipedTriplesStream;
 import org.apache.jena.riot.system.ErrorHandler;
@@ -40,6 +35,8 @@ import com.irisa.swpatterns.data.RDFPatternResource;
 public class BigDataTransactionExtractor {
 
 	private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.class);
+	
+	private static boolean conversionFailed = false;
 
 	private HashSet<Resource> _individuals = new HashSet<Resource>();
 	private UtilOntology _onto = new UtilOntology();
@@ -96,6 +93,7 @@ public class BigDataTransactionExtractor {
 	}
 
 	private static Thread bigdataParserThread(String filename, PipedTriplesStream dataStream) {
+		conversionFailed = false;
 		Thread parser=new Thread(){
 			@Override public void run(){
 				try {
@@ -121,6 +119,7 @@ public class BigDataTransactionExtractor {
 					.parse(dataStream);
 				} catch(Exception e) {
 					logger.error("Unhandled exception during parsing, Dataset probably badly formated: ", e);
+					conversionFailed = true;
 					throw e;
 				}
 			}};
@@ -130,6 +129,8 @@ public class BigDataTransactionExtractor {
 
 	public ItemsetSet extractTransactionsFromFile(String filename) {
 		logger.debug("big data loading START");
+
+		ItemsetSet result = new ItemsetSet();
 
 		logger.debug("Jena loading ...");
 		// First, line by line, fill the indexes
@@ -205,6 +206,10 @@ public class BigDataTransactionExtractor {
 		} finally {
 			executor.shutdown();
 			dataIt.close();
+			
+			if(conversionFailed) {
+				return result;
+			}
 		}
 		logger.debug("End of first reading");
 
@@ -292,7 +297,6 @@ public class BigDataTransactionExtractor {
 
 		logger.debug("Union of all tmp transactions for " + this._individuals.size() + " individuals");
 		// Union of the transactions
-		ItemsetSet result = new ItemsetSet();
 		Iterator<Resource> itIndiv = this._individuals.iterator();
 		int nbtreatedIndiv = 1;
 		while(itIndiv.hasNext()) {

@@ -115,16 +115,20 @@ public class BigDataTransactionExtractorMain {
 				}
 
 				transactionsBigData = converter.extractTransactionsFromFile(rdfFile);
-				// Printing transactions for both files
-				if(outputTransaction) {
-					Utils.printTransactions(transactionsBigData, transactOutputFile);
-					logger.debug("Transactions printed to " + transactOutputFile);
-					AttributeIndex.getInstance().printAttributeIndex(outputConversionIndexFile);
-					logger.debug("Index printed to " + outputConversionIndexFile);
-				}
+				if(! transactionsBigData.isEmpty()) {
+					// Printing transactions for both files
+					if(outputTransaction) {
+						Utils.printTransactions(transactionsBigData, transactOutputFile);
+						logger.debug("Transactions printed to " + transactOutputFile);
+						AttributeIndex.getInstance().printAttributeIndex(outputConversionIndexFile);
+						logger.debug("Index printed to " + outputConversionIndexFile);
+					}
 
-				logger.debug("Nb transactions: " + transactionsBigData.size());
-				logger.debug("Nb items: " + index.size());
+					logger.debug("Nb transactions: " + transactionsBigData.size());
+					logger.debug("Nb items: " + index.size());
+				} else {
+					logger.fatal("No transaction returned");
+				}
 
 
 			}
