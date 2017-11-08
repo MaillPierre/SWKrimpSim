@@ -147,6 +147,7 @@ public class Utils {
 	//		return result;
 	//	}
 
+	@Deprecated 
 	public static Itemsets readItemsetFile(String filename) {
 		Itemsets result = new Itemsets(filename);
 		try {
