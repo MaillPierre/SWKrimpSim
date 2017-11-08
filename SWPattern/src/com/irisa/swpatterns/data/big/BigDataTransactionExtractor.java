@@ -206,10 +206,10 @@ public class BigDataTransactionExtractor {
 		} finally {
 			executor.shutdown();
 			dataIt.close();
-			
-			if(conversionFailed) {
-				return result;
-			}
+		}
+		
+		if(conversionFailed) {
+			return result;
 		}
 		logger.debug("End of first reading");
 
