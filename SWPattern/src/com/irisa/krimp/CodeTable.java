@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
+import com.irisa.jenautils.Couple;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
@@ -484,28 +485,24 @@ public class CodeTable {
 		}
 		assert trans.size() == 0; // this should always happen 
 		return result; 
-	}
+	}	
 	
-	/** 
-	 * 
-	 * Codifying function using isCover function
-	 * 
-	 */
-	
-	public ItemsetSet codifyUsingIsCover (KItemset trans) {
+	public Couple<ItemsetSet, KItemset> codifyAware (KItemset trans)  {
+		KItemset auxTrans = new KItemset(trans);
 		ItemsetSet result = new ItemsetSet(); 
 		Iterator<KItemset> itIs = codeIterator();
-		
 		KItemset auxCode = null; 
-		while (itIs.hasNext()) {
-			auxCode = itIs.next();
-			if (this.isCover(trans, auxCode)) {
+		while (itIs.hasNext() && (auxTrans.size() != 0) ) {
+			auxCode = itIs.next(); 
+			if (auxTrans.containsAll(auxCode)) {
 				result.add(auxCode); 
+				auxTrans = auxTrans.substraction(auxCode); 
 			}
 		}
-		return result; 
+		// currently, trans can be non-empty
+		// we return both the codes used, and the remaining non-covered part of the transaction (new items) 
+		return new Couple(result, auxTrans); 
 	}
-	
 	
 	public void removeCode(KItemset pruneCandidate) {
 		this._codes.remove(pruneCandidate);

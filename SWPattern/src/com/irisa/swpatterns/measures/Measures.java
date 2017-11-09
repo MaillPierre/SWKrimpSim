@@ -19,41 +19,7 @@ public class Measures {
 	
 	private static Logger logger = Logger.getLogger(Measures.class);
 
-	/** 
-	 * 
-	 * Calculate the Structural similarity between D1 and D2 through their codetables. 
-	 * Keeping the distribution means that the usages of the codeTable CT2 is not updated 
-	 * in order to keep the original data distribution as well. This is important for integration/updating/cleaning scenarios 
-	 * where we want to get also information about the original data (it is implicitly stored in the 
-	 * original length of the codes). 
-	 * 
-	 *  None of the CTs is altered. Both CTs have to have the same "vocabulary"/items
-	 * 
-	 * @param D1 The database to be compared
-	 * @param CT1 The codetable obtained from D1
-	 * @param CT2 The codetable of the original KB (against which we compare D1)
-	 * @return
-	 */
-	
-	public static double structuralSimilarityKeepingDistribution (ItemsetSet D1, CodeTable CT1, CodeTable CT2 ) {
 
-		// first we get the size of the database D1 codified with its own CT
-		double evalKrimpSize = CT1.codificationLength(D1);
-		
-		// we have to clone and smooth the codeTable 
-		CodeTable tempCT = new CodeTable(CT2);
-		// we change the database without updating anything but the dataIndex
-		tempCT.setTransactions(D1);
-		// we applyLaplaceSmoothing for perplexity purposes
-		tempCT.applyLaplaceSmoothingToUsages();
-		// second we get the size of the database D1 codified with the
-		double refKrimpSize = tempCT.codificationLength(D1); 
-		logger.debug("keeping >> codificationLength: "+refKrimpSize);
-		logger.debug("keeping >> innerLength: "+tempCT.encodedTransactionSetCodeLength());
-		
-		assert evalKrimpSize > 0.0; 
-		return refKrimpSize / evalKrimpSize; 		
-	}
 	
 	/** 
 	 * 
@@ -89,6 +55,22 @@ public class Measures {
 		assert evalKrimpSize > 0.0; 
 		return refKrimpSize / evalKrimpSize; 		
 	}
+	
+	
+	
+	public static double structuralSimilarityWithoutKeepingDistributionSharingItemset (CodeTable CT1, CodeTable CT2 ) {
+
+		// first we get the size of the database D1 codified with its own CT
+		double evalKrimpSize = CT1.encodedTransactionSetCodeLength();
+		
+		// we don't have to clone it, as it share the itemset
+		double refKrimpSize = CT2.encodedTransactionSetCodeLength(); 
+		
+		assert evalKrimpSize > 0.0; 
+		return refKrimpSize / evalKrimpSize; 		
+	}
+	
+	
 	
 	/** 
 	 * 
@@ -128,6 +110,17 @@ public class Measures {
 		
 		
 		return (refKrimpSize + tempCT.codeTableCodeLength()) / (evalKrimpSize + CT1.codeTableCodeLength()); 		
+	}
+	
+	public static double structuralSimilarityWithoutKeepingDistributionUsingLengthsSharingItemset (CodeTable CT1, CodeTable CT2 ) {
+
+		// first we get the size of the database D1 codified with its own CT
+		double evalKrimpSize = CT1.encodedTransactionSetCodeLength();
+		double refKrimpSize = CT2.encodedTransactionSetCodeLength(); 
+		
+		assert evalKrimpSize > 0.0; 
+		
+		return (refKrimpSize + CT2.codeTableCodeLength()) / (evalKrimpSize + CT1.codeTableCodeLength()); 		
 	}
 	
 	
@@ -185,5 +178,31 @@ public class Measures {
 		return refKrimpSize/evalKrimpSize; 
 		
 	}
+	
+	
+	/** 
+	 * Codify a set of transactions using a CT that might not include all the items
+	 * To avoid potential problems with previously non-used singletons and new singletons 
+	 * introduced by new items, this method assumes to the new items
+	 * by giving them the longest codes (result of the laplace Smoothing). 
+	 *
+	 * @param D1
+	 * @param CT1 
+	 * @return 
+	 */
+	
+	public static double codificationLengthApplyingLaplaceSmoothing (ItemsetSet D1, CodeTable CT1) {
+		// we have to clone and smooth the codeTable 
+		CodeTable tempCT = new CodeTable(CT1);
+		// we change the database without updating anything but the dataIndex
+		tempCT.setTransactions(D1);
+		// we applyLaplaceSmoothing for perplexity purposes
+		tempCT.applyLaplaceSmoothingToUsages();
+		// second we get the size of the database D1 codified with the
+		return tempCT.codificationLength(D1);  		
+	}
+	
+	
+	
 	
 }
