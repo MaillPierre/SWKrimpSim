@@ -12,9 +12,12 @@ import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
 import com.irisa.jenautils.BaseRDF;
+import com.irisa.jenautils.BaseRDF.MODE;
 import com.irisa.jenautils.CustomQuerySolution;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
+import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.KItemset;
 import com.irisa.swpatterns.data.AttributeIndex;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternPathFragment;
@@ -68,6 +71,40 @@ public class TransactionsExtractor {
 
 	public void setIndex(AttributeIndex index) {
 		this._index = index;
+	}
+
+	/**
+	 * Neighbor properties transactions: type and outgoing/ingoing properties.
+	 * For each class, if limit is > 0, only take into account the limited amount of individual
+	 * @param baseRDF
+	 * @param onto
+	 * @return
+	 */
+	public ItemsetSet extractTransactions(String filename) {
+		
+		BaseRDF baseRDF = new BaseRDF(filename, MODE.LOCAL);
+		UtilOntology onto = new UtilOntology();
+		
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
+			initDegreeCount( baseRDF, onto);
+		}
+		
+		logger.debug("Transaction extraction");
+
+		// Aggregation of the individual descriptions
+		LabeledTransactions results = new LabeledTransactions();
+		Iterator<Resource> itClass = onto.usedClassIterator();
+		while(itClass.hasNext()) 
+		{
+			Resource currentClass = itClass.next();
+			results.addAll(extractTransactionsForClass(baseRDF, onto, currentClass));
+		}
+
+		logger.debug("End of transaction extraction");
+		logger.debug(_index.size() + " attributes");
+//
+		logger.debug(results.size() + " lines");
+		return AttributeIndex.getInstance().convertToTransactions(results);
 	}
 
 	/**
@@ -287,6 +324,36 @@ public class TransactionsExtractor {
 		return indivResult;
 	}
 	
+	
+	public KItemset extractTransactionsForIndividual(String filename, Resource currIndiv) {
+		LabeledTransaction indivResult = new LabeledTransaction();
+		BaseRDF baseRDF = new BaseRDF(filename, MODE.LOCAL);
+		UtilOntology onto = new UtilOntology();
+		
+		indivResult.setSource(currIndiv);
+
+		// QUERY types triples
+		if(! _noTypeBool) {
+			indivResult.addAll(this.extractTypeAttributeForIndividual(baseRDF, onto, currIndiv));
+		}
+
+		// QUERY out triples
+		if(! _noOutBool) {
+			indivResult.addAll(this.extractOutPropertyAttributeForIndividual(baseRDF, onto, currIndiv));
+		}
+
+		// QUERY in triples
+		if(! _noInBool) {
+			indivResult.addAll(this.extractInPropertyAttributesForIndividual(baseRDF, onto, currIndiv));
+		}
+		
+//		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
+//			indivResult.addAll(this.extractPathFragmentAttributesForIndividual(baseRDF, onto, currIndiv));
+//		}
+		
+		return AttributeIndex.getInstance().convertToTransaction(indivResult);
+	}
+	
 	public LabeledTransactions extractTransactionsForClass(BaseRDF baseRDF, UtilOntology onto, Resource currentClass) {
 
 //		logger.debug("Current class: " + currentClass);
@@ -319,6 +386,43 @@ public class TransactionsExtractor {
 			}
 		}
 		return results;
+	}
+	
+	public ItemsetSet extractTransactionsForClass(String filename, Resource currentClass) {
+
+//		logger.debug("Current class: " + currentClass);
+		BaseRDF baseRDF = new BaseRDF(filename, MODE.LOCAL);
+		UtilOntology onto = new UtilOntology();
+
+		LabeledTransactions results = new LabeledTransactions();
+
+		HashSet<Resource> indivSet = new HashSet<Resource>();
+		String indivQueryString = "SELECT DISTINCT ?i WHERE { ?i a <" + currentClass + "> . }";
+		if(queryLimit > 0) {
+			indivQueryString += " LIMIT " + queryLimit;
+		}
+		QueryResultIterator itIndivQuery = new QueryResultIterator(indivQueryString, baseRDF);
+		try {
+			while(itIndivQuery.hasNext()) {
+				CustomQuerySolution indivSol = itIndivQuery.next();
+				indivSet.add(indivSol.getResource("i"));
+			}
+		} catch(HttpException e) {
+
+		} finally{
+			itIndivQuery.close();
+		}
+
+		Iterator<Resource> itIndiv = indivSet.iterator();
+		while(itIndiv.hasNext()) {
+			Resource currIndiv = itIndiv.next();
+			if(! currIndiv.isAnon() && ! this._individuals.contains(currIndiv)) {
+				this._individuals.add(currIndiv);
+				results.add(extractTransactionsForIndividual(baseRDF, onto, currIndiv));
+			}
+		}
+		
+		return AttributeIndex.getInstance().convertToTransactions(results);
 	}
 
 	
