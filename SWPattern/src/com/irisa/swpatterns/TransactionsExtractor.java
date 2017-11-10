@@ -85,26 +85,7 @@ public class TransactionsExtractor {
 		BaseRDF baseRDF = new BaseRDF(filename, MODE.LOCAL);
 		UtilOntology onto = new UtilOntology();
 		
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndOther) {
-			initDegreeCount( baseRDF, onto);
-		}
-		
-		logger.debug("Transaction extraction");
-
-		// Aggregation of the individual descriptions
-		LabeledTransactions results = new LabeledTransactions();
-		Iterator<Resource> itClass = onto.usedClassIterator();
-		while(itClass.hasNext()) 
-		{
-			Resource currentClass = itClass.next();
-			results.addAll(extractTransactionsForClass(baseRDF, onto, currentClass));
-		}
-
-		logger.debug("End of transaction extraction");
-		logger.debug(_index.size() + " attributes");
-//
-		logger.debug(results.size() + " lines");
-		return AttributeIndex.getInstance().convertToTransactions(results);
+		return AttributeIndex.getInstance().convertToTransactions(extractTransactions(baseRDF, onto));
 	}
 
 	/**
@@ -329,29 +310,8 @@ public class TransactionsExtractor {
 		LabeledTransaction indivResult = new LabeledTransaction();
 		BaseRDF baseRDF = new BaseRDF(filename, MODE.LOCAL);
 		UtilOntology onto = new UtilOntology();
-		
-		indivResult.setSource(currIndiv);
-
-		// QUERY types triples
-		if(! _noTypeBool) {
-			indivResult.addAll(this.extractTypeAttributeForIndividual(baseRDF, onto, currIndiv));
-		}
-
-		// QUERY out triples
-		if(! _noOutBool) {
-			indivResult.addAll(this.extractOutPropertyAttributeForIndividual(baseRDF, onto, currIndiv));
-		}
-
-		// QUERY in triples
-		if(! _noInBool) {
-			indivResult.addAll(this.extractInPropertyAttributesForIndividual(baseRDF, onto, currIndiv));
-		}
-		
-//		if(this.getNeighborLevel() == Neighborhood.PropertyAndObjectType) {
-//			indivResult.addAll(this.extractPathFragmentAttributesForIndividual(baseRDF, onto, currIndiv));
-//		}
-		
-		return AttributeIndex.getInstance().convertToTransaction(indivResult);
+				
+		return AttributeIndex.getInstance().convertToTransaction(extractTransactionsForIndividual(baseRDF, onto, currIndiv));
 	}
 	
 	public LabeledTransactions extractTransactionsForClass(BaseRDF baseRDF, UtilOntology onto, Resource currentClass) {
@@ -380,7 +340,7 @@ public class TransactionsExtractor {
 		Iterator<Resource> itIndiv = indivSet.iterator();
 		while(itIndiv.hasNext()) {
 			Resource currIndiv = itIndiv.next();
-			if(! currIndiv.isAnon() && ! this._individuals.contains(currIndiv)) {
+			if(/*! currIndiv.isAnon() &&*/ ! this._individuals.contains(currIndiv)) {
 				this._individuals.add(currIndiv);
 				results.add(extractTransactionsForIndividual(baseRDF, onto, currIndiv));
 			}
@@ -393,36 +353,8 @@ public class TransactionsExtractor {
 //		logger.debug("Current class: " + currentClass);
 		BaseRDF baseRDF = new BaseRDF(filename, MODE.LOCAL);
 		UtilOntology onto = new UtilOntology();
-
-		LabeledTransactions results = new LabeledTransactions();
-
-		HashSet<Resource> indivSet = new HashSet<Resource>();
-		String indivQueryString = "SELECT DISTINCT ?i WHERE { ?i a <" + currentClass + "> . }";
-		if(queryLimit > 0) {
-			indivQueryString += " LIMIT " + queryLimit;
-		}
-		QueryResultIterator itIndivQuery = new QueryResultIterator(indivQueryString, baseRDF);
-		try {
-			while(itIndivQuery.hasNext()) {
-				CustomQuerySolution indivSol = itIndivQuery.next();
-				indivSet.add(indivSol.getResource("i"));
-			}
-		} catch(HttpException e) {
-
-		} finally{
-			itIndivQuery.close();
-		}
-
-		Iterator<Resource> itIndiv = indivSet.iterator();
-		while(itIndiv.hasNext()) {
-			Resource currIndiv = itIndiv.next();
-			if(! currIndiv.isAnon() && ! this._individuals.contains(currIndiv)) {
-				this._individuals.add(currIndiv);
-				results.add(extractTransactionsForIndividual(baseRDF, onto, currIndiv));
-			}
-		}
 		
-		return AttributeIndex.getInstance().convertToTransactions(results);
+		return AttributeIndex.getInstance().convertToTransactions(extractTransactionsForClass(baseRDF, onto, currentClass));
 	}
 
 	
