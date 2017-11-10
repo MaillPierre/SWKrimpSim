@@ -115,8 +115,8 @@ public class Measures {
 	public static double structuralSimilarityWithoutKeepingDistributionUsingLengthsSharingItemset (CodeTable CT1, CodeTable CT2 ) {
 
 		// first we get the size of the database D1 codified with its own CT
-		double evalKrimpSize = CT1.encodedTransactionSetCodeLength();
-		double refKrimpSize = CT2.encodedTransactionSetCodeLength(); 
+		double evalKrimpSize = CT1.codificationLength(CT1.getTransactions());
+		double refKrimpSize = CT2.codificationLength(CT1.getTransactions()); 
 		
 		assert evalKrimpSize > 0.0; 
 		
