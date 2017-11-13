@@ -489,6 +489,18 @@ public class CodeTable {
 		return result; 
 	}	
 	
+	/** 
+	 * 
+	 * Codifying function that is aware of the fact that there might be part of the transaction 
+	 * that is not being covered by the codes contained in the code table. 
+	 * 
+	 *  It returns the codes used in the partial coverage, and the set of items (singletons) 
+	 *  that have not been covered. 
+	 * 
+	 * @param trans
+	 * @return
+	 */
+	
 	public Couple<ItemsetSet, KItemset> codifyAware (KItemset trans)  {
 		KItemset auxTrans = new KItemset(trans);
 		ItemsetSet result = new ItemsetSet(); 
