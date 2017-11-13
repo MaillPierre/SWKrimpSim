@@ -20,6 +20,9 @@ import com.irisa.krimp.data.Utils;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
 /**
+ * Was the central class for our own implementation of the algorithms.
+ * Becomes an unchangeable contener for codes and their lengths.
+ * 
  * @author pmaillot
  *
  */
@@ -39,6 +42,7 @@ public class CodeTable {
 	private boolean _standardFlag = false; // Set true if it is the standard codetable
 	private CodeTable _standardCT = null; // Codetable containing only singletons for the coding length of a CT
 	
+	@Deprecated
 	/**
 	 * Initialization of the usages and codes indices
 	 * @param index
@@ -48,7 +52,8 @@ public class CodeTable {
 	public CodeTable(ItemsetSet transactions, ItemsetSet codes, DataIndexes analysis) {
 		this(transactions, codes, analysis, false);
 	}
-	
+
+	@Deprecated
 	protected CodeTable(ItemsetSet transactions, ItemsetSet codes, DataIndexes analysis, boolean standardFlag) {
 		_transactions = transactions;
 		if(codes == null) {
@@ -72,6 +77,7 @@ public class CodeTable {
 		return _index;
 	}
 
+	@Deprecated
 	private void init() {
 		initSingletonSupports();
 		initCodes();
