@@ -215,6 +215,7 @@ public class CodeTable {
 	 * @return
 	 * @throws LogicException 
 	 */
+	@Deprecated 
 	public double encodedTransactionCodeLength(KItemset transaction) throws LogicException {
 		double result = 0.0;
 		Iterator<KItemset> itCodes = this.codeIterator();
@@ -239,6 +240,7 @@ public class CodeTable {
 	 * @return
 	 * @throws LogicException 
 	 */
+	@Deprecated
 	public double encodedTransactionSetCodeLength() throws LogicException {
 		double result = 0.0;
 		Iterator<KItemset> itTrans = this._transactions.iterator();
