@@ -10,7 +10,7 @@ import com.irisa.krimp.data.KItemset;
 import com.irisa.krimp.data.Utils;
 
 /**
- * Represents one codification measure of a transaction set using one codetable.
+ * Represents one codification measure of a transaction set using one codetable or a codetable by itself.
  * The codetable is copied, the transactions are not
  * @author pmaillot
  *
@@ -22,6 +22,9 @@ public class CodificationMeasure {
 	
 	public CodificationMeasure(final ItemsetSet transactions, final CodeTable codetable) {
 		this.setTransactions(transactions);
+		this.setCodetable(codetable);
+	}
+	public CodificationMeasure(final CodeTable codetable) {
 		this.setCodetable(codetable);
 	}
 
@@ -222,6 +225,14 @@ public class CodificationMeasure {
 	    	}
 	    }	
 		this._codetable.recomputeUsageTotal(); 
+	}
+	
+	public double codetableCodeLength() {
+		return codeTableCodeLength(_codetable);
+	}
+	
+	public double codeLengthOfCode(KItemset code) {
+		return codeLengthOfcode(_codetable, code);
 	}
 	
 	
