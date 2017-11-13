@@ -86,6 +86,10 @@ public class Utils {
 
 		return result;
 	}
+	
+	public ItemsetSet readCodeTableCodes(String filename) {
+		return readItemsetSetFile(filename);
+	}
 
 	//	public static Itemsets readItemsetFile(String filename) {
 	//		Itemsets result = new Itemsets(filename);
@@ -308,7 +312,7 @@ public class Utils {
 	 * @param transactions
 	 * @param output
 	 */
-	public static void printCodeTable(ItemsetSet ct, String output) {
+	public static void printCodeTableCodes(ItemsetSet ct, String output) {
 		printItemsetSet(ct, output, false, false);
 	}
 
@@ -477,7 +481,7 @@ public class Utils {
 			String analysisName = argv[1];
 			String outputName = argv[2];
 			ItemsetSet ct = readVreekenEtAlCodeTable(ctName, analysisName);
-			printCodeTable(ct, outputName);
+			printCodeTableCodes(ct, outputName);
 		} else {
 			logger.fatal("This program needs 3 arguments: <Vreeken et al. CT filename> <Vreeken et al. database analysis> <Output file>");
 		}
