@@ -56,7 +56,7 @@ public class CodificationMeasure {
 	 */
 	private static double probabilisticDistrib(CodeTable ct, KItemset code) {
 		int codeUsage = code.getUsage();
-		if(ct.contains(code)) {
+		if(code.getUsage() == 0 && ct.contains(code)) {
 			try {
 			Optional<KItemset> value = ct.getCodes()
 	            .stream()
