@@ -22,6 +22,7 @@
 // -dataset DatabaseFilename 
 // -measure regular 
 // -recalculate 
+// -vreekenFormat
 ///////////////////////////////////////////////////////////////////////////////
 
 package com.irisa.swpatterns.measures.tests;
