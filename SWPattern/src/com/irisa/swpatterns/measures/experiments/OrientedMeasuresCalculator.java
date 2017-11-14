@@ -17,6 +17,9 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.PropertyConfigurator;
+
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
@@ -37,6 +40,8 @@ public class OrientedMeasuresCalculator {
 	public static String RESULTS_HEADERS = "originalCT;comparedCT;comparedDB;ourFormat;measure;measureValue;execTime";  
 			
 	public static void main(String[] args) {
+		BasicConfigurator.configure();
+		PropertyConfigurator.configure("log4j-config.txt");
 	
 		CommandLineParser parser = new DefaultParser();
 		Options options = new Options();

@@ -1,6 +1,8 @@
 package com.irisa.swpatterns.measures;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import com.irisa.exception.LogicException;
 import com.irisa.jenautils.Couple;
@@ -8,6 +10,7 @@ import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 import com.irisa.krimp.data.Utils;
+import org.apache.log4j.Logger;
 
 /**
  * Represents one codification measure of a transaction set using one codetable or a codetable by itself.
@@ -16,6 +19,8 @@ import com.irisa.krimp.data.Utils;
  *
  */
 public class CodificationMeasure {
+	
+	private static Logger logger = Logger.getLogger(CodificationMeasure.class);
 
 	private ItemsetSet _transactions = null;
 	private CodeTable _codetable = null;
@@ -50,7 +55,19 @@ public class CodificationMeasure {
 	 * @return
 	 */
 	private static double probabilisticDistrib(CodeTable ct, KItemset code) {
-		return (double) code.getUsage() / (double) ct.getUsageTotal();
+		int codeUsage = code.getUsage();
+		if(ct.contains(code)) {
+			try {
+			Optional<KItemset> value = ct.getCodes()
+	            .stream()
+	            .filter(a -> a.equals(code))
+	            .findFirst();
+			codeUsage = value.get().getUsage();
+			} catch(NoSuchElementException e) {
+				logger.error("Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+			}
+		}
+		return (double) codeUsage / (double) ct.getUsageTotal();
 	}
 	
 	/**
@@ -81,7 +98,8 @@ public class CodificationMeasure {
 					stcL = codeLengthOfCodeAccordingST(ct, code);
 				}
 				// else => it is a 0.0
-								
+				
+				logger.debug("codeTableCodeLength: CTlength=" + cL + " stcL=" + stcL + " code=" + code );
 				result += cL + stcL;
 			}
 		}
@@ -99,7 +117,9 @@ public class CodificationMeasure {
 			Iterator<Integer> itCode = code.iterator();
 			while(itCode.hasNext()) {
 				Integer item = itCode.next();
-				result+= codeLengthOfcode(ct.getStandardCodeTable(), Utils.createCodeSingleton(item)); 
+				double itemCodeLength = codeLengthOfcode(ct.getStandardCodeTable(), Utils.createCodeSingleton(item));
+				logger.debug("codeLengthOfCodeAccordingST: codelength=" + itemCodeLength + " item=" + item);
+				result += itemCodeLength; 
 			}
 		}
 		return result; 
