@@ -20,6 +20,10 @@ import com.irisa.krimp.data.Utils;
 import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 
 /**
+ * Was the central class for our own implementation of the algorithms.
+ * Becomes an unchangeable contener for codes and their lengths.
+ * The encoded length of a database is retrieved with codificationlength()
+ * 
  * @author pmaillot
  *
  */
@@ -27,10 +31,12 @@ public class CodeTable {
 	
 	private static Logger logger = Logger.getLogger(CodeTable.class);
 
+	@Deprecated
 	private ItemsetSet _transactions = null;
 	private ItemsetSet _codes = null;
+	@Deprecated
 	private HashMap<KItemset, Integer> _itemsetUsage = new HashMap<KItemset, Integer>();
-	private HashMap<KItemset, Integer> _itemsetCode = new HashMap<KItemset, Integer>();
+	@Deprecated
 	private DataIndexes _index = null;
 	private long _usageTotal = 0;
 
@@ -39,8 +45,10 @@ public class CodeTable {
 	private boolean _standardFlag = false; // Set true if it is the standard codetable
 	private CodeTable _standardCT = null; // Codetable containing only singletons for the coding length of a CT
 	
+	@Deprecated
 	/**
 	 * Initialization of the usages and codes indices
+	 * @Deprecated: CT not linked to a particular transaction set
 	 * @param index
 	 * @param transactions
 	 * @param codes
@@ -48,7 +56,11 @@ public class CodeTable {
 	public CodeTable(ItemsetSet transactions, ItemsetSet codes, DataIndexes analysis) {
 		this(transactions, codes, analysis, false);
 	}
-	
+
+	@Deprecated
+	/**
+	 * @Deprecated: CT not linked to a particular transaction set
+	 */
 	protected CodeTable(ItemsetSet transactions, ItemsetSet codes, DataIndexes analysis, boolean standardFlag) {
 		_transactions = transactions;
 		if(codes == null) {
@@ -68,21 +80,84 @@ public class CodeTable {
 		init();	
 	}
 	
-	public DataIndexes get_index() {
-		return _index;
+	/**
+	 * Simple creation of a codetable, each pattern contains its own usage.
+	 * @param codes
+	 */
+	public CodeTable(ItemsetSet codes) {
+		this(codes, false);
+	}
+	
+	public CodeTable(ItemsetSet codes, boolean standard) {
+		this._standardFlag = standard;
+		if(standard) {
+			this._codes = generateStandardCodeTable(codes);
+			
+		} else {
+			this._codes = codes;
+			this._standardCT = new CodeTable(codes, true);
+		}
+		recomputeUsageTotal();
+	}
+	
+	/**
+	 * Generate a standard code table from a normal code table by adding for each items the usage of each code containing it.
+	 * @param codes
+	 * @return
+	 */
+	private static ItemsetSet generateStandardCodeTable(ItemsetSet codes) {
+		ItemsetSet stdCodes = new ItemsetSet();
+		HashMap<Integer, Integer> stdUsagesMap = new HashMap<Integer, Integer>();
+		
+		for(KItemset code : codes) {
+			for(int item : code) {
+				if(stdUsagesMap.get(item) == null) {
+					stdUsagesMap.put(item, 0);
+				}
+				stdUsagesMap.put(item, stdUsagesMap.get(item) + code.getUsage());
+			}
+		}
+		
+		for(Integer item : stdUsagesMap.keySet()) {
+			KItemset singleton = Utils.createCodeSingleton(item);
+			singleton.setSupport(stdUsagesMap.get(item));
+			singleton.setUsage(stdUsagesMap.get(item));
+			
+			stdCodes.add(singleton);
+		}
+		
+		return stdCodes;
 	}
 
+	@Deprecated
+	/**
+	 * 
+	 * @Deprecated: Moved to CodificationMeasure or removed 
+	 */
 	private void init() {
 		initSingletonSupports();
 		initCodes();
 		orderCodesStandardCoverageOrder();
 		updateUsages();		
 	}
-	
+
+	@Deprecated
+	/**
+	 * @Deprecated: CT is not linked to a particular set of transactions
+	 * @param transactions
+	 * @param analysis
+	 * @return
+	 */
 	public static CodeTable createStandardCodeTable(ItemsetSet transactions, DataIndexes analysis) {
 		return new CodeTable(transactions, null, analysis, true);
 	}
-	
+
+	@Deprecated
+	/**
+	 * @Deprecated: CT is not linked to a particular set of transactions
+	 * @param transactions
+	 * @return
+	 */
 	public static CodeTable createStandardCodeTable(ItemsetSet transactions) {
 		return new CodeTable(transactions, null, new DataIndexes(transactions), true);
 	}
@@ -91,7 +166,6 @@ public class CodeTable {
 		_transactions = ct._transactions;
 		_codes = new ItemsetSet(ct._codes);
 		_itemsetUsage = new HashMap<KItemset, Integer>(ct._itemsetUsage);
-		_itemsetCode = new HashMap<KItemset, Integer>(ct._itemsetCode);
 		_usageTotal = ct._usageTotal;
 		_standardFlag = ct._standardFlag;
 		_index = ct._index; // only depend on transactions and unmutable, no copy needed
@@ -101,13 +175,28 @@ public class CodeTable {
 		// CB: We ensure that the copy is in standardCoverageOrder 
 		orderCodesStandardCoverageOrder();
 	}
-
+	
+	/**
+	 * 
+	 * @Deprecated: CT is not linked to a particular set of transactions
+	 * @return
+	 */
 	public ItemsetSet getTransactions() {
 		return _transactions;
 	}
 	
+	public boolean isStandard() {
+		return this._standardFlag;
+	}
+	
+	public CodeTable getStandardCodeTable() {
+		return this._standardCT;
+	}
+
+	@Deprecated
 	/**
 	 * Trigger reinitialization of the indexes
+	 * @Deprecated: CT is not linked to a particular set of transactions
 	 * @param transactions
 	 */
 	public void setTransactionsReinitializing(ItemsetSet transactions) {
@@ -115,10 +204,12 @@ public class CodeTable {
 		this._index = new DataIndexes(transactions);
 		init();
 	}
-	
+
+	@Deprecated
 	/**
 	 * Substitute the transactions we want this code table act on without reinitializing the 
 	 *	supports (needed to calculate the new compression rates) 
+	 * @Deprecated: CT is not linked to a particular set of transactions
 	 * @param transactions
 	 */
 	public void setTransactions(ItemsetSet transactions) {
@@ -137,23 +228,38 @@ public class CodeTable {
 		return this._codes;
 	}
 	
+	public long getUsageTotal() {
+		return this._usageTotal;
+	}
+	
+	public void recomputeUsageTotal() {
+		this._usageTotal = 0;
+		for(KItemset code : _codes) {
+			this._usageTotal += code.getUsage();
+		}
+	}
+
+	@Deprecated
 	/**
 	 * Create new indices for new codes, put the usage of each code to 0
+	 * @Deprecated: not used anymore
 	 */
 	private void initCodes() {
 		this._codes.forEach(new Consumer<KItemset>() {
 			@Override
 			public void accept(KItemset code) {
-				if(_itemsetCode.get(code) == null) {
-					_itemsetCode.put(code, Utils.getAttributeNumber());
-				}
 				if(_itemsetUsage.get(code) == null) {
 					_itemsetUsage.put(code, 0);
 				}
 			}
 		});
 	}
-	
+
+	@Deprecated
+	/**
+	 * 
+	 * @Deprecated: Not used anymore
+	 */
 	private void initSingletonSupports() {
 		logger.debug("initSupport");
 		
@@ -166,10 +272,9 @@ public class CodeTable {
 				_codes.add(single);
 			}
 			_itemsetUsage.put(single, _index.getItemSupport(item));
-			_itemsetCode.put(single, item);
 		}
 	}
-	
+
 //	/**
 //	 * init the support vector of a code by doing a AND operation of all of its constituting singletons support vectors
 //	 * @param code
@@ -183,23 +288,35 @@ public class CodeTable {
 //		}
 //		this._codeSupport.put(code, candidateSupport);		
 //	}
-	
+
+	@Deprecated
+	/**
+	 * 
+	 * @Deprecated: Moved to CodificationMeasure
+	 * @param code
+	 * @return
+	 */
 	public int getUsage(KItemset code) {
 		if(this._itemsetUsage.get(code) == null) {
 			return 0;
 		}
 		return this._itemsetUsage.get(code);
 	}
-	
-	public Integer getCodeIndice(KItemset it) {
-		return this._itemsetCode.get(it);
-	}
-	
+
+	@Deprecated
+	/**
+	 * 
+	 * @Deprecated: Moved to CodificationMeasure
+	 * @param code
+	 * @return
+	 */
 	public double probabilisticDistrib(KItemset code) {
 		return (double) this.getUsage(code) / (double) this._usageTotal;
 	}
-	
+
+	@Deprecated
 	/**
+	 * @Deprecated: Moved to CodificationMeasure
 	 * L(code_CT(X))
 	 * @param code
 	 * @return
@@ -209,6 +326,7 @@ public class CodeTable {
 	}
 	
 	/**
+	 * @Deprecated: Moved to CodificationMeasure
 	 * L(t | CT)  [Dirty version]
 	 * PRE: codeTable in standardCoverageOrder 
 	 * @param transaction
@@ -235,6 +353,7 @@ public class CodeTable {
 	}
 	
 	/**
+	 * @Deprecated: Moved to CodificationMeasure
 	 * L(D | CT)
 	 * PRE: codetable in standardCoverageOrder
 	 * @return
@@ -251,8 +370,10 @@ public class CodeTable {
 		
 		return result;
 	}
-	
+
+	@Deprecated
 	/**
+	 * @Deprecated: Moved to CodificationMeasure
 	 * L(CT|D)
 	 * @return
 	 */
@@ -283,11 +404,12 @@ public class CodeTable {
 		}
 		return result;
 	}
-	
+
+	@Deprecated
 	/** 
+	 * @Deprecated: Moved to CodificationMeasure
 	 * L(code_ST(X))
 	 */
-	
 	public double codeLengthOfCodeAccordingST(KItemset code) {
 		double result = 0.0;
 		// this method should return 0 if the codetable is not the ST
@@ -300,8 +422,10 @@ public class CodeTable {
 		}
 		return result; 
 	}
-	
+
+	@Deprecated
 	/**
+	 * @Deprecated: Moved to CodificationMeasure
 	 * L(D, CT)
 	 * @return
 	 * @throws LogicException 
@@ -334,39 +458,26 @@ public class CodeTable {
 //		}
 //	}
 	
+	@Deprecated
 	/**
+	 * @Deprecated: Moved to CodificationMeasure
 	 * Initialize the usage of each code according to the cover
 	 * PRE: the codeTable must be in standardCoverTable order
 	 */
 	public void updateUsages() {
 		this._usageTotal = 0;
 		
-//		Iterator<KItemset> itCodes = this.codeIterator();
-//		while(itCodes.hasNext()) {
-//			KItemset code = itCodes.next();
-//			
-//			_itemsetUsage.replace(code, 0);
-//			
-//			int itrans = this._index.getCodeTransactionVector(code).nextSetBit(0);
-//			while(itrans >= 0) {
-//				KItemset trans = this._transactions.get(itrans);
-//				if(isCover(trans, code)) {
-//					_itemsetUsage.replace(code, _itemsetUsage.get(code) +1);
-//				}
-//				itrans = this._index.getCodeTransactionVector(code).nextSetBit(itrans+1);
-//			}
-//			
-//			this._usageTotal += _itemsetUsage.get(code);
-//		}
-		
 		Iterator<KItemset> itCodes = this.codeIterator();
 		while(itCodes.hasNext()) {
-			_itemsetUsage.replace(itCodes.next(), 0); 
+			KItemset code = itCodes.next();
+			_itemsetUsage.replace(code, 0); 
+			code.setUsage(0);
 		}
 		
 		for (KItemset t: this._transactions) {
 			ItemsetSet codes = this.codify(t); 
 			for (KItemset aux: codes) {
+				aux.setUsage(aux.getUsage()+1);
 				_itemsetUsage.replace(aux, _itemsetUsage.get(aux)+1); 
 			}
 			this._usageTotal+=codes.size(); 
@@ -378,7 +489,7 @@ public class CodeTable {
 	}
 	
 	/**
-	 * Comparator to sort the code list
+	 * Comparator to sort the code list by size -> support -> alphabetical order
 	 */
 	public static Comparator<KItemset> standardCoverOrderComparator = new Comparator<KItemset>() {
 		@Override
@@ -395,7 +506,7 @@ public class CodeTable {
 	};
 	
 	/**
-	 * Comparator to sort the code list
+	 * Comparator to sort the code list by support -> size -> alphabetical order
 	 */
 	public static Comparator<KItemset> standardCandidateOrderComparator = new Comparator<KItemset>() {
 		@Override
@@ -410,8 +521,10 @@ public class CodeTable {
 			return 0;
 		}
 	};
-	
+
+	@Deprecated
 	/**
+	 * @Deprecated: not used anymore
 	 * fast check for basic conditions to be a cover of a transaction
 	 * @param trans transaction
 	 * @param code code
@@ -421,8 +534,9 @@ public class CodeTable {
 		return ( code.size() <= trans.size()  && ( trans.containsAll(code)));
 	}
 	
+	@Deprecated
 	/**
-	 * 
+	 * @Deprecated: not used anymore
 	 * @param transaction transaction
 	 * @param code code from the codetable
 	 * @return true if the code is part of the transaction cover
@@ -435,9 +549,10 @@ public class CodeTable {
 		}
 		return false;
 	}
-	
+
+	@Deprecated
 	/**
-	 * 
+	 * @Deprecated: not used anymore
 	 * @param trans transaction
 	 * @param code code from the codetable
 	 * @param itLastTestedCode Iterator over codes, used for recursive calls to avoid re-iteration
@@ -464,10 +579,11 @@ public class CodeTable {
 		return false;
 	}
 	
-
+	@Deprecated
 	/** 
 	 * 
 	 * Codifying function according to the KRIMP paper
+	 * Deprecated: Moved to CodificationMeasure
 	 * 
 	 * @param trans
 	 * @return
@@ -515,39 +631,34 @@ public class CodeTable {
 		}
 		// currently, trans can be non-empty
 		// we return both the codes used, and the remaining non-covered part of the transaction (new items) 
-		return new Couple(result, auxTrans); 
+		return new Couple<ItemsetSet, KItemset>(result, auxTrans); 
 	}
-	
+
+	@Deprecated
+	/**
+	 * Deprecated: The updating of the usages should be done only if needed
+	 * @param pruneCandidate
+	 */
 	public void removeCode(KItemset pruneCandidate) {
 		this._codes.remove(pruneCandidate);
-		this._itemsetCode.remove(pruneCandidate);
 		this._itemsetUsage.remove(pruneCandidate);
 		// CB: removing from an ordered list must not alter the order
 		updateUsages(); // Have to maintain the thing up to date ? 
-		
 	}
 	
 	public boolean contains(KItemset candidate) {
 		return this._codes.contains(candidate);
 	}
 	
+	@Deprecated
 	/**
 	 * Supposed to be a new code
+	 * Deprecated: The updating of the usages should be done only if needed
 	 * @param code
 	 */
 	public void addCode(KItemset code) {
-		this.addCode(code, Utils.getAttributeNumber());
-	}
-	
-	/**
-	 * Add a code and its already existing indice
-	 * @param code
-	 * @param indice
-	 */
-	public void addCode(KItemset code, int indice) {
 		if(! this._codes.contains(code)) {
 			this._codes.add(code);
-			this._itemsetCode.put(code, indice);
 			this._itemsetUsage.put(code, this.getUsage(code));
 			// after adding it we have to reorder 
 			orderCodesStandardCoverageOrder();
@@ -556,34 +667,19 @@ public class CodeTable {
 		}
 	}
 	
-	public static Itemset itemsetAddition(Itemset iSet, Itemset added) {
-		TreeSet<Integer> tmpBaseSet = new TreeSet<Integer>();
-		for(int i = 0; i < iSet.getItems().length; i++) {
-			tmpBaseSet.add(iSet.get(i));
+	/**
+	 * Add a code to the end of the code table before reordering in coverageOrder. This code MUST NOT overlap with any existing code
+	 * @param code
+	 */
+	public void addSingleton(KItemset code) {
+		if(code.size() == 1 && ! this._codes.contains(code)) {
+			for(KItemset otherCode: this._codes) {
+				assert (! otherCode.contains(code)); // tmp safety test to check if their is no need to update usages
+			}
+			this._codes.addLast(code);
 		}
-		TreeSet<Integer> tmpAddedSet = new TreeSet<Integer>();
-		for(int i = 0; i < added.getItems().length; i++) {
-			tmpAddedSet.add(added.get(i));
-		}
-		tmpBaseSet.addAll(tmpAddedSet);
-		
-		return new Itemset(new ArrayList<Integer>(tmpBaseSet), iSet.getAbsoluteSupport());
+		orderCodesStandardCoverageOrder();
 	}
-	
-	// replaced by KItemset.substraction
-//	public static Itemset itemsetSubstraction(KItemset trans, KItemset tmpCode) {
-//		TreeSet<Integer> tmpBaseSet = new TreeSet<Integer>();
-//		for(int i = 0; i < trans.getItems().length; i++) {
-//			tmpBaseSet.add(trans.get(i));
-//		}
-//		TreeSet<Integer> tmpSubstractedSet = new TreeSet<Integer>();
-//		for(int i = 0; i < tmpCode.getItems().length; i++) {
-//			tmpSubstractedSet.add(tmpCode.get(i));
-//		}
-//		tmpBaseSet.removeAll(tmpSubstractedSet);
-//		
-//		return new Itemset(new ArrayList<Integer>(tmpBaseSet), trans.getAbsoluteSupport());
-//	}
 	
 	public String toString() {
 		
@@ -617,27 +713,11 @@ public class CodeTable {
 		Collections.sort(this._codes, CodeTable.standardCandidateOrderComparator);
 	}
 	
-	public KItemset getCodeFromIndex (Integer idx) {
-		
-		// CB: this should be stored as an inverted index
-		// done this way only for testing purposes
-		KItemset result = null; 
-		for (KItemset it: _codes) {
-			Integer aux = _itemsetCode.get(it); 
-			if (aux != null) {
-				if (aux.equals(idx)) {
-					result = it; 
-					break; // early termination
-				}
-			}
-		}
-		return result; 
-		
-	}
-	
+	@Deprecated
 	/** 
 	 * Length of the codification of a set of transactions using this code table
 	 * It uses exactly the same cover order (it does not update either the support or the usage of the elements in the table) 
+	 * Deprecated: Moved to CodificationMeasure
 	 */
 	public double codificationLength (ItemsetSet database) {
 		double result = 0.0;
@@ -651,6 +731,10 @@ public class CodeTable {
 		return result; 
 	}
 	
+	@Deprecated
+	/**
+	 * Deprecated: Moved to CodificationMeasure
+	 */
 	public void applyLaplaceSmoothingToUsages () {
 		
 		int totalAdded = 0;

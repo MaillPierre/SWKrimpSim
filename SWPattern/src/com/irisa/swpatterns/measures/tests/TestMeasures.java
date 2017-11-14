@@ -26,25 +26,20 @@
 
 package com.irisa.swpatterns.measures.tests;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.KrimpAlgorithm;
-import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.SWFrequentItemsetExtractor;
+import com.irisa.swpatterns.measures.CodificationMeasure;
 import com.irisa.swpatterns.measures.Measures;
 
 public class TestMeasures {
@@ -112,9 +107,9 @@ public class TestMeasures {
 			ItemsetSet transactions = Utils.readItemsetSetFile(datasetFilename); 
 			ItemsetSet originalTransactions = Utils.readItemsetSetFile(originalDatasetFilename); 
 			
-			DataIndexes index = new DataIndexes(transactions); 
-			CodeTable comparedCT = new CodeTable(transactions, comparedItemCT, index); 
-			CodeTable originalCT = new CodeTable(transactions, originalItemCT, index); 
+//			DataIndexes index = new DataIndexes(transactions); 
+			CodeTable comparedCT = new CodeTable(comparedItemCT); 
+			CodeTable originalCT = new CodeTable(originalItemCT); 
 			
 			CodeTable comparedKrimpCT = null;
 			CodeTable originalKrimpCT = null; 
@@ -153,52 +148,62 @@ public class TestMeasures {
 			Utils.printItemsetSet(comparedItemCT, "comparedCT-output.dat");
 			
 			double value = -1.0; 
-			double valueNotSharing = -1.0; 
+//			double valueNotSharing = -1.0; 
 			double refValue =-1.0; 
 			double evalValue = -1.0; 
 			double oldMeasure = -1.0; 
 			
 			double recalculatedOldMeasure = -1.0; 
 			double recalculatedValue = -1.0; 
-			double recalculatedValueNotSharing = -1.0; 
+//			double recalculatedValueNotSharing = -1.0; 
 			
 			switch (measure) {
 			case "regular":
-				value = Measures.structuralSimilarityWithoutKeepingDistributionSharingItemset(comparedCT, originalCT);
-				valueNotSharing = Measures.structuralSimilarityWithoutKeepingDistribution(comparedCT.getTransactions(), comparedCT, originalCT);
+				value = Measures.structuralSimilarityWithoutKeepingDistribution(transactions, comparedCT, originalCT);
+//				valueNotSharing = Measures.structuralSimilarityWithoutKeepingDistribution(transactions, comparedCT, originalCT);
 				break; 
 			case "usingLengths": 
-				value = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengthsSharingItemset(comparedCT, originalCT); 
-				valueNotSharing = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(comparedCT.getTransactions(), comparedCT, originalCT);
+				value = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(transactions, comparedCT, originalCT); 
+//				valueNotSharing = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(comparedCT.getTransactions(), comparedCT, originalCT);
 				break; 
 			default: 
 				break; 
 			}
 
-			evalValue = comparedCT.codificationLength(transactions); 
-			originalCT.setTransactions(transactions);
-			originalCT.updateUsages();
-			refValue = originalCT.codificationLength(transactions); 
+			CodificationMeasure oldCodMeasure1 = new CodificationMeasure(transactions, comparedCT);
+//			evalValue = comparedCT.codificationLength(transactions); 
+			evalValue = oldCodMeasure1.codificationLength(); 
+			CodificationMeasure oldCodMeasure2 = new CodificationMeasure(transactions, originalCT);
+//			originalCT.setTransactions(transactions);
+			oldCodMeasure2.updateUsages();
+//			originalCT.updateUsages();
+//			refValue = originalCT.codificationLength(transactions); 
+			refValue = oldCodMeasure2.codificationLength();
 			oldMeasure = refValue / evalValue; 
 
 			if (cmd.hasOption(RECALCULATE_OPTION)) {
 				switch (measure) {
 				case "regular":
-					recalculatedValue = Measures.structuralSimilarityWithoutKeepingDistributionSharingItemset(comparedKrimpCT, originalKrimpCT);
-					recalculatedValueNotSharing = Measures.structuralSimilarityWithoutKeepingDistribution(comparedCT.getTransactions(), comparedKrimpCT, originalKrimpCT);
+					recalculatedValue = Measures.structuralSimilarityWithoutKeepingDistribution(transactions, comparedKrimpCT, originalKrimpCT);
+//					recalculatedValueNotSharing = Measures.structuralSimilarityWithoutKeepingDistribution(comparedCT.getTransactions(), comparedKrimpCT, originalKrimpCT);
 					break; 
 				case "usingLengths": 
-					recalculatedValue = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengthsSharingItemset(comparedKrimpCT, originalKrimpCT); 
-					recalculatedValueNotSharing = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(comparedCT.getTransactions(), comparedKrimpCT, originalKrimpCT);
+					recalculatedValue = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(transactions, comparedKrimpCT, originalKrimpCT); 
+//					recalculatedValueNotSharing = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(comparedCT.getTransactions(), comparedKrimpCT, originalKrimpCT);
 					break; 
 				default: 
 					break; 
 				}
 				
-				evalValue = comparedKrimpCT.codificationLength(transactions); 
-				originalKrimpCT.setTransactions(transactions);
-				originalKrimpCT.updateUsages();
-				refValue = originalKrimpCT.codificationLength(transactions); 
+				CodificationMeasure recalcOldCodMeasure1 = new CodificationMeasure(transactions, comparedKrimpCT);
+//				evalValue = comparedKrimpCT.codificationLength(transactions); 
+				evalValue = recalcOldCodMeasure1.codificationLength(); 
+				CodificationMeasure recalcOldCodMeasure2 = new CodificationMeasure(transactions, originalKrimpCT);
+//				originalKrimpCT.setTransactions(transactions);
+				recalcOldCodMeasure2.updateUsages();
+//				originalKrimpCT.updateUsages();
+//				refValue = originalKrimpCT.codificationLength(transactions); 
+				refValue = recalcOldCodMeasure2.codificationLength(); 
 				recalculatedOldMeasure = refValue / evalValue; 
 			}
 			
@@ -208,10 +213,10 @@ public class TestMeasures {
 			System.out.println("Vreeken Format: "+cmd.hasOption(VREEKEN_OPTION)); 
 			System.out.println("OldMeasure: "+oldMeasure);
 			System.out.println("Distance sharing itemSets: "+value);
-			System.out.println("Distance not sharing itemSets: "+valueNotSharing);
+//			System.out.println("Distance not sharing itemSets: "+valueNotSharing);
 			if (cmd.hasOption(RECALCULATE_OPTION)){
 				System.out.println("Recalculated sharing itemSets: "+recalculatedValue);
-				System.out.println("Recalculated not sharing itemSets: "+recalculatedValueNotSharing);
+//				System.out.println("Recalculated not sharing itemSets: "+recalculatedValueNotSharing);
 				System.out.println("Recalculated old value: "+recalculatedOldMeasure);				
 			}
 		}
