@@ -5,6 +5,23 @@
 //Date: November 2017
 //Comments: Program to calculate both distances  
 //Modifications: 
+//Example command line:
+// For comparing and recalculating the measures, load using our table format: 
+// -comparedCT iswc-2012-complete.nt.Property.krimp.dat 
+// -originalCT ekaw-2016-complete.nt.Property.krimp.dat 
+// -originalDataset ekaw-2016-complete.nt.dbProperty.dat 
+// -dataset iswc-2012-complete.nt.dbProperty.dat 
+// -measure regular 
+// -recalculate
+
+// For comparing and recalculating, load using Vreeken's format: 
+// -comparedCT CTFilename 
+// -comparedDBAnalysis DBAnalysisFilename
+// -originalCT CTFilename 
+// -originalDataset DBAnalysisFilename 
+// -dataset DatabaseFilename 
+// -measure regular 
+// -recalculate 
 ///////////////////////////////////////////////////////////////////////////////
 
 package com.irisa.swpatterns.measures.tests;
