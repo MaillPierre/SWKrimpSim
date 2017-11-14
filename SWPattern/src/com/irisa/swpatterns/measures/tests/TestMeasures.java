@@ -19,6 +19,7 @@
 // -comparedDBAnalysis DBAnalysisFilename
 // -originalCT CTFilename 
 // -originalDataset DBAnalysisFilename 
+// -originalDBAnalysis DBAnalysisFilename
 // -dataset DatabaseFilename 
 // -measure regular 
 // -recalculate 
@@ -172,6 +173,7 @@ public class TestMeasures {
 			}
 
 			CodificationMeasure oldCodMeasure1 = new CodificationMeasure(transactions, comparedCT);
+//			System.err.println(comparedCT);
 //			evalValue = comparedCT.codificationLength(transactions); 
 			evalValue = oldCodMeasure1.codificationLength(); 
 			CodificationMeasure oldCodMeasure2 = new CodificationMeasure(transactions, originalCT);
@@ -180,6 +182,7 @@ public class TestMeasures {
 //			originalCT.updateUsages();
 //			refValue = originalCT.codificationLength(transactions); 
 			refValue = oldCodMeasure2.codificationLength();
+			System.out.println("Ref: " + refValue + " eval: " + evalValue);
 			oldMeasure = refValue / evalValue; 
 
 			if (cmd.hasOption(RECALCULATE_OPTION)) {
