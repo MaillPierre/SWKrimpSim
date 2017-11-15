@@ -113,6 +113,9 @@ public class TestMeasures {
 			CodeTable comparedCT = new CodeTable(comparedItemCT); 
 			CodeTable originalCT = new CodeTable(originalItemCT); 
 			
+			System.out.println(comparedCT);
+			System.out.println(originalCT);
+			
 			CodeTable comparedKrimpCT = null;
 			CodeTable originalKrimpCT = null; 
 			if (cmd.hasOption(RECALCULATE_OPTION)) {
@@ -184,6 +187,8 @@ public class TestMeasures {
 			refValue = oldCodMeasure2.codificationLength();
 			System.out.println("Ref: " + refValue + " eval: " + evalValue);
 			oldMeasure = refValue / evalValue; 
+			
+			System.out.println(oldCodMeasure2.getCodetable());
 
 			if (cmd.hasOption(RECALCULATE_OPTION)) {
 				switch (measure) {
@@ -209,6 +214,8 @@ public class TestMeasures {
 //				refValue = originalKrimpCT.codificationLength(transactions); 
 				refValue = recalcOldCodMeasure2.codificationLength(); 
 				recalculatedOldMeasure = refValue / evalValue; 
+				
+
 			}
 			
 			System.out.println("OriginalCTFilename: "+originalCTFilename);
@@ -223,6 +230,7 @@ public class TestMeasures {
 //				System.out.println("Recalculated not sharing itemSets: "+recalculatedValueNotSharing);
 				System.out.println("Recalculated old value: "+recalculatedOldMeasure);				
 			}
+			
 		}
 		catch (Exception e) {
 			e.printStackTrace();

@@ -695,7 +695,7 @@ public class CodeTable {
 			r.append(" s:"); 
 			r.append(is.getSupport()); 
 			r.append(" u:");
-			r.append(this.getUsage(is));
+			r.append(is.getUsage());
 			r.append(" P:");
 			r.append(this.probabilisticDistrib(is));
 			r.append(" L:");

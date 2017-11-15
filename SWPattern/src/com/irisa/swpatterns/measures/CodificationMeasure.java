@@ -56,8 +56,8 @@ public class CodificationMeasure {
 	 */
 	private static double probabilisticDistrib(CodeTable ct, KItemset code) {
 		int codeUsage = code.getUsage();
-		if(code.getUsage() == 0 && ct.contains(code)) {
-			try {
+		if(codeUsage == 0 && ct.contains(code)) {
+			try { // Using a bit of code using java8 and lambda stuff found on the web
 			Optional<KItemset> value = ct.getCodes()
 	            .stream()
 	            .filter(a -> a.equals(code))
@@ -152,9 +152,10 @@ public class CodificationMeasure {
 		
 		for (KItemset t: this._transactions) {
 			ItemsetSet codes = this.codify(t); 
-			for (KItemset code: codes) {
+			for (KItemset code: codes) { 
 				code.setUsage(code.getUsage()+1);
 			}
+			
 		}
 		
 		this._codetable.recomputeUsageTotal();
@@ -171,14 +172,24 @@ public class CodificationMeasure {
 		ItemsetSet result = new ItemsetSet(); 
 		Iterator<KItemset> itIs = this._codetable.codeIterator();
 		KItemset auxCode = null; 
-		while (itIs.hasNext() && (auxTrans.size() != 0) ) {
+		while (itIs.hasNext() && (auxTrans.size() != 0) ) { // Searching for the cover
 			auxCode = itIs.next(); 
 			if (auxTrans.containsAll(auxCode)) {
 				result.add(auxCode); 
 				auxTrans = auxTrans.substraction(auxCode); 
 			}
 		}
-		assert trans.size() == 0; // this should always happen 
+		
+		// adding the codes that appear in the transaction but not in the code table
+		if(! auxTrans.isEmpty()) {
+			for(int item : auxTrans) {
+				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
+				result.add(sinlgton);
+				this._codetable.addSingleton(sinlgton);
+			}
+		}
+		auxTrans.clear();
+		
 		return result; 
 	}
 	
@@ -254,7 +265,30 @@ public class CodificationMeasure {
 	public double codeLengthOfCode(KItemset code) {
 		return codeLengthOfcode(_codetable, code);
 	}
-	
+
+	public String toString() {
+		
+		// StringBuilder copied from smpf code, just to see ...
+		StringBuilder r = new StringBuilder ();
+		r.append("Total Usages: ");
+		r.append(this._codetable.getUsageTotal());
+		r.append('\n');
+		Iterator<KItemset> itIs = this._codetable.codeIterator();
+		while(itIs.hasNext()) {
+			KItemset is = itIs.next();
+			r.append(is.toString());
+			r.append(" s:"); 
+			r.append(is.getSupport()); 
+			r.append(" u:");
+			r.append(is.getUsage());
+			r.append(" P:");
+			r.append(probabilisticDistrib(this._codetable, is));
+			r.append(" L:");
+			r.append(codeLengthOfcode(this._codetable, is));
+			r.append('\n');
+		}
+		return r.toString();
+	}
 	
 	
 	

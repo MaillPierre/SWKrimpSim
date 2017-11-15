@@ -456,6 +456,14 @@ public class Utils {
 		return new KItemset(Collections.singleton(codeNum));
 	}
 
+	public static KItemset createCodeSingleton(int codeNum, int support) {
+		return new KItemset(Collections.singleton(codeNum), support);
+	}
+
+	public static KItemset createCodeSingleton(int codeNum, int support, int usage) {
+		return new KItemset(Collections.singleton(codeNum), support, usage);
+	}
+
 	public static int getAttributeNumber() {
 		int result = counterAttribute++;
 		if(itemNumberSet.contains(result)) {
