@@ -185,7 +185,6 @@ public class TestMeasures {
 //			originalCT.updateUsages();
 //			refValue = originalCT.codificationLength(transactions); 
 			refValue = oldCodMeasure2.codificationLength();
-			System.out.println("Ref: " + refValue + " eval: " + evalValue);
 			oldMeasure = refValue / evalValue; 
 			
 			System.out.println(oldCodMeasure2.getCodetable());

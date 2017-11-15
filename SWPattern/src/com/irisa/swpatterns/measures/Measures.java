@@ -116,7 +116,7 @@ public class Measures {
 		
 		assert evalKrimpSize > 0.0; 
 		
-		logger.debug("structuralSimilarityWithoutKeepingDistributionUsingLengths = ( " + refKrimpSize + " + " + measure2.codetableCodeLength() + " / (" + evalKrimpSize + " + " + measure1.codetableCodeLength() + " )");
+		logger.trace("structuralSimilarityWithoutKeepingDistributionUsingLengths = ( " + refKrimpSize + " + " + measure2.codetableCodeLength() + " / (" + evalKrimpSize + " + " + measure1.codetableCodeLength() + " )");
 		return (refKrimpSize + measure2.codetableCodeLength()) / (evalKrimpSize + measure1.codetableCodeLength()); 		
 	}
 	
