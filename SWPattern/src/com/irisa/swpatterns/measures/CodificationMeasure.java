@@ -99,7 +99,7 @@ public class CodificationMeasure {
 				}
 				// else => it is a 0.0
 				
-				logger.debug("codeTableCodeLength: CTlength=" + cL + " stcL=" + stcL + " code=" + code );
+				logger.trace("codeTableCodeLength: CTlength=" + cL + " stcL=" + stcL + " code=" + code );
 				result += cL + stcL;
 			}
 		}
@@ -118,7 +118,7 @@ public class CodificationMeasure {
 			while(itCode.hasNext()) {
 				Integer item = itCode.next();
 				double itemCodeLength = codeLengthOfcode(ct.getStandardCodeTable(), Utils.createCodeSingleton(item));
-				logger.debug("codeLengthOfCodeAccordingST: codelength=" + itemCodeLength + " item=" + item);
+				logger.trace("codeLengthOfCodeAccordingST: codelength=" + itemCodeLength + " item=" + item);
 				result += itemCodeLength; 
 			}
 		}
