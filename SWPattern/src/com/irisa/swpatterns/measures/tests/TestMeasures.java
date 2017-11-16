@@ -124,14 +124,14 @@ public class TestMeasures {
 				KrimpAlgorithm kAlgo = new KrimpAlgorithm(transactions, candidateCodes);
 				comparedKrimpCT = kAlgo.runAlgorithm(true);
 				
-				Utils.printItemsetSet(comparedKrimpCT.getCodes(), "comparedKrimpCT-output.dat");
+				Utils.printCodeTable(comparedKrimpCT.getCodes(), "comparedKrimpCT-output.dat");
 				
 				fsExtractor = new SWFrequentItemsetExtractor();
 				candidateCodes = new ItemsetSet(fsExtractor.computeItemsets(originalTransactions));
 				kAlgo = new KrimpAlgorithm(originalTransactions, candidateCodes);
 				originalKrimpCT = kAlgo.runAlgorithm(true);
 				
-				Utils.printItemsetSet(originalKrimpCT.getCodes(), "originalKrimpCT-output.dat");
+				Utils.printCodeTable(originalKrimpCT.getCodes(), "originalKrimpCT-output.dat");
 				
 			}
 			
@@ -144,13 +144,13 @@ public class TestMeasures {
 			System.out.println("OriginalCT:");
 			System.out.println("-----------");
 			System.out.println("Size: "+originalCT.getCodes().size()); 
-			Utils.printItemsetSet(originalItemCT, "originalCT-output.dat");
+			Utils.printCodeTable(originalItemCT, "originalCT-output.dat");
 			
 			
 			System.out.println("ComparedCT:");
 			System.out.println("-----------");
 			System.out.println("Size: "+comparedCT.getCodes().size());
-			Utils.printItemsetSet(comparedItemCT, "comparedCT-output.dat");
+			Utils.printCodeTable(comparedItemCT, "comparedCT-output.dat");
 			
 			double value = -1.0; 
 //			double valueNotSharing = -1.0; 
