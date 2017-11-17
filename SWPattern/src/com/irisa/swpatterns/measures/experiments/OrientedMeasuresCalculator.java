@@ -17,10 +17,10 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.PropertyConfigurator;
 
 import com.irisa.krimp.CodeTable;
-import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.measures.Measures;
@@ -40,6 +40,8 @@ public class OrientedMeasuresCalculator {
 	public static String RESULTS_HEADERS = "originalCT;comparedCT;comparedDB;ourFormat;measure;measureValue;execTime";  
 			
 	public static void main(String[] args) {
+		BasicConfigurator.configure();
+		PropertyConfigurator.configure("log4j-config.txt");
 	
 		CommandLineParser parser = new DefaultParser();
 		Options options = new Options();
@@ -93,18 +95,18 @@ public class OrientedMeasuresCalculator {
 			}
 			
 			ItemsetSet transactions = Utils.readItemsetSetFile(datasetFilename); 
-			DataIndexes index = new DataIndexes(transactions); 
-			CodeTable comparedCT = new CodeTable(transactions, comparedItemCT, index); 
-			CodeTable originalCT = new CodeTable(transactions, originalItemCT, index); 
+//			DataIndexes index = new DataIndexes(transactions); 
+			CodeTable comparedCT = new CodeTable(comparedItemCT); 
+			CodeTable originalCT = new CodeTable(originalItemCT); 
 			
 			long start = System.nanoTime(); 
 			double value = -1.0; 
 			switch (measure) {
 				case "regular":
-					value = Measures.structuralSimilarityWithoutKeepingDistributionSharingItemset(comparedCT, originalCT);
+					value = Measures.structuralSimilarityWithoutKeepingDistribution(transactions, comparedCT, originalCT);
 					break; 
 				case "usingLengths": 
-					value = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengthsSharingItemset(comparedCT, originalCT); 
+					value = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(transactions, comparedCT, originalCT); 
 					break; 
 				default: 
 					break; 

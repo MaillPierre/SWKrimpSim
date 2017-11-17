@@ -41,34 +41,39 @@ public class Measures {
 	public static double structuralSimilarityWithoutKeepingDistribution (ItemsetSet D1, CodeTable CT1, CodeTable CT2 ) {
 
 		// first we get the size of the database D1 codified with its own CT
-		double evalKrimpSize = CT1.codificationLength(D1);
+		CodificationMeasure measure1 = new CodificationMeasure(D1, CT1);
+		double evalKrimpSize = measure1.codificationLength();
 		
 		// we clone the CT2
 		// the usages are updated in the init() method
 		// we reuse as much as possible the information already calculated in the previous CTs
-		CodeTable tempCT = new CodeTable (CT2); 
-		tempCT.setTransactions(D1);
-		tempCT.updateUsages();
+		CodificationMeasure measure2 = new CodificationMeasure(D1, CT2);
+//		CodeTable tempCT = new CodeTable (CT2); 
+//		tempCT.setTransactions(D1);
+		measure2.updateUsages();
+//		tempCT.updateUsages();
 		
-		double refKrimpSize = tempCT.codificationLength(D1); 
-		
-		assert evalKrimpSize > 0.0; 
-		return refKrimpSize / evalKrimpSize; 		
-	}
-	
-	
-	
-	public static double structuralSimilarityWithoutKeepingDistributionSharingItemset (CodeTable CT1, CodeTable CT2 ) {
-
-		// first we get the size of the database D1 codified with its own CT
-		double evalKrimpSize = CT1.codificationLength(CT1.getTransactions());
-		
-		// we don't have to clone it, as it share the itemset
-		double refKrimpSize = CT2.codificationLength(CT2.getTransactions()); 
+		double refKrimpSize = measure2.codificationLength(); 
 		
 		assert evalKrimpSize > 0.0; 
 		return refKrimpSize / evalKrimpSize; 		
 	}
+	
+	
+	
+//	public static double structuralSimilarityWithoutKeepingDistributionSharingItemset (ItemsetSet D1, CodeTable CT1, CodeTable CT2 ) {
+//
+//		// first we get the size of the database D1 codified with its own CT
+//		CodificationMeasure measure1 = new CodificationMeasure(D1, CT1);
+//		double evalKrimpSize = measure1.codificationLength();
+//		
+//		// we don't have to clone it, as it share the itemset
+//		CodificationMeasure measure2 = new CodificationMeasure(D1, CT2);
+//		double refKrimpSize = measure2.codificationLength(); 
+//		
+//		assert evalKrimpSize > 0.0; 
+//		return refKrimpSize / evalKrimpSize; 		
+//	}
 	
 	
 	
@@ -95,33 +100,36 @@ public class Measures {
 	public static double structuralSimilarityWithoutKeepingDistributionUsingLengths (ItemsetSet D1, CodeTable CT1, CodeTable CT2 ) {
 
 		// first we get the size of the database D1 codified with its own CT
-		double evalKrimpSize = CT1.codificationLength(D1);
+		CodificationMeasure measure1 = new CodificationMeasure(D1, CT1);
+		double evalKrimpSize = measure1.codificationLength();
 		
 		// we clone the CT2
 		// the usages are updated in the init() method
 		// we reuse as much as possible the information already calculated in the previous CTs
-		CodeTable tempCT = new CodeTable (CT2); 
-		tempCT.setTransactions(D1);
-		tempCT.updateUsages();
+//		CodeTable tempCT = new CodeTable (CT2); 
+		CodificationMeasure measure2 = new CodificationMeasure(D1, CT2);
+//		tempCT.setTransactions(D1);
+//		tempCT.updateUsages();
+		measure2.updateUsages();
 		
-		double refKrimpSize = tempCT.codificationLength(D1); 
+		double refKrimpSize = measure1.codificationLength(); 
 		
 		assert evalKrimpSize > 0.0; 
 		
-		
-		return (refKrimpSize + tempCT.codeTableCodeLength()) / (evalKrimpSize + CT1.codeTableCodeLength()); 		
+		logger.trace("structuralSimilarityWithoutKeepingDistributionUsingLengths = ( " + refKrimpSize + " + " + measure2.codetableCodeLength() + " / (" + evalKrimpSize + " + " + measure1.codetableCodeLength() + " )");
+		return (refKrimpSize + measure2.codetableCodeLength()) / (evalKrimpSize + measure1.codetableCodeLength()); 		
 	}
 	
-	public static double structuralSimilarityWithoutKeepingDistributionUsingLengthsSharingItemset (CodeTable CT1, CodeTable CT2 ) {
-
-		// first we get the size of the database D1 codified with its own CT
-		double evalKrimpSize = CT1.codificationLength(CT1.getTransactions());
-		double refKrimpSize = CT2.codificationLength(CT1.getTransactions()); 
-		
-		assert evalKrimpSize > 0.0; 
-		
-		return (refKrimpSize + CT2.codeTableCodeLength()) / (evalKrimpSize + CT1.codeTableCodeLength()); 		
-	}
+//	public static double structuralSimilarityWithoutKeepingDistributionUsingLengthsSharingItemset (CodeTable CT1, CodeTable CT2 ) {
+//
+//		// first we get the size of the database D1 codified with its own CT
+//		double evalKrimpSize = CT1.codificationLength(CT1.getTransactions());
+//		double refKrimpSize = CT2.codificationLength(CT1.getTransactions()); 
+//		
+//		assert evalKrimpSize > 0.0; 
+//		
+//		return (refKrimpSize + CT2.codeTableCodeLength()) / (evalKrimpSize + CT1.codeTableCodeLength()); 		
+//	}
 	
 	
 	/** 
@@ -135,16 +143,21 @@ public class Measures {
 	
 		CTLengthDifferences result = new CTLengthDifferences(); 
 		
-		CodeTable originalCT = new CodeTable (CT); 
-		originalCT.applyLaplaceSmoothingToUsages(); 
+//		CodeTable originalCT = new CodeTable (CT); 
+		CodificationMeasure measure1 = new CodificationMeasure(D, CT);
+//		originalCT.applyLaplaceSmoothingToUsages(); 
+		measure1.applyLaplaceSmoothingToUsages();
 		
-		CodeTable tempCT = new CodeTable (CT); 
-		tempCT.setTransactions(D);
-		tempCT.updateUsages();
-		tempCT.applyLaplaceSmoothingToUsages();
+		CodificationMeasure measure2 = new CodificationMeasure(D, CT);
+		measure2.updateUsages();
+		measure2.applyLaplaceSmoothingToUsages();
+//		CodeTable tempCT = new CodeTable (CT); 
+//		tempCT.setTransactions(D);
+//		tempCT.updateUsages();
+//		tempCT.applyLaplaceSmoothingToUsages();
 		
 		for (KItemset code: CT.getCodes()) {
-			result.putDifference(code, tempCT.codeLengthOfcode(code) - originalCT.codeLengthOfcode(code));
+			result.putDifference(code, measure2.codeLengthOfCode(code) - measure1.codeLengthOfCode(code));
 		}
 		
 		return result; 
@@ -165,15 +178,19 @@ public class Measures {
 		
 		// we need to apply laplace smoothing to include the codes that are not used
 		// in the game (another option in this case would be to make the assumption of 0*log(0) == 0) 
-		CodeTable originalCT = new CodeTable(CT1); 
-		originalCT.applyLaplaceSmoothingToUsages();
+//		CodeTable originalCT = new CodeTable(CT1); 
+		CodificationMeasure measure1 = new CodificationMeasure(CT1);
+//		originalCT.applyLaplaceSmoothingToUsages();
+		measure1.applyLaplaceSmoothingToUsages();
 		
-		CodeTable tempCT = new CodeTable (CT2); 
-		tempCT.setTransactions(CT1.getCodes());
-		tempCT.applyLaplaceSmoothingToUsages();
+//		CodeTable tempCT = new CodeTable (CT2); 
+		CodificationMeasure measure2 = new CodificationMeasure(CT1.getCodes(), CT2);
+//		tempCT.setTransactions(CT1.getCodes());
+//		tempCT.applyLaplaceSmoothingToUsages();
+		measure2.applyLaplaceSmoothingToUsages();
 		
-		double evalKrimpSize = originalCT.codificationLength(CT1.getCodes()); 
-		double refKrimpSize = tempCT.codificationLength(CT1.getCodes()); 
+		double evalKrimpSize = measure1.codificationLength(); 
+		double refKrimpSize = measure2.codificationLength(); 
 		
 		return refKrimpSize/evalKrimpSize; 
 		
@@ -193,13 +210,15 @@ public class Measures {
 	
 	public static double codificationLengthApplyingLaplaceSmoothing (ItemsetSet D1, CodeTable CT1) {
 		// we have to clone and smooth the codeTable 
-		CodeTable tempCT = new CodeTable(CT1);
+//		CodeTable tempCT = new CodeTable(CT1);
+		CodificationMeasure measure = new CodificationMeasure(D1, CT1);
 		// we change the database without updating anything but the dataIndex
-		tempCT.setTransactions(D1);
+//		tempCT.setTransactions(D1);
 		// we applyLaplaceSmoothing for perplexity purposes
-		tempCT.applyLaplaceSmoothingToUsages();
+//		tempCT.applyLaplaceSmoothingToUsages();
+		measure.applyLaplaceSmoothingToUsages();
 		// second we get the size of the database D1 codified with the
-		return tempCT.codificationLength(D1);  		
+		return measure.codificationLength();  		
 	}
 	
 	

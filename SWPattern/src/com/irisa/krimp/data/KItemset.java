@@ -23,11 +23,18 @@ public class KItemset extends HashSet<Integer> {
 		super(arg0);
 		if(arg0 instanceof KItemset) {
 			this._support = ((KItemset) arg0).getSupport();
+			this._usage = ((KItemset) arg0).getUsage();
 		}
 	}
+	
 	public KItemset(Collection<? extends Integer> arg0, int supp) {
+		this(arg0, supp, 0);
+	}
+	
+	public KItemset(Collection<? extends Integer> arg0, int supp, int usg) {
 		super(arg0);
 		this._support = supp;
+		this._usage = usg;
 	}
 
 	protected KItemset(int initialCapacity) {

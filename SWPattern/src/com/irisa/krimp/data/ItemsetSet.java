@@ -21,6 +21,7 @@ import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 public class ItemsetSet extends LinkedList<KItemset> {
 
 //	protected HashMap<Integer, HashSet<KItemset>> itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>();
+	private BitSet _knownItemSet = new BitSet(); // An set bit at position i indicate the use of item i somewhere in the dataset
 	
 	public ItemsetSet() {
 		super();
@@ -28,6 +29,7 @@ public class ItemsetSet extends LinkedList<KItemset> {
 	
 	public ItemsetSet(ItemsetSet is) {
 		super(is);
+		this._knownItemSet = is._knownItemSet;
 //		itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>(is.itemItemsetIndex);
 	}
 	
@@ -43,6 +45,9 @@ public class ItemsetSet extends LinkedList<KItemset> {
 			while(itList.hasNext()) {
 				KItemset smpf = new KItemset(itList.next());
 				
+				for(int item : smpf ) {
+					_knownItemSet.set(item);
+				}
 				add(smpf);
 			}
 		}
@@ -59,6 +64,24 @@ public class ItemsetSet extends LinkedList<KItemset> {
 //			}
 //			itemItemsetIndex.get(item).add(newIs);
 //		}
+		for(int item : auxCode) {
+			_knownItemSet.set(item);
+		}
+	}
+	
+	/**
+	 * @return List of items used in this itemsetSet
+	 */
+	public List<Integer> knownItems() {
+		LinkedList<Integer> result = new LinkedList<Integer>();
+		
+		int index = 0;
+		while(this._knownItemSet.nextSetBit(index) >= 0) {
+			result.add(this._knownItemSet.nextSetBit(index));
+			index++;
+		}
+		
+		return result;
 	}
 	
 	public double averageSize() {
