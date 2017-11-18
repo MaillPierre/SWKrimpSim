@@ -112,11 +112,11 @@ public class Measures {
 //		tempCT.updateUsages();
 		measure2.updateUsages();
 		
-		double refKrimpSize = measure1.codificationLength(); 
+		double refKrimpSize = measure2.codificationLength(); 
 		
 		assert evalKrimpSize > 0.0; 
 		
-		logger.debug("structuralSimilarityWithoutKeepingDistributionUsingLengths = ( " + refKrimpSize + " + " + measure2.codetableCodeLength() + " / (" + evalKrimpSize + " + " + measure1.codetableCodeLength() + " )");
+		logger.trace("structuralSimilarityWithoutKeepingDistributionUsingLengths = ( " + refKrimpSize + " + " + measure2.codetableCodeLength() + " / (" + evalKrimpSize + " + " + measure1.codetableCodeLength() + " )");
 		return (refKrimpSize + measure2.codetableCodeLength()) / (evalKrimpSize + measure1.codetableCodeLength()); 		
 	}
 	
