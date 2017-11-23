@@ -24,8 +24,6 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 public class Utils {
 
@@ -151,152 +149,8 @@ public class Utils {
 	//		return result;
 	//	}
 
-	@Deprecated 
-	public static Itemsets readItemsetFile(String filename) {
-		Itemsets result = new Itemsets(filename);
-		try {
-			BufferedReader reader = new BufferedReader(new FileReader(filename));
 
-			CSVParser parser = new CSVParser(reader, CSVFormat.TDF.withDelimiter(' '));
-			for (CSVRecord line : parser) {
-				boolean withSupport = false;
-				boolean withUsage = false;
-				LinkedList<Integer> itemsetLine = new LinkedList<Integer>();
-				int support = 1;
-				int usage = 0;
-				if (line.get(0).equals('#') 
-						|| line.get(0).equals('%')
-						|| line.get(0).equals('@')) {
-					continue;
-				}
-				for(int i = 0; i < line.size(); i++) {
-					if( withSupport || withUsage) {
-						if(withSupport) {
-							support = Integer.valueOf(line.get(i));
-						}
-						withSupport = false;
-						if(withUsage) {
-							usage = Integer.valueOf(line.get(i));
-						}
-						withUsage = false;
-					} else if(line.get(i).equals("#SUP:")) {
-						withSupport = true;
-						continue;
-					} else if(line.get(i).equals("#USG:")) {
-						withUsage = true;
-						continue;
-					} else {
-						try {
-							itemsetLine.add(Integer.valueOf(line.get(i)));
-						} catch(NumberFormatException e) {
-							logger.fatal(filename + " " + line + " (" + i + "): " + line.get(i), e);
-						}
-					}
-				}
-				result.addItemset(new Itemset(itemsetLine, support), line.size());
-			}
-			parser.close();
-		} catch (IOException e) {
-			logger.fatal(e);
-		}
 
-		return result;
-	}
-
-	public static Itemsets readTransactionFile(String filename) {
-		Itemsets result = new Itemsets(filename);
-
-		// scan the database
-		BufferedReader reader;
-		try {
-			reader = new BufferedReader(new FileReader(filename));
-			String line;
-			// for each line (transaction) until the end of file
-			while (((line = reader.readLine()) != null)){ 
-				LinkedList<Integer> itemsetLine = new LinkedList<Integer>();
-				int lineSupport = 1;
-				// if the line is  a comment, is  empty or is a
-				// kind of metadata
-				if (line.isEmpty() == true ||
-						line.charAt(0) == '#' || line.charAt(0) == '%'
-						|| line.charAt(0) == '@') {
-					continue;
-				}
-
-				// split the transaction into items
-				String[] lineSplited = line.split(" ");
-				// for each item in the
-				// transaction
-				for (String itemString : lineSplited) { 
-					try {
-						if(itemString.isEmpty()) {
-							continue;
-						} else {
-							// convert item to integer
-							Integer item = Integer.parseInt(itemString);
-							itemsetLine.add(item);
-						}
-					} catch (NumberFormatException e) {
-						logger.error(itemString, e);
-					}
-				}
-				Collections.sort(itemsetLine);
-				result.addItemset(new Itemset(itemsetLine, lineSupport), itemsetLine.size());
-			}
-			// close the input file
-			reader.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		return result;
-	}
-	protected static void printItemsets(Itemsets is, String output) {
-		printItemsets(is, output, false);
-	}
-
-	protected static void printItemsets(Itemsets is, String output, boolean noSupport) {
-		try {
-			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(output)));
-			CSVPrinter printer = new CSVPrinter(out, CSVFormat.TDF.withDelimiter(' ').withQuote(null));
-
-			// Writing lines
-			is.getLevels().forEach(new Consumer<List<Itemset>>() {
-				@Override
-				public void accept(List<Itemset> l) {
-					l.forEach(new Consumer<Itemset>() {
-						@Override
-						public void accept(Itemset t) {
-							try {
-								for(int i = 0; i < t.size(); i++) {
-									printer.print(t.get(i));
-								}
-								if(! noSupport) {
-									printer.print((Object)"#SUP:");
-									printer.print(t.getAbsoluteSupport());
-								}
-								printer.println();
-							} catch (IOException e) {
-								logger.error(e);
-							}
-						}
-					});
-				}
-			});
-
-			printer.close();
-		} catch (IOException e) {
-			logger.error(e);
-		}
-	}
-
-	public static void printTransactions(Itemsets is, String output) {
-		printItemsets(is, output, true);
-	}
 
 	/**
 	 * Print the transaction in the format expected by SPMF (int separated by spaces).
@@ -324,6 +178,7 @@ public class Utils {
 	protected static void printItemsetSet(ItemsetSet transactions, String output, boolean noSupport) {
 		printItemsetSet(transactions, output, noSupport, true);
 	}
+	
 	protected static void printItemsetSet(ItemsetSet transactions, String output, boolean noSupport, boolean noUsage) {
 
 		try {

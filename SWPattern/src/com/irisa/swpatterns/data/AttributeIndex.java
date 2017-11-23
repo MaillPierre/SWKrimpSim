@@ -32,9 +32,6 @@ import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.Global;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
-
 /**
  * Singleton class containing the index for RDFComponent/Item number 
  * @author pmaillot
@@ -122,36 +119,6 @@ public class AttributeIndex {
 		}
 	}
 
-	public LabeledTransaction labelItemSet(Itemset iSet) {
-		LabeledTransaction result = new LabeledTransaction();
-
-		for(int i = 0; i < iSet.getItems().length; i++) {
-			result.add(_itemAttributeIndex.get(iSet.get(i)));
-		}
-		result.setSupport(iSet.getAbsoluteSupport());
-
-		return result;
-	}
-	
-	public List<LabeledTransaction> labelItemSet(Itemsets iSets) {
-		List<LabeledTransaction> result = new ArrayList<LabeledTransaction>();
-		
-		for(int level = 0; level < iSets.getLevels().size(); level++) {
-			iSets.getLevels().forEach(new Consumer<List<Itemset>>() {
-				@Override
-				public void accept(List<Itemset> l) {
-					l.forEach(new Consumer<Itemset>(){
-						@Override
-						public void accept(Itemset is) {
-							result.add(labelItemSet(is));
-						}
-					});
-				}
-			});
-		}
-		
-		return result;
-	}
 	
 	public ItemsetSet convertToTransactions(LabeledTransactions labelSet) {
 		ItemsetSet result = new ItemsetSet();

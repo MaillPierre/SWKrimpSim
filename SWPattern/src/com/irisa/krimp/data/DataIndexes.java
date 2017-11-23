@@ -10,8 +10,6 @@ import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
 
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
-
 public class DataIndexes {
 	
 	private static Logger logger = Logger.getLogger(DataIndexes.class);
@@ -109,10 +107,6 @@ public class DataIndexes {
 	
 	public int getCodeSupport(KItemset code) {
 		return getCodeTransactionVector(code).cardinality();
-	}
-	
-	public BitSet getTransactionItemVector(Itemset trans) {
-		return this._transactionItemVectors.get(trans);
 	}
 	
 	public BitSet getItemTransactionVector(int item) {

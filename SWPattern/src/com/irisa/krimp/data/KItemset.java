@@ -8,8 +8,6 @@ import java.util.List;
 
 import org.apache.jena.ext.com.google.common.collect.Lists;
 
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
-
 public class KItemset extends HashSet<Integer> {
 	
 	private int _support = 0;
@@ -45,14 +43,6 @@ public class KItemset extends HashSet<Integer> {
 		super(initialCapacity, loadFactor);
 	}
 
-	public KItemset(Itemset smpf) {
-		super();
-		for(int i = 0; i < smpf.size(); i++) {
-			add(smpf.get(i));
-		}
-		this._support = smpf.getAbsoluteSupport();
-	}
-	
 	public int getSupport() {
 		return this._support;
 	}
@@ -115,10 +105,6 @@ public class KItemset extends HashSet<Integer> {
 		return Lists.newArrayList(this);
 	}
 	
-	public Itemset toSMPFItemset() {
-		return new Itemset(this.getItemList(), this.getSupport());
-	}
-
 	public int getUsage() {
 		return _usage;
 	}

@@ -13,17 +13,10 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import com.irisa.jenautils.BaseRDF;
-import com.irisa.jenautils.QueryResultIterator;
-import com.irisa.jenautils.UtilOntology;
-import com.irisa.jenautils.BaseRDF.MODE;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;
-import com.irisa.swpatterns.SWFrequentItemsetExtractor;
-import com.irisa.swpatterns.TransactionsExtractor;
 import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
 import com.irisa.swpatterns.data.AttributeIndex;
-import com.irisa.swpatterns.data.LabeledTransactions;
 
 public class BigDataTransactionExtractorMain {
 

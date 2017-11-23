@@ -17,8 +17,6 @@ import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 import com.irisa.krimp.data.Utils;
 
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
-
 /**
  * Was the central class for our own implementation of the algorithms.
  * Becomes an unchangeable contener for codes and their lengths.

@@ -22,7 +22,6 @@ import com.irisa.jenautils.BaseRDF.MODE;
 import com.irisa.jenautils.QueryResultIterator;
 import com.irisa.jenautils.UtilOntology;
 import com.irisa.krimp.CodeTable;
-import com.irisa.krimp.KrimpAlgorithm;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.Utils;

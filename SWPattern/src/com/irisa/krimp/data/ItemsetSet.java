@@ -10,9 +10,6 @@ import java.util.function.Consumer;
 
 import com.irisa.swpatterns.data.AttributeIndex;
 
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
-
 /**
  * Intended to replace SPMF Itemsets
  * @author pmaillot
@@ -31,26 +28,6 @@ public class ItemsetSet extends LinkedList<KItemset> {
 		super(is);
 		this._knownItemSet = is._knownItemSet;
 //		itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>(is.itemItemsetIndex);
-	}
-	
-	public ItemsetSet(Itemsets iset) {
-		super();
-		
-		// Add the itemsets
-		Iterator<List<Itemset>> itSets = iset.getLevels().iterator();
-		while(itSets.hasNext()) {
-			List<Itemset> list = itSets.next();
-			
-			Iterator<Itemset> itList = list.iterator();
-			while(itList.hasNext()) {
-				KItemset smpf = new KItemset(itList.next());
-				
-				for(int item : smpf ) {
-					_knownItemSet.set(item);
-				}
-				add(smpf);
-			}
-		}
 	}
 	
 	public void addItemset(KItemset auxCode) {
@@ -126,18 +103,5 @@ public class ItemsetSet extends LinkedList<KItemset> {
 		}
 		
 		return r.toString();
-	}
-	
-	public Itemsets toItemsets() {
-		Itemsets result = new Itemsets("");
-		
-		this.forEach(new Consumer<KItemset>() {
-			@Override
-			public void accept(KItemset t) {
-				result.addItemset(t.toSMPFItemset(), t.size());
-			}
-		});
-		
-		return result;
 	}
 }
