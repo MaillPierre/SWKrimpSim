@@ -112,7 +112,7 @@ public class Measures {
 //		tempCT.updateUsages();
 		measure2.updateUsages();
 		
-		double refKrimpSize = measure1.codificationLength(); 
+		double refKrimpSize = measure2.codificationLength(); 
 		
 		assert evalKrimpSize > 0.0; 
 		
