@@ -89,7 +89,7 @@ public class CodeTable {
 	public CodeTable(ItemsetSet codes, boolean standard) {
 		this._standardFlag = standard;
 		if(standard) {
-			this._codes = generateStandardCodeTable(codes);
+			this._codes = generateStandardCodeTableCodes(codes);
 			
 		} else {
 			this._codes = codes;
@@ -103,7 +103,7 @@ public class CodeTable {
 	 * @param codes
 	 * @return
 	 */
-	private static ItemsetSet generateStandardCodeTable(ItemsetSet codes) {
+	private static ItemsetSet generateStandardCodeTableCodes(ItemsetSet codes) {
 		ItemsetSet stdCodes = new ItemsetSet();
 		HashMap<Integer, Integer> stdUsagesMap = new HashMap<Integer, Integer>();
 		
@@ -125,6 +125,10 @@ public class CodeTable {
 		}
 		
 		return stdCodes;
+	}
+	
+	public void regenerateStandardCodeTable() {
+		this._standardCT = new CodeTable(_codes, true);
 	}
 
 	@Deprecated

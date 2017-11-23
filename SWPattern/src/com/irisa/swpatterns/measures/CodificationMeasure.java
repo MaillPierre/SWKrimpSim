@@ -85,6 +85,7 @@ public class CodificationMeasure {
 	 */
 	private static double codeTableCodeLength(CodeTable ct) {
 		double result = 0.0;
+		ct.regenerateStandardCodeTable(); // To be sure all codes appearing are taken into account in the STCT
 		Iterator<KItemset> itCodes = ct.codeIterator();
 		while(itCodes.hasNext()) {
 			KItemset code = itCodes.next();
@@ -108,7 +109,9 @@ public class CodificationMeasure {
 
 	
 	/** 
-	 * L(code_ST(X))
+	 * L(code_ST(X)).
+	 * The argument codetable is NOT the standard codetable
+	 * @return 0 if the given code table is the standard codetable
 	 */
 	private static double codeLengthOfCodeAccordingST(CodeTable ct, KItemset code) {
 		double result = 0.0;

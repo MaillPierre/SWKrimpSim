@@ -103,7 +103,6 @@ public class TestMeasures {
 			}
 
 			ItemsetSet transactions = Utils.readItemsetSetFile(datasetFilename); 
-			Utils.readItemsetSetFile(originalDatasetFilename); 
 			
 //			DataIndexes index = new DataIndexes(transactions); 
 			CodeTable comparedCT = new CodeTable(comparedItemCT); 
@@ -168,7 +167,7 @@ public class TestMeasures {
 			System.out.println("DatasetFilename: "+datasetFilename); 
 			System.out.println("Vreeken Format: "+cmd.hasOption(VREEKEN_OPTION)); 
 			System.out.println("OldMeasure: "+oldMeasure);
-			System.out.println("Distance sharing itemSets: "+value);
+			System.out.println("Measure: "+value);
 //			System.out.println("Distance not sharing itemSets: "+valueNotSharing);
 			
 		}
