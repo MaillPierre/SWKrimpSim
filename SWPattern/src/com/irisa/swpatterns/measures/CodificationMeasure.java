@@ -29,6 +29,7 @@ public class CodificationMeasure {
 		this.setTransactions(transactions);
 		this.setCodetable(codetable);
 	}
+	
 	public CodificationMeasure(final CodeTable codetable) {
 		this.setCodetable(codetable);
 	}
@@ -38,7 +39,7 @@ public class CodificationMeasure {
 	}
 
 	public void setCodetable(CodeTable _codetable) {
-		this._codetable = new CodeTable(_codetable);
+		this._codetable = new CodeTable(new ItemsetSet(_codetable.getCodes()));
 	}
 
 	public ItemsetSet getTransactions() {
@@ -234,7 +235,9 @@ public class CodificationMeasure {
 		for (KItemset it: this._transactions) {
 			codes = this.codify(it); 
 			for (KItemset code: codes) {
-				result += codeLengthOfcode(this._codetable, code); 
+				double codelength = codeLengthOfcode(this._codetable, code);
+				assert ! Double.isInfinite(codelength);
+				result += codelength; 
 			}
 		}
 		return result; 

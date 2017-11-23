@@ -1,11 +1,9 @@
 package com.irisa.krimp;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.TreeSet;
 import java.util.function.Consumer;
 
 import org.apache.log4j.Logger;
@@ -175,7 +173,7 @@ public class CodeTable {
 		_standardCT = ct._standardCT;
 		
 		// CB: We ensure that the copy is in standardCoverageOrder 
-		orderCodesStandardCoverageOrder();
+//		orderCodesStandardCoverageOrder();
 	}
 	
 	/**

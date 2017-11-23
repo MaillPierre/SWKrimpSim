@@ -63,7 +63,7 @@ public class TestMeasures {
 		
 		CommandLineParser parser = new DefaultParser();
 		Options options = new Options();
-		options.addOption(MEASURE_OPTION, true, "measure type to be used - regular|usingLengths"); 
+		options.addOption(MEASURE_OPTION, true, "measure type to be used - regular|usingLengths|keepingUsages"); 
 		options.addOption(ORIGINAL_CT_OPTION, true, "codeTable of the dataset AGAINST which we compare the dataset");
 		options.addOption(ORIGINAL_DB_ANALYSIS_OPTION, true, "original db analysis file required to read Vreeken CTs "); 
 		options.addOption(COMPARED_CT_OPTION, true, "codeTable of the compared dataset"); 
@@ -103,6 +103,7 @@ public class TestMeasures {
 			}
 
 			ItemsetSet transactions = Utils.readItemsetSetFile(datasetFilename); 
+			ItemsetSet originalTransactions = Utils.readItemsetSetFile(originalDatasetFilename);
 			
 //			DataIndexes index = new DataIndexes(transactions); 
 			CodeTable comparedCT = new CodeTable(comparedItemCT); 
@@ -110,65 +111,71 @@ public class TestMeasures {
 			
 			System.out.println(comparedCT);
 			System.out.println(originalCT);
-			
-			System.out.println("TransactionsFile: ");
+
 			System.out.println("------------------");
+			System.out.println("originalTransactionsFile: " + originalDatasetFilename);
+			System.out.println("Size: "+originalTransactions.size());
+			System.out.println("Density: "+originalTransactions.density());
+
+			System.out.println("------------------");
+			System.out.println("TransactionsFile: " + datasetFilename);
 			System.out.println("Size: "+transactions.size());
 			System.out.println("Density: "+transactions.density());
-			
-			System.out.println("OriginalCT:");
+
 			System.out.println("-----------");
+			System.out.println("OriginalCT: " + originalCTFilename);
 			System.out.println("Size: "+originalCT.getCodes().size()); 
 			Utils.printCodeTableCodes(originalItemCT, "originalCT-output.dat");
 			
-			
-			System.out.println("ComparedCT:");
+
 			System.out.println("-----------");
+			System.out.println("ComparedCT: " + comparedCTFilename);
 			System.out.println("Size: "+comparedCT.getCodes().size());
 			Utils.printCodeTableCodes(comparedItemCT, "comparedCT-output.dat");
+			System.out.println("-----------");
 			
 			double value = -1.0; 
-//			double valueNotSharing = -1.0; 
+			double opposedValue = -1.0; 
 			double refValue =-1.0; 
 			double evalValue = -1.0; 
 			double oldMeasure = -1.0; 
 			
-//			double recalculatedValueNotSharing = -1.0; 
+			System.out.println("Measure: " + measure);
 			
 			switch (measure) {
 			case "regular":
 				value = Measures.structuralSimilarityWithoutKeepingDistribution(transactions, comparedCT, originalCT);
-//				valueNotSharing = Measures.structuralSimilarityWithoutKeepingDistribution(transactions, comparedCT, originalCT);
+				opposedValue  = Measures.structuralSimilarityWithoutKeepingDistribution(originalTransactions, originalCT, comparedCT);
 				break; 
 			case "usingLengths": 
 				value = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(transactions, comparedCT, originalCT); 
-//				valueNotSharing = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(comparedCT.getTransactions(), comparedCT, originalCT);
+				opposedValue = Measures.structuralSimilarityWithoutKeepingDistributionUsingLengths(originalTransactions, originalCT, comparedCT); 
 				break; 
+			case "keepingUsages":
+				value = Measures.structuralSimilarityKeepingDistribution(transactions, comparedCT, originalCT);
+				opposedValue = Measures.structuralSimilarityKeepingDistribution(originalTransactions, originalCT, comparedCT);
+				break;
 			default: 
 				break; 
 			}
 
 			CodificationMeasure oldCodMeasure1 = new CodificationMeasure(transactions, comparedCT);
-//			System.err.println(comparedCT);
-//			evalValue = comparedCT.codificationLength(transactions); 
 			evalValue = oldCodMeasure1.codificationLength(); 
+			
 			CodificationMeasure oldCodMeasure2 = new CodificationMeasure(transactions, originalCT);
-//			originalCT.setTransactions(transactions);
 			oldCodMeasure2.updateUsages();
-//			originalCT.updateUsages();
-//			refValue = originalCT.codificationLength(transactions); 
 			refValue = oldCodMeasure2.codificationLength();
+			
 			oldMeasure = refValue / evalValue; 
-			
-			System.out.println(oldCodMeasure2.getCodetable());
-			
+						
 			System.out.println("OriginalCTFilename: "+originalCTFilename);
 			System.out.println("ComparedCTFilename: "+comparedCTFilename); 
+			System.out.println("OriginalDatasetFilename: "+originalDatasetFilename); 
 			System.out.println("DatasetFilename: "+datasetFilename); 
 			System.out.println("Vreeken Format: "+cmd.hasOption(VREEKEN_OPTION)); 
 			System.out.println("OldMeasure: "+oldMeasure);
 			System.out.println("Measure: "+value);
-//			System.out.println("Distance not sharing itemSets: "+valueNotSharing);
+			System.out.println("Opposed Measure: "+opposedValue);
 			
 		}
 		catch (Exception e) {
