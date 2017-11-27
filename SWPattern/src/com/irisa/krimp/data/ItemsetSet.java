@@ -25,8 +25,10 @@ public class ItemsetSet extends LinkedList<KItemset> {
 	}
 	
 	public ItemsetSet(ItemsetSet is) {
-		super(is);
-		this._knownItemSet = is._knownItemSet;
+		this();
+		for(KItemset code : is) {
+			addItemset(code);
+		}
 //		itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>(is.itemItemsetIndex);
 	}
 	
