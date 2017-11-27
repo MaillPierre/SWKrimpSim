@@ -696,10 +696,6 @@ public class CodeTable {
 			r.append(is.getSupport()); 
 			r.append(" u:");
 			r.append(is.getUsage());
-			r.append(" P:");
-			r.append(this.probabilisticDistrib(is));
-			r.append(" L:");
-			r.append(this.codeLengthOfcode(is));
 			r.append('\n');
 		}
 		return r.toString();
