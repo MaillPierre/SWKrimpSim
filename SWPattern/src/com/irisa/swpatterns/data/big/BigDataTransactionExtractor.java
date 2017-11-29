@@ -307,14 +307,14 @@ public class BigDataTransactionExtractor {
 			if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
 				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
 				this._buildingTransactionsTypeItems.remove(indiv);
-				if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
-					indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
-					this._buildingTransactionsPropertyItems.remove(indiv);
-				}
-				if(this._buildingtransactionsPropertyClassItems.containsKey(indiv)) {
-					indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingtransactionsPropertyClassItems.get(indiv)));
-					this._buildingtransactionsPropertyClassItems.remove(indiv);
-				}
+			}
+			if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
+				this._buildingTransactionsPropertyItems.remove(indiv);
+			}
+			if(this._buildingtransactionsPropertyClassItems.containsKey(indiv)) {
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingtransactionsPropertyClassItems.get(indiv)));
+				this._buildingtransactionsPropertyClassItems.remove(indiv);
 			}
 
 			if(! indivTrans.isEmpty()) {

@@ -110,12 +110,12 @@ public class BigDataTransactionExtractorMain {
 				transactionsBigData = converter.extractTransactionsFromFile(rdfFile);
 				if(! transactionsBigData.isEmpty()) {
 					// Printing transactions for both files
-					if(outputTransaction) {
+//					if(outputTransaction) {
 						Utils.printTransactions(transactionsBigData, transactOutputFile);
-						logger.debug("Transactions printed to " + transactOutputFile);
+						logger.debug(transactionsBigData.size() + " transactions printed to " + transactOutputFile);
 						AttributeIndex.getInstance().printAttributeIndex(outputConversionIndexFile);
 						logger.debug("Index printed to " + outputConversionIndexFile);
-					}
+//					}
 
 					logger.debug("Nb transactions: " + transactionsBigData.size());
 					logger.debug("Nb items: " + index.size());
