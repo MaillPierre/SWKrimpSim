@@ -29,9 +29,6 @@ public class Utils {
 
 	private static Logger logger = Logger.getLogger(Utils.class);
 
-	private static int counterAttribute = 0;
-	private static HashSet<Integer> itemNumberSet = new HashSet<Integer>();
-
 	public static ItemsetSet readItemsetSetFile(String filename) {
 		ItemsetSet result = new ItemsetSet();
 		try {
@@ -321,19 +318,6 @@ public class Utils {
 
 	public static KItemset createCodeSingleton(int codeNum, int support, int usage) {
 		return new KItemset(Collections.singleton(codeNum), support, usage);
-	}
-
-	public static int getAttributeNumber() {
-		int result = counterAttribute++;
-		if(itemNumberSet.contains(result)) {
-			result = getAttributeNumber();
-		}
-		itemNumberSet.add(result);
-		return result;
-	}
-
-	public static void addUsedItemNumber(int item) {
-		itemNumberSet.add(item);
 	}
 
 	public static void main(String[] argv) {

@@ -7,8 +7,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,7 +27,6 @@ import org.apache.log4j.Logger;
 import com.irisa.exception.LogicException;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
-import com.irisa.krimp.data.Utils;
 import com.irisa.swpatterns.Global;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 
@@ -46,6 +44,9 @@ public class AttributeIndex {
 	private HashMap<Integer, RDFPatternComponent> _itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
 
 	private static int countPattern = 0;
+
+	private int _counterAttribute = 0;
+	private BitSet _itemNumberSet = new BitSet();
 	
 	private static AttributeIndex _instance = null;
 
@@ -68,6 +69,9 @@ public class AttributeIndex {
 		this._attributes = new LabeledTransaction(index._attributes);
 		this._attributeItemIndex = new HashMap<RDFPatternComponent, Integer>(index._attributeItemIndex);
 		this._itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>(this._itemAttributeIndex);
+		this._counterAttribute = index._counterAttribute;
+		this._itemNumberSet = new BitSet();
+		this._itemNumberSet.or(index._itemNumberSet);
 	}
 
 	public Iterator<RDFPatternComponent> patternComponentIterator() {
@@ -113,7 +117,7 @@ public class AttributeIndex {
 		if(! contains(attribute)) {
 			_attributes.add(attribute);
 			if(! _attributeItemIndex.containsKey(attribute)) {
-				_attributeItemIndex.put(attribute, Utils.getAttributeNumber());
+				_attributeItemIndex.put(attribute, getAttributeNumber());
 				_itemAttributeIndex.put(_attributeItemIndex.get(attribute), attribute );
 			}
 		}
@@ -249,7 +253,7 @@ public class AttributeIndex {
 					throw new LogicException("Couldn't parse line " + record.getRecordNumber() + " : " + record);
 				}
 				
-				Utils.addUsedItemNumber(item);
+				addUsedItemNumber(item);
 				this._attributeItemIndex.put(compo, item);
 				this._itemAttributeIndex.put(item, compo);
 				this._attributes.add(compo);
@@ -337,6 +341,26 @@ public class AttributeIndex {
 		StringWriter out = new StringWriter();
 		this.rdfizePattern(liSet).write(out, "TURTLE");
 		String result = out.toString();
+		return result;
+	}
+
+	public void addUsedItemNumber(int item) {
+		_itemNumberSet.set(item);
+	}
+	
+	public boolean isItemUsed(int item ) {
+		return _itemNumberSet.get(item);
+	}
+
+	/**
+	 * @return an unique unused attribute number
+	 */
+	public int getAttributeNumber() {
+		int result = _counterAttribute++;
+		if(isItemUsed(result)) {
+			result = this._itemNumberSet.nextClearBit(result);
+		}
+		addUsedItemNumber(result);
 		return result;
 	}
 	
