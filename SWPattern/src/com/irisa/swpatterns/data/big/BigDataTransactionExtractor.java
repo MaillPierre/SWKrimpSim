@@ -141,6 +141,7 @@ public class BigDataTransactionExtractor {
 
 		int nbtriples = 1;
 		int nbMaxtriples = 0;
+		int nbParsingErrors = 0;
 		try {
 			Thread parser = bigdataParserThread(filename, dataSteam);
 			executor.submit(parser);
@@ -199,10 +200,12 @@ public class BigDataTransactionExtractor {
 					nbMaxtriples++;
 					Thread.sleep(0);
 				} catch(Exception e) { // Catching the neurotic Jena parser exceptions
-					logger.error("Exception during this line treatment: ", e);
+					logger.trace("Exception during this line treatment: ", e);
+					nbParsingErrors++;
 				}
 			}
 			logger.debug("Property based items built");
+			logger.debug(nbParsingErrors + " parsing errors");
 		} finally {
 			executor.shutdown();
 			dataIt.close();
@@ -282,7 +285,7 @@ public class BigDataTransactionExtractor {
 						nbtriples++;
 						Thread.sleep(0);
 					} catch(Exception e) { // Catching the neurotic Jena parser exceptions
-						logger.error("Exception during this line treatment: ", e);
+						logger.trace("Exception during this line treatment: ", e);
 					}
 				}
 				logger.debug("End of second reading");
