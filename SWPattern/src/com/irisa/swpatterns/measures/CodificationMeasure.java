@@ -1,5 +1,6 @@
 package com.irisa.swpatterns.measures;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -147,6 +148,28 @@ public class CodificationMeasure {
 	 * PRE: the codeTable must be in standardCoverTable order
 	 */
 	public void updateUsages() {
+		
+		// we first extend the singletons with the non-seen ones to 
+		// avoid concurrent modifications
+		ArrayList<KItemset> newOnes = new ArrayList<>();
+		logger.debug("known Items: "+this._transactions.knownItems().size()); 
+		for (Integer codeInt: this._transactions.knownItems()) {
+			Optional<KItemset> value = this._codetable.getCodes()
+	            .stream()
+	            .filter(a -> a.equals(codeInt))
+	            .findFirst();
+			if (!value.isPresent()) {
+				// we create them with support 0 on purpose to them being 
+				// added to the end of the code table in standard cover order
+				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1)); 
+			}						
+		}
+		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
+		logger.debug("Singletons added: "+newOnes.size());
+		
+		this._codetable.orderCodesStandardCoverageOrder();
+		// we should be now safe 
+		
 		this._codetable.getCodes().stream().forEach(e -> e.setUsage(0));
 		this._transactions.parallelStream().forEach(e -> this.updateUsagesTransaction(e)); 		
 		this._codetable.recomputeUsageTotal();

@@ -57,7 +57,12 @@ public class Measures {
 		// the usages are updated in the init() method
 		// we reuse as much as possible the information already calculated in the previous CTs
 		CodificationMeasure measure2 = new CodificationMeasure(D1, CT2);
+		logger.debug("BEFORE UPDATE");
+		logger.debug(measure2.getCodetable().toString());
 		measure2.updateUsages();
+		logger.debug("AFTER UPDATE");
+		logger.debug(measure2.getCodetable().toString());
+		
 		
 		double refKrimpSize = 0.0; 
 		try {

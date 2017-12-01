@@ -1,6 +1,7 @@
 package com.irisa.krimp.data;
 
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,9 +33,9 @@ public class ItemsetSet extends LinkedList<KItemset> {
 //		itemItemsetIndex = new HashMap<Integer, HashSet<KItemset>>(is.itemItemsetIndex);
 	}
 	
-	public void addItemset(KItemset auxCode) {
+	public boolean addItemset(KItemset auxCode) {
 		KItemset newIs = new KItemset(auxCode);
-		super.add(newIs);
+		boolean result = super.add(newIs);
 //		Iterator<Integer> itAux = auxCode.iterator();
 //		while(itAux.hasNext()) {
 //			int item = itAux.next();
@@ -46,6 +47,8 @@ public class ItemsetSet extends LinkedList<KItemset> {
 		for(int item : auxCode) {
 			_knownItemSet.set(item);
 		}
+		
+		return result; 
 	}
 	
 	/**
@@ -106,4 +109,17 @@ public class ItemsetSet extends LinkedList<KItemset> {
 		
 		return r.toString();
 	}
+	
+	
+		public boolean add(KItemset e) {
+			return addItemset(e);
+		}
+	
+		public boolean addAll(Collection<? extends KItemset> c) {
+			// we get a 1 for each of the elements that have been 
+			// succesfully added to the itemsetset
+			// it returns true if everything has been added
+			int value = c.stream().mapToInt(e-> (this.add(e)?1:0)).sum();
+			return (value == c.size());
+		}
 }

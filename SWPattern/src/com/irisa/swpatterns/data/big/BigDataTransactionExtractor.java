@@ -321,7 +321,7 @@ public class BigDataTransactionExtractor {
 			}
 
 			if(! indivTrans.isEmpty()) {
-				result.add(indivTrans);
+				result.addItemset(indivTrans);
 			}
 
 			if(nbtreatedIndiv % 100000 == 0) {
