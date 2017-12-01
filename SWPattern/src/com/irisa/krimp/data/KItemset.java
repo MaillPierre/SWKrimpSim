@@ -112,6 +112,11 @@ public class KItemset extends HashSet<Integer> {
 	public void setUsage(int usage) {
 		this._usage = usage;
 	}
+	
+	/** to be able to use streams and parallelization when updating the usages **/ 
+	public synchronized void incrementUsageAtomically() {
+		this._usage++; 
+	}
 
 	public String getLabel() {
 		return _label;
@@ -121,4 +126,6 @@ public class KItemset extends HashSet<Integer> {
 		this._label = _label;
 	}
 
+	
+	
 }

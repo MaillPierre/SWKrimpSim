@@ -147,23 +147,18 @@ public class CodificationMeasure {
 	 * PRE: the codeTable must be in standardCoverTable order
 	 */
 	public void updateUsages() {
-				
-		Iterator<KItemset> itCodes = this._codetable.codeIterator();
-		while(itCodes.hasNext()) {
-			KItemset code = itCodes.next();
-			code.setUsage(0); 
-		}
-		
-		for (KItemset t: this._transactions) {
-			ItemsetSet codes = this.codify(t); 
-			for (KItemset code: codes) { 
-				code.setUsage(code.getUsage()+1);
-			}
-			
-		}
-		
+		this._codetable.getCodes().stream().forEach(e -> e.setUsage(0));
+		this._transactions.parallelStream().forEach(e -> this.updateUsagesTransaction(e)); 		
 		this._codetable.recomputeUsageTotal();
 	}
+	
+	public void updateUsagesTransaction (KItemset transaction) {
+		ItemsetSet codes = this.codify(transaction); 
+		for (KItemset code: codes) { 
+			code.incrementUsageAtomically(); 
+		}
+	}
+	
 	
 	/** 
 	 * Codifying function according to the KRIMP paper
@@ -231,17 +226,22 @@ public class CodificationMeasure {
 	 */
 	public double codificationLength () {
 		double result = 0.0;
+		result = this._transactions.parallelStream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+		return result; 
+	}
+	
+	public double transactionCodificationLength (KItemset it) {
 		ItemsetSet codes = null; 
-		for (KItemset it: this._transactions) {
-			codes = this.codify(it); 
-			for (KItemset code: codes) {
-				double codelength = codeLengthOfcode(this._codetable, code);
-				assert ! Double.isInfinite(codelength);
-				result += codelength; 
-			}
+		double result = 0.0; 
+		codes = this.codify(it); 
+		for (KItemset code: codes) {
+			double codelength = codeLengthOfcode(this._codetable, code);
+			assert ! Double.isInfinite(codelength);
+			result += codelength; 
 		}
 		return result; 
 	}
+	
 	
 	public void applyLaplaceSmoothingToUsages () {
 		
