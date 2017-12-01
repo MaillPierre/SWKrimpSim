@@ -34,8 +34,7 @@ public class ItemsetSet extends LinkedList<KItemset> {
 	}
 	
 	public boolean addItemset(KItemset auxCode) {
-		KItemset newIs = new KItemset(auxCode);
-		boolean result = super.add(newIs);
+		boolean result = super.add(auxCode);
 //		Iterator<Integer> itAux = auxCode.iterator();
 //		while(itAux.hasNext()) {
 //			int item = itAux.next();

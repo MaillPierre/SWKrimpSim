@@ -166,7 +166,6 @@ public class CodificationMeasure {
 		}
 		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
 		logger.debug("Singletons added: "+newOnes.size());
-		
 		this._codetable.orderCodesStandardCoverageOrder();
 		// we should be now safe 
 		
@@ -176,9 +175,13 @@ public class CodificationMeasure {
 	}
 	
 	public void updateUsagesTransaction (KItemset transaction) {
-		ItemsetSet codes = this.codify(transaction); 
+		ItemsetSet codes = this.codify(transaction);
+//		logger.debug(transaction + " covered by "+codes.size()); 
 		for (KItemset code: codes) { 
+			int codeUsage = code.getUsage(); 
 			code.incrementUsageAtomically(); 
+			int codeUsageAfter = code.getUsage(); 
+//			logger.debug("b4: "+codeUsage+" after: "+codeUsageAfter);
 		}
 	}
 	
@@ -201,7 +204,6 @@ public class CodificationMeasure {
 				auxTrans = auxTrans.substraction(auxCode); 
 			}
 		}
-		
 		// adding the codes that appear in the transaction but not in the code table
 		if(! auxTrans.isEmpty()) {
 			for(int item : auxTrans) {
@@ -259,6 +261,7 @@ public class CodificationMeasure {
 		codes = this.codify(it); 
 		for (KItemset code: codes) {
 			double codelength = codeLengthOfcode(this._codetable, code);
+//			logger.debug(code + " codelength: "+codelength);
 			assert ! Double.isInfinite(codelength);
 			result += codelength; 
 		}
