@@ -154,9 +154,10 @@ public class CodificationMeasure {
 		ArrayList<KItemset> newOnes = new ArrayList<>();
 		logger.debug("known Items: "+this._transactions.knownItems().size()); 
 		for (Integer codeInt: this._transactions.knownItems()) {
+			
 			Optional<KItemset> value = this._codetable.getCodes()
 	            .stream()
-	            .filter(a -> a.equals(codeInt))
+	            .filter(a -> a.equals(Utils.createCodeSingleton(codeInt)))
 	            .findFirst();
 			if (!value.isPresent()) {
 				// we create them with support 0 on purpose to them being 
@@ -166,6 +167,8 @@ public class CodificationMeasure {
 		}
 		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
 		logger.debug("Singletons added: "+newOnes.size());
+		logger.debug("---");
+		logger.debug(this._codetable.toString());
 		this._codetable.orderCodesStandardCoverageOrder();
 		// we should be now safe 
 		
@@ -259,10 +262,18 @@ public class CodificationMeasure {
 		ItemsetSet codes = null; 
 		double result = 0.0; 
 		codes = this.codify(it); 
+	
 		for (KItemset code: codes) {
 			double codelength = codeLengthOfcode(this._codetable, code);
 //			logger.debug(code + " codelength: "+codelength);
-			assert ! Double.isInfinite(codelength);
+			try {
+				assert ! Double.isInfinite(codelength);
+			}
+			catch (AssertionError e) {
+				logger.debug(code + " codelength: "+codelength);
+
+				System.exit(-1);
+			}
 			result += codelength; 
 		}
 		return result; 

@@ -52,6 +52,7 @@ public class Measures {
 			logger.debug(CT1);
 			throw e;
 		}
+		logger.debug("evalSize: "+evalKrimpSize);
 		
 		// we clone the CT2
 		// the usages are updated in the init() method
@@ -63,15 +64,14 @@ public class Measures {
 		logger.debug("AFTER UPDATE");
 		logger.debug(measure2.getCodetable().toString());
 		
-		
 		double refKrimpSize = 0.0; 
 		try {
+			logger.debug("OUT: "+D1.size());
 			refKrimpSize = measure2.codificationLength(); 
 		} catch(AssertionError e) {
 			logger.debug(CT2);
 			throw e;
 		}
-		
 //		logger.debug("structuralSimilarityWithoutKeepingDistribution " + refKrimpSize +  " / " + evalKrimpSize);
 		assert evalKrimpSize > 0.0; 
 		return refKrimpSize / evalKrimpSize; 		

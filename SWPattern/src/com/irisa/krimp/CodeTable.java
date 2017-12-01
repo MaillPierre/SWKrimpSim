@@ -678,6 +678,9 @@ public class CodeTable {
 			}
 			this._codes.addLast(code);
 		}
+		else{
+			logger.debug(code+" already included");
+		}
 		orderCodesStandardCoverageOrder();
 	}
 	
