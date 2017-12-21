@@ -40,6 +40,7 @@ public class AttributeIndex {
 	private Logger logger = Logger.getLogger(AttributeIndex.class);
 
 	private LabeledTransaction _attributes = new LabeledTransaction();
+	private HashMap<RDFPatternComponent, RDFPatternComponent> _instantiationIndex = new HashMap<>(); 
 	private HashMap<RDFPatternComponent, Integer> _attributeItemIndex = new HashMap<RDFPatternComponent, Integer>();
 	private HashMap<Integer, RDFPatternComponent> _itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>();
 
@@ -67,6 +68,9 @@ public class AttributeIndex {
 	
 	protected AttributeIndex(AttributeIndex index) {
 		this._attributes = new LabeledTransaction(index._attributes);
+		
+		this._instantiationIndex = new HashMap<>(index._instantiationIndex); 
+		
 		this._attributeItemIndex = new HashMap<RDFPatternComponent, Integer>(index._attributeItemIndex);
 		this._itemAttributeIndex = new HashMap<Integer, RDFPatternComponent>(this._itemAttributeIndex);
 		this._counterAttribute = index._counterAttribute;
@@ -102,7 +106,7 @@ public class AttributeIndex {
 		if(! contains(compo)){
 			add(compo);
 		}
-		return compo;
+		return (RDFPatternResource) _instantiationIndex.get(compo);
 	}
 	
 	public RDFPatternPathFragment getComponent(Resource res1, Resource res2, Type type) {
@@ -110,12 +114,13 @@ public class AttributeIndex {
 		if(! contains(compo)){
 			add(compo);
 		}
-		return compo;
+		return (RDFPatternPathFragment) _instantiationIndex.get(compo);
 	}
 	
 	public void add(RDFPatternComponent attribute) {
 		if(! contains(attribute)) {
 			_attributes.add(attribute);
+			_instantiationIndex.put(attribute, attribute); 
 			if(! _attributeItemIndex.containsKey(attribute)) {
 				_attributeItemIndex.put(attribute, getAttributeNumber());
 				_itemAttributeIndex.put(_attributeItemIndex.get(attribute), attribute );
@@ -257,6 +262,7 @@ public class AttributeIndex {
 				this._attributeItemIndex.put(compo, item);
 				this._itemAttributeIndex.put(item, compo);
 				this._attributes.add(compo);
+				this._instantiationIndex.put(compo, compo); 
 			}
 		} catch (IOException e) {
 			logger.error(e);
@@ -364,4 +370,10 @@ public class AttributeIndex {
 		return result;
 	}
 	
+	
+	public boolean checkInstantiationIndex () {
+		boolean A = this._attributes.stream().allMatch(this._instantiationIndex::containsKey);
+		boolean B = this._instantiationIndex.keySet().stream().allMatch(this._attributes::contains); 
+		return A && B; 
+	}
 }

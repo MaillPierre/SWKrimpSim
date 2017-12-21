@@ -50,7 +50,7 @@ public class BigDataTransactionExtractor {
 	private HashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
 	private HashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new HashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
 
-	private HashMap<Resource, LabeledTransaction> _buildingtransactionsPropertyClassItems = new HashMap<Resource, LabeledTransaction>();
+	// private HashMap<Resource, LabeledTransaction> _buildingtransactionsPropertyClassItems = new HashMap<Resource, LabeledTransaction>();
 
 	public boolean isKnownIndividual(Resource indiv) {
 		return _individuals.contains(indiv);
@@ -216,6 +216,10 @@ public class BigDataTransactionExtractor {
 		}
 		logger.debug("End of first reading");
 
+		// we explicitly try to recover the used memory
+		executor = null; 
+		System.gc();
+		
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			logger.debug("Second reading of the file fo the property-class conversion");
 			// First, line by line, fill the indexes
@@ -297,7 +301,8 @@ public class BigDataTransactionExtractor {
 		}
 		model.close();
 
-
+		System.gc(); 
+		
 		logger.debug("Union of all tmp transactions for " + this._individuals.size() + " individuals");
 		// Union of the transactions
 		Iterator<Resource> itIndiv = this._individuals.iterator();
@@ -315,10 +320,10 @@ public class BigDataTransactionExtractor {
 				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
 				this._buildingTransactionsPropertyItems.remove(indiv);
 			}
-			if(this._buildingtransactionsPropertyClassItems.containsKey(indiv)) {
-				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingtransactionsPropertyClassItems.get(indiv)));
-				this._buildingtransactionsPropertyClassItems.remove(indiv);
-			}
+//			if(this._buildingtransactionsPropertyClassItems.containsKey(indiv)) {
+//				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingtransactionsPropertyClassItems.get(indiv)));
+//				this._buildingtransactionsPropertyClassItems.remove(indiv);
+//			}
 
 			if(! indivTrans.isEmpty()) {
 				result.addItemset(indivTrans);
@@ -342,6 +347,8 @@ public class BigDataTransactionExtractor {
 		switch(compo.getType()) {
 		case OUT_PROPERTY:
 		case IN_PROPERTY:
+		case OUT_NEIGHBOUR_TYPE: 
+		case IN_NEIGHBOUR_TYPE: 
 			if(! this._buildingTransactionsPropertyItems.containsKey(res)) { 
 				this._buildingTransactionsPropertyItems.put(res, new LabeledTransaction(res));
 			}
@@ -353,13 +360,13 @@ public class BigDataTransactionExtractor {
 			}
 			this._buildingTransactionsTypeItems.get(res).add(compo);
 			break;
-		case OUT_NEIGHBOUR_TYPE:
-		case IN_NEIGHBOUR_TYPE:
-			if(! this._buildingtransactionsPropertyClassItems.containsKey(res)) {
-				this._buildingtransactionsPropertyClassItems.put(res, new LabeledTransaction(res));
-			}
-			this._buildingtransactionsPropertyClassItems.get(res).add(compo);
-			break;
+//		case OUT_NEIGHBOUR_TYPE:
+//		case IN_NEIGHBOUR_TYPE:
+//			if(! this._buildingtransactionsPropertyClassItems.containsKey(res)) {
+//				this._buildingtransactionsPropertyClassItems.put(res, new LabeledTransaction(res));
+//			}
+//			this._buildingtransactionsPropertyClassItems.get(res).add(compo);
+//			break;
 		default:
 			throw new LogicException("Unexpected element \""+ compo +"\" to add to the indexes for resource " + res );
 		}
