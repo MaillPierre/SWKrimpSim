@@ -16,7 +16,17 @@ import org.apache.jena.rdf.model.Statement;
 
 import com.irisa.dbplharvest.DataUtils;
 import com.irisa.dbplharvest.data.DataConstants.ACCEPTED_URI_FILTER;
+import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
+import com.irisa.utilities.Couple;
 
+/**
+ * Data representation in memory of a changeset.
+ * Contains the modified triples, the list of modified resources apearing in them and the their contexts.
+ * The context of each modified resource contains the triples where they appear and the type of the resources they are connected to.
+ * @author pmaillot
+ *
+ */
 public class Changeset implements AbstractChangeset {
 
 	protected String _year;
@@ -33,9 +43,12 @@ public class Changeset implements AbstractChangeset {
 	protected String _modifiedResFilename = "";
 	protected String _contextFilename = "";
 	
+	protected ItemsetSet _addTransactions = new ItemsetSet();
+	protected ItemsetSet _delTransactions = new ItemsetSet();
+	
 	public enum CONTEXT_SOURCE {
 		FROM_FILE,
-		FROM_SPARQL
+		FROM_MEMORY
 	}
 
 	public Changeset() {
@@ -66,6 +79,29 @@ public class Changeset implements AbstractChangeset {
 	
 	protected String contextFilename() {
 		return DataUtils.dateBasedName(_year, _month, _day, _hour, _number) + ".context.nt";
+	}
+	
+	public ItemsetSet getAddTransaction(Neighborhood level) {
+		if(this._addTransactions.isEmpty() && ! this._addedTriples.isEmpty()) { // If we should have transactions
+			convertTransactions(level);
+		}
+		return this._addTransactions;
+	}
+	
+	public ItemsetSet getDelTransaction(Neighborhood level) {
+		if(this._delTransactions.isEmpty() 
+				&& ! this._deletedTriples.isEmpty()) { // If we should have transactions
+			convertTransactions(level);
+		}
+		return this._delTransactions;
+	}
+	
+	public void convertTransactions(Neighborhood level) {
+		ChangesetTransactionConverter converter = new ChangesetTransactionConverter();
+		converter.setNeighborLevel(level);
+		Couple<ItemsetSet, ItemsetSet> trans = converter.extractChangesetTransactionsFromContext(this);
+		this._addTransactions = trans.getSecond();
+		this._delTransactions = trans.getFirst();
 	}
 	
 	protected void updateTmpFilenames() {

@@ -25,12 +25,14 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.lang.PipedRDFIterator;
 import org.apache.jena.riot.lang.PipedTriplesStream;
 import org.apache.jena.riot.system.ErrorHandler;
 import org.apache.jena.riot.system.ErrorHandlerFactory;
+import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
 import com.irisa.jenautils.QueryResultIterator;
@@ -409,16 +411,38 @@ public final class DataUtils {
 	 * @param resList
 	 */
 	public static void extractDescriptionTriples(Model result, Model source, Set<Resource> resList) {
+		HashSet<Resource> secondaryRes = new HashSet<Resource>();
+		
 		Iterator<Resource> itRes= resList.iterator();
 		while(itRes.hasNext()) {
 			Resource res = itRes.next();
 			
 			StmtIterator subjectIt = source.listStatements(res, null, (RDFNode)null);
-			result.add(subjectIt);
+			while(subjectIt.hasNext()) {
+				Statement stat = subjectIt.next();
+				if(stat.getObject().isResource()) {
+					secondaryRes.add(stat.getObject().asResource());
+				}
+				
+				result.add(stat);
+			}
 			subjectIt.close();
+			
 			StmtIterator objectIt = source.listStatements(null, null, res.as(RDFNode.class));
-			result.add(objectIt);
+			while(objectIt.hasNext()) {
+				Statement stat = objectIt.next();
+				secondaryRes.add(stat.getSubject());
+				
+				result.add(stat);
+			}
 			objectIt.close();
+		}
+		
+		Iterator<Resource> itSecondRes = secondaryRes.iterator();
+		while(itSecondRes.hasNext()) {
+			Resource secondRes = itSecondRes.next();
+			StmtIterator secondStatIt = source.listStatements(secondRes, RDF.type, (RDFNode)null);
+			result.add(secondStatIt);
 		}
 	}
 }

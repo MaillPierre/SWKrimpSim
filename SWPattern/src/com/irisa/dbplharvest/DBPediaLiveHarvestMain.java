@@ -3,12 +3,15 @@ package com.irisa.dbplharvest;
 import java.io.File;
 import java.util.LinkedList;
 
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.irisa.dbplharvest.data.Changeset;
 import com.irisa.dbplharvest.data.Changeset.CONTEXT_SOURCE;
+import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
 import com.irisa.dbplharvest.data.ChangesetFile;
 
 public class DBPediaLiveHarvestMain {
@@ -40,11 +43,19 @@ public class DBPediaLiveHarvestMain {
 		return harvest(2016, 1, 1, 0, maxChangesets, online);
 	}
 
+	public static LinkedList<ChangesetFile> harvest(int maxChangesets, boolean online, String changesetPath) {
+		return harvest(2016, 1, 1, 0, maxChangesets, online, "./datasets/");
+	}
+	
 	public static LinkedList<ChangesetFile> harvest(int year, int month, int day, int hour, int maxChangesets, boolean online) {
+		return harvest(year, month, day, hour, maxChangesets, online, "./datasets/");
+	}
+
+	public static LinkedList<ChangesetFile> harvest(int year, int month, int day, int hour, int maxChangesets, boolean online, String localPath) {
 		LinkedList<ChangesetFile> result = new LinkedList<ChangesetFile>();
 
 		String baseUrl = "http://live.dbpedia.org/changesets/";
-		String localBasePath = "./datasets/";
+		String localBasePath = localPath;
 		int tmpYear = year;
 		String yearString = "" + tmpYear;
 		for(int tmpMonth = month; (tmpMonth <= 12) && (result.size() < maxChangesets) ; tmpMonth++) {
@@ -128,18 +139,22 @@ public class DBPediaLiveHarvestMain {
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
 		PropertyConfigurator.configure("log4j-config.txt");
+		
+		// Set up the index here for index sharing
 
-		LinkedList<ChangesetFile> changesets = harvest(3, false);
+		LinkedList<ChangesetFile> changesets = harvest(3, false, "/home/pmaillot/git/DBPLiveHarvest/DBPLiveUpdateHarvesting/datasets/"); // TODO: Number of max changesets and path to be modified for deployment
 		LinkedList<Changeset> chTriples = new LinkedList<Changeset>();
 		for(ChangesetFile chgFile : changesets) {
 			chTriples.add(new Changeset(chgFile));
 		}
 
-		// "/home/pmaillot/Documents/KRIMP/DBpdedia/3.7/dbpedia.3.7.nt"
-		
+//		Model dbpediaModel = ModelFactory.createDefaultModel(); // Context extract by loading in memory
+//		dbpediaModel.read("/home/pmaillot/Documents/KRIMP/DBpdedia/3.7/dbpedia.3.7.nt");
 		for(Changeset chg : chTriples) {
 			chg.printModifiedResources();
-			chg.extractContextTriples("/home/pmaillot/Documents/KRIMP/DBpdedia/3.7/dbpedia.3.7.nt", CONTEXT_SOURCE.FROM_FILE);
+//			chg.extractContextTriples(dbpediaModel);
+			chg.extractContextTriples("/home/pmaillot/Documents/KRIMP/DBpdedia/3.7/dbpedia.3.7.nt", CONTEXT_SOURCE.FROM_FILE); // Context extract With grep
+			logger.debug("Got " + chg.getDelTransaction(Neighborhood.Property).size() + " for delete and " + chg.getAddTransaction(Neighborhood.Property).size() + " for add transactions in my pocket");
 			logger.debug(chg);
 		}
 	}
