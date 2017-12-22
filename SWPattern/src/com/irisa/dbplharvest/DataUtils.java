@@ -10,8 +10,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.GZIPInputStream;
@@ -22,12 +25,15 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.lang.PipedRDFIterator;
 import org.apache.jena.riot.lang.PipedTriplesStream;
 import org.apache.jena.riot.system.ErrorHandler;
 import org.apache.jena.riot.system.ErrorHandlerFactory;
 import org.apache.log4j.Logger;
+
+import com.irisa.jenautils.QueryResultIterator;
 
 
 /**
@@ -294,6 +300,12 @@ public final class DataUtils {
         return new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
     }    
     
+    /**
+     * Filter all lines from source containing elements from filter file to destination file. Call external process.
+     * @param sourceFilename
+     * @param destinationFilename
+     * @param filterFilename
+     */
     public static void printFilter(String sourceFilename, String destinationFilename, String filterFilename) {
     	try{
     		ProcessBuilder builder = new ProcessBuilder("grep", "-f", filterFilename, sourceFilename);
@@ -341,6 +353,11 @@ public final class DataUtils {
 			return parser;
 	}
 	
+	/**
+	 * Read a file and put its triples in the model
+	 * @param model modified model
+	 * @param filename read file containing triples
+	 */
 	public static void putTriplesInModel(Model model, String filename) {
 		PipedRDFIterator<Triple> dataIt = new PipedRDFIterator<Triple>();
 		PipedTriplesStream dataSteam = new PipedTriplesStream(dataIt);
@@ -382,6 +399,26 @@ public final class DataUtils {
 		} finally {
 			executor.shutdown();
 			dataIt.close();
+		}
+	}
+	
+	/**
+	 * Extract the description of a set of resources from source to result
+	 * @param result
+	 * @param source
+	 * @param resList
+	 */
+	public static void extractDescriptionTriples(Model result, Model source, Set<Resource> resList) {
+		Iterator<Resource> itRes= resList.iterator();
+		while(itRes.hasNext()) {
+			Resource res = itRes.next();
+			
+			StmtIterator subjectIt = source.listStatements(res, null, (RDFNode)null);
+			result.add(subjectIt);
+			subjectIt.close();
+			StmtIterator objectIt = source.listStatements(null, null, res.as(RDFNode.class));
+			result.add(objectIt);
+			objectIt.close();
 		}
 	}
 }

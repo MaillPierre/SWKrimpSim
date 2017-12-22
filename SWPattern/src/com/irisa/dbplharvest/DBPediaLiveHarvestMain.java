@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.irisa.dbplharvest.data.Changeset;
+import com.irisa.dbplharvest.data.Changeset.CONTEXT_SOURCE;
 import com.irisa.dbplharvest.data.ChangesetFile;
 
 public class DBPediaLiveHarvestMain {
@@ -21,10 +22,20 @@ public class DBPediaLiveHarvestMain {
 
 	private static Logger logger = Logger.getLogger(DBPediaLiveHarvestMain.class);
 
-
+	/**
+	 * Extract updates and treat them.
+	 * @param online true if the missing updates must be attempted to be fetched online
+	 * @return
+	 */
 	public static LinkedList<ChangesetFile> harvest(boolean online) {
 		return harvest(Integer.MAX_VALUE, online);
 	}
+	/**
+	 * 
+	 * @param maxChangesets max number of update to be extracted
+	 * @param online true if the missing updates must be attempted to be fetched online
+	 * @return
+	 */
 	public static LinkedList<ChangesetFile> harvest(int maxChangesets, boolean online) {
 		return harvest(2016, 1, 1, 0, maxChangesets, online);
 	}
@@ -128,7 +139,7 @@ public class DBPediaLiveHarvestMain {
 		
 		for(Changeset chg : chTriples) {
 			chg.printModifiedResources();
-			chg.extractContextTriples("/home/pmaillot/Documents/KRIMP/DBpdedia/3.7/dbpedia.3.7.nt");
+			chg.extractContextTriples("/home/pmaillot/Documents/KRIMP/DBpdedia/3.7/dbpedia.3.7.nt", CONTEXT_SOURCE.FROM_FILE);
 			logger.debug(chg);
 		}
 	}

@@ -32,6 +32,11 @@ public class Changeset implements AbstractChangeset {
 	protected HashSet<Resource> _modifiedResources = new HashSet<Resource>();
 	protected String _modifiedResFilename = "";
 	protected String _contextFilename = "";
+	
+	public enum CONTEXT_SOURCE {
+		FROM_FILE,
+		FROM_SPARQL
+	}
 
 	public Changeset() {
 	}
@@ -77,16 +82,24 @@ public class Changeset implements AbstractChangeset {
 		_contextTriples.read(filename);
 	}
 	
-	public void extractContextTriples(String sourcefilename) {
+	public void extractContextTriples(String sourcename, CONTEXT_SOURCE source) {
 		if(! (new File(this._modifiedResFilename).exists())) {
 			printModifiedResources();
 		}
-		if(! (new File(this._contextFilename).exists())) {
-			DataUtils.printFilter(sourcefilename, this._contextFilename, this._modifiedResFilename);
+		if(source == CONTEXT_SOURCE.FROM_FILE) {
+			if(! (new File(this._contextFilename).exists())) {
+				DataUtils.printFilter(sourcename, this._contextFilename, this._modifiedResFilename);
+			}
+			DataUtils.putTriplesInModel(this._contextTriples, _contextFilename);
+		} else {
+			extractContextTriples((ModelFactory.createDefaultModel().read(sourcename)));
 		}
-		DataUtils.putTriplesInModel(this._contextTriples, _contextFilename);
 	}
 	
+	public void extractContextTriples(Model model) {
+		DataUtils.extractDescriptionTriples(_contextTriples, model, _modifiedResources);
+	}
+
 	public void readAddTriples(String filename) {
 		_addedTriples.read(filename);
 		this._modifiedResources.addAll(extractModifiedResources(_addedTriples));
@@ -186,7 +199,7 @@ public class Changeset implements AbstractChangeset {
 	}
 	
 	/**
-	 * Makes sur that the removed triples are not added afterward and vice-versa
+	 * Makes sure that the removed triples are not added afterward and vice-versa
 	 */
 	protected void canonize() {
 		if(this._addedTriples != null && this._deletedTriples != null) {
