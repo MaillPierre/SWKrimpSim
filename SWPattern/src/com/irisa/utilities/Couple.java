@@ -1,4 +1,5 @@
-package com.irisa.jenautils;
+package com.irisa.utilities;
+
 
 public class Couple<A, B> {
 	private A _first;
