@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
-import com.irisa.jenautils.Couple;
+import com.irisa.utilities.Couple;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;

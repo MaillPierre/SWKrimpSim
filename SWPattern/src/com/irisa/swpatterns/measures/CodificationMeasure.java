@@ -6,7 +6,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import com.irisa.exception.LogicException;
-import com.irisa.jenautils.Couple;
+import com.irisa.utilities.Couple;
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
