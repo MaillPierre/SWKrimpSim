@@ -168,23 +168,28 @@ public class CodificationMeasure {
 		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
 		logger.debug("Singletons added: "+newOnes.size());
 		logger.debug("---");
-		logger.debug(this._codetable.toString());
+		// logger.debug(this._codetable.toString());
+		long start = System.nanoTime(); 
 		this._codetable.orderCodesStandardCoverageOrder();
+		logger.debug("Ordering CT: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
 		// we should be now safe 
 		
-		this._codetable.getCodes().stream().forEach(e -> e.setUsage(0));
-		this._transactions.parallelStream().forEach(e -> this.updateUsagesTransaction(e)); 		
+		start = System.nanoTime(); 
+		this._codetable.getCodes().parallelStream().forEach(e -> e.setUsage(0));
+		logger.debug("Setting 0: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		start = System.nanoTime(); 
+		this._transactions.parallelStream().forEach(e -> this.updateUsagesTransaction(e));
+		logger.debug("UpdateTransactions: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		start = System.nanoTime(); 
 		this._codetable.recomputeUsageTotal();
+		logger.debug("RecomputingUsageTotal: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		
 	}
 	
 	public void updateUsagesTransaction (KItemset transaction) {
 		ItemsetSet codes = this.codify(transaction);
-//		logger.debug(transaction + " covered by "+codes.size()); 
 		for (KItemset code: codes) { 
-			int codeUsage = code.getUsage(); 
 			code.incrementUsageAtomically(); 
-			int codeUsageAfter = code.getUsage(); 
-//			logger.debug("b4: "+codeUsage+" after: "+codeUsageAfter);
 		}
 	}
 	
@@ -236,7 +241,6 @@ public class CodificationMeasure {
 				this._codetable.addSingleton(sinlgton);
 			}
 		}
-		auxTrans.clear();
 		
 		return result; 
 	}

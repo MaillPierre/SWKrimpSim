@@ -46,8 +46,11 @@ public class Measures {
 		// first we get the size of the database D1 codified with its own CT
 		CodificationMeasure measure1 = new CodificationMeasure(D1, CT1);
 		double evalKrimpSize = 0.0;
+		long start = System.nanoTime(); 
 		try {
 			evalKrimpSize = measure1.codificationLength();
+			logger.debug("Original dataset codification:  "+(((double)(System.nanoTime()-start))/(double)1000000)+" ms"); 
+			
 		} catch(AssertionError e) {
 			logger.debug(CT1);
 			throw e;
@@ -58,12 +61,16 @@ public class Measures {
 		// the usages are updated in the init() method
 		// we reuse as much as possible the information already calculated in the previous CTs
 		CodificationMeasure measure2 = new CodificationMeasure(D1, CT2);
+		start = System.nanoTime(); 
 		measure2.updateUsages();
+		logger.debug("Update usages: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms"); 
 		
 		double refKrimpSize = 0.0; 
 		try {
 			logger.debug("OUT: "+D1.size());
-			refKrimpSize = measure2.codificationLength(); 
+			start = System.nanoTime(); 
+			refKrimpSize = measure2.codificationLength();
+			logger.debug("Compared dataset codification:  "+(((double)(System.nanoTime()-start))/(double)1000000)+" ms"); 
 		} catch(AssertionError e) {
 			logger.debug(CT2);
 			throw e;
