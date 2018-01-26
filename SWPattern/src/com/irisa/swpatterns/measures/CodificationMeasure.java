@@ -200,13 +200,34 @@ public class CodificationMeasure {
 		ItemsetSet result = new ItemsetSet(); 
 		Iterator<KItemset> itIs = this._codetable.codeIterator();
 		KItemset auxCode = null; 
-		while (itIs.hasNext() && (auxTrans.size() != 0) ) { // Searching for the cover
+		boolean lengthOneReached = false;
+		while (itIs.hasNext() && (auxTrans.size() != 0) && (!lengthOneReached))  { // Searching for the cover
 			auxCode = itIs.next(); 
-			if (auxTrans.containsAll(auxCode)) {
-				result.add(auxCode); 
-				auxTrans = auxTrans.substraction(auxCode); 
+			if (auxCode.size()!=1) {
+				// we check all the codes that are not singletons
+				if (auxTrans.containsAll(auxCode)) {
+					result.add(auxCode); 
+					auxTrans = auxTrans.substraction(auxCode); 
+				}
+			}
+			else {
+				lengthOneReached = true;
 			}
 		}
+		// now we treat all the remaining elements in auxTrans as 
+		// singletons
+		
+		if (!auxTrans.isEmpty()) {
+			KItemset remainingSingletons = new KItemset(auxTrans);
+			for(int item : remainingSingletons) {
+				KItemset singleton = Utils.createCodeSingleton(item, 0, 1);
+				if (this._codetable.contains(singleton)) {
+					auxTrans = auxTrans.substraction(singleton);
+					result.add(singleton);
+				}
+			}
+		}
+		
 		// adding the codes that appear in the transaction but not in the code table
 		if(! auxTrans.isEmpty()) {
 			for(int item : auxTrans) {
