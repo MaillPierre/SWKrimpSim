@@ -166,11 +166,17 @@ public class CodificationMeasure {
 				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1)); 
 			}						
 		}
-		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
-		logger.debug("Singletons added: "+newOnes.size());
-		logger.debug("---");
-		// logger.debug(this._codetable.toString());
-		long start = System.nanoTime(); 
+//		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
+		if (!newOnes.isEmpty()) {
+			this._codetable.addSingletons(newOnes);
+			logger.debug("Singletons added: "+newOnes.size());
+			logger.debug("---");
+//			logger.debug(this._codetable.toString());
+//			logger.debug(this._codetable.getOneLengthCodes().keySet());
+			
+		}
+		long start = System.nanoTime();
+		// it should already be in standard coverage order
 		this._codetable.orderCodesStandardCoverageOrder();
 		logger.debug("Ordering CT: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
 		// we should be now safe 
@@ -233,17 +239,25 @@ public class CodificationMeasure {
 					auxTrans=auxTrans.substraction(oneLength.get(item));
 					result.add(oneLength.get(item));
 				}
+				else { 
+					KItemset singleton = Utils.createCodeSingleton(item, 0, 1); 
+					result.add(singleton); 
+					this._codetable.addSingleton(singleton);
+				}
 			}
 		}
 		
 		// adding the codes that appear in the transaction but not in the code table
-		if(! auxTrans.isEmpty()) {
-			for(int item : auxTrans) {
-				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
-				result.add(sinlgton);
-				this._codetable.addSingleton(sinlgton);
-			}
-		}
+//		if(! auxTrans.isEmpty()) {
+//			for(int item : auxTrans) {
+//				
+//				
+//				
+//				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
+//				result.add(sinlgton);
+//				this._codetable.addSingleton(sinlgton);
+//			}
+//		}
 //		logger.debug("new approach: "+(((double)System.nanoTime()-start)/(double)1000000)+ " ms.");
 //		logger.debug(result);
 

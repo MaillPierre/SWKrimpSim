@@ -1,5 +1,6 @@
 package com.irisa.krimp;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -682,14 +683,43 @@ public class CodeTable {
 	 * @param code
 	 */
 	public void addSingleton(KItemset code) {
-		if(code.size() == 1 && ! this._codes.contains(code)) {
-			for(KItemset otherCode: this._codes) {
-				assert (! otherCode.contains(code)); // tmp safety test to check if their is no need to update usages
+
+//		if(code.size() == 1 && ! this._codes.contains(code) && !this._oneLengthCodes.containsKey(code.getItems()[0])) {			
+		// CB: we get rid of the search in the Linked list (contains) and check among the one size codes
+		if(code.size() == 1 && !this._oneLengthCodes.containsKey(code.getItems()[0])) {			
+			
+			if (!this._oneLengthCodes.containsKey(code.getItems()[0])) {
+				this._codes.addLast(code);
+				this._oneLengthCodes.put(code.getItems()[0], code);
+				// we only call the ordering if something has been modified
+				orderCodesStandardCoverageOrder();
+				logger.debug(code + " added");
 			}
-			this._codes.addLast(code);
 		}
-		else{
-			logger.debug(code+" already included");
+//		else{
+//			logger.debug(code+" already included");
+//		}
+	}
+	
+	/**
+	 * Add a set of codes to the end of the code table before reordering in coverageOrder. This code MUST NOT overlap with any existing code
+	 * @param codes
+	 */
+	public void addSingletons(ArrayList<KItemset> codes) {
+		
+		for (KItemset code: codes) {
+//			if(code.size() == 1 && ! this._codes.contains(code)) {
+			// CB: substituted the mo
+			if(code.size() == 1 && !this._oneLengthCodes.containsKey(code.getItems()[0])) {
+//				for(KItemset otherCode: this._codes) {
+//					assert (! otherCode.contains(code)); // tmp safety test to check if their is no need to update usages
+//				}
+				this._codes.addLast(code);
+				this._oneLengthCodes.put(code.getItems()[0], code);
+			}
+//			else{
+//				logger.debug(code+" already included");
+//			}
 		}
 		orderCodesStandardCoverageOrder();
 	}
