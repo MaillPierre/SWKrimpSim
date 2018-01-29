@@ -1,6 +1,7 @@
 package com.irisa.swpatterns.measures;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -206,6 +207,8 @@ public class CodificationMeasure {
 		Iterator<KItemset> itIs = this._codetable.codeIterator();
 		KItemset auxCode = null; 
 		boolean lengthOneReached = false;
+//		int execs = 0; 
+//		long start = System.nanoTime();
 		while (itIs.hasNext() && (auxTrans.size() != 0) && (!lengthOneReached))  { // Searching for the cover
 			auxCode = itIs.next(); 
 			if (auxCode.size()!=1) {
@@ -221,14 +224,14 @@ public class CodificationMeasure {
 		}
 		// now we treat all the remaining elements in auxTrans as 
 		// singletons
-		
+
 		if (!auxTrans.isEmpty()) {
 			KItemset remainingSingletons = new KItemset(auxTrans);
-			for(int item : remainingSingletons) {
-				KItemset singleton = Utils.createCodeSingleton(item, 0, 1);
-				if (this._codetable.contains(singleton)) {
-					auxTrans = auxTrans.substraction(singleton);
-					result.add(singleton);
+			HashMap<Integer, KItemset> oneLength = this._codetable.getOneLengthCodes();
+ 			for(int item : remainingSingletons) {
+				if (oneLength.containsKey(item)) {
+					auxTrans=auxTrans.substraction(oneLength.get(item));
+					result.add(oneLength.get(item));
 				}
 			}
 		}
@@ -241,6 +244,39 @@ public class CodificationMeasure {
 				this._codetable.addSingleton(sinlgton);
 			}
 		}
+//		logger.debug("new approach: "+(((double)System.nanoTime()-start)/(double)1000000)+ " ms.");
+//		logger.debug(result);
+
+		
+		
+//		// old code
+//		
+//		KItemset auxTrans2 = new KItemset(trans);
+//		ItemsetSet result2 = new ItemsetSet(); 
+//		Iterator<KItemset> itIs2 = this._codetable.codeIterator();
+//		KItemset auxCode2 = null; 
+//		start = System.nanoTime();
+//		
+//		while (itIs2.hasNext() && (auxTrans2.size() != 0))  { // Searching for the cover
+//			auxCode2 = itIs2.next(); 
+//				// we check all the codes that are not singletons
+//			if (auxTrans2.containsAll(auxCode2)) {
+//				result2.add(auxCode2); 
+//				auxTrans2 = auxTrans2.substraction(auxCode2); 
+//			}
+//		}
+//		
+//		// adding the codes that appear in the transaction but not in the code table
+//		if(! auxTrans2.isEmpty()) {
+//			for(int item : auxTrans2) {
+//				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
+//				result2.add(sinlgton);
+//				this._codetable.addSingleton(sinlgton);
+//			}
+//		}
+//		logger.debug("old approach: "+(((double)System.nanoTime()-start)/(double)1000000)+ " ms.");
+//		logger.debug(result2);
+		
 		
 		return result; 
 	}
@@ -280,6 +316,10 @@ public class CodificationMeasure {
 	public double codificationLength () {
 		double result = 0.0;
 		result = this._transactions.parallelStream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+		
+		// nonparallel for debugging purposes 
+//		result = this._transactions.stream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+
 		return result; 
 	}
 	

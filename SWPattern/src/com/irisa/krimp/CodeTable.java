@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import org.apache.jena.sparql.function.library.e;
 import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
@@ -40,6 +41,10 @@ public class CodeTable {
 	
 	private boolean _standardFlag = false; // Set true if it is the standard codetable
 	private CodeTable _standardCT = null; // Codetable containing only singletons for the coding length of a CT
+	
+	// CB: speed up for codification purposes
+	private HashMap<Integer, KItemset> _oneLengthCodes = new HashMap<Integer, KItemset> (); 
+	
 	
 	@Deprecated
 	/**
@@ -88,9 +93,14 @@ public class CodeTable {
 		this._standardFlag = standard;
 		if(standard) {
 			this._codes = generateStandardCodeTableCodes(codes);
+			// CB: we add all of them to the oneLengthCodes
+			this._codes.forEach(e -> this._oneLengthCodes.put(e.getItems()[0], e));
 			
 		} else {
 			this._codes = codes;
+			// CB: we only add the oneLengthCodes
+			this._codes.forEach(e -> {if (e.size()==1) 
+											this._oneLengthCodes.put(e.getItems()[0], e); }); 
 			this._standardCT = new CodeTable(codes, true);
 		}
 		recomputeUsageTotal();
@@ -761,6 +771,10 @@ public class CodeTable {
 	    	}
 	    }	
 		_usageTotal += totalAdded; 
+	}
+	
+	public HashMap<Integer,KItemset> getOneLengthCodes () {
+		return _oneLengthCodes; 
 	}
 	
 }
