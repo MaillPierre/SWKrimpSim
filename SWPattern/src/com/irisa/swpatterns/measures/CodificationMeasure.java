@@ -154,17 +154,22 @@ public class CodificationMeasure {
 		// avoid concurrent modifications
 		ArrayList<KItemset> newOnes = new ArrayList<>();
 		logger.debug("known Items: "+this._transactions.knownItems().size()); 
+		HashMap<Integer,KItemset> oneLengthCodes = this._codetable.getOneLengthCodes();
 		for (Integer codeInt: this._transactions.knownItems()) {
 			
-			Optional<KItemset> value = this._codetable.getCodes()
-	            .stream()
-	            .filter(a -> a.equals(Utils.createCodeSingleton(codeInt)))
-	            .findFirst();
-			if (!value.isPresent()) {
-				// we create them with support 0 on purpose to them being 
-				// added to the end of the code table in standard cover order
-				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1)); 
-			}						
+//			Optional<KItemset> value = this._codetable.getCodes()
+//	            .stream()
+//	            .filter(a -> a.equals(Utils.createCodeSingleton(codeInt)))
+//	            .findFirst();
+//			if (!value.isPresent()) {
+//				// we create them with support 0 on purpose to them being 
+//				// added to the end of the code table in standard cover order
+//				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1)); 
+//			}		
+			
+			if (!oneLengthCodes.containsKey(codeInt)) {
+				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1));
+			}
 		}
 //		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
 		if (!newOnes.isEmpty()) {
