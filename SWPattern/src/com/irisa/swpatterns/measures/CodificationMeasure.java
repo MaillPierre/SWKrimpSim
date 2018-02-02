@@ -59,15 +59,54 @@ public class CodificationMeasure {
 	 */
 	private static double probabilisticDistrib(CodeTable ct, KItemset code) {
 		int codeUsage = code.getUsage();
-		if(codeUsage == 0 && ct.contains(code)) {
-			try { // Using a bit of code using java8 and lambda stuff found on the web
-			Optional<KItemset> value = ct.getCodes()
-	            .stream()
-	            .filter(a -> a.equals(code))
-	            .findFirst();
-			codeUsage = value.get().getUsage();
-			} catch(NoSuchElementException e) {
-				logger.error("Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+//		if(codeUsage == 0 && ct.contains(code)) {	
+		if(codeUsage == 0) {
+			// we look for it in the table
+			if (code.size() != 1) {
+				Optional<KItemset> value = ct.getCodes()
+		            .parallelStream()
+					.filter(a -> a.size() != 1)
+		            .filter(a -> a.equals(code))
+		            .findFirst();
+					
+				if (value.isPresent()) {
+					codeUsage = value.get().getUsage();
+				}
+				else {
+					logger.error("WO Exception: Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+				}
+				
+//				Iterator<KItemset> codes = ct.getCodes().iterator();
+//				KItemset auxValue = null; 
+//				boolean nonOne = true; 
+//				boolean found = false;
+//				while (codes.hasNext() && nonOne && !found) { 
+//					auxValue = codes.next(); 
+//					if (auxValue.size() != 1) {
+//						found = auxValue.equals(code);
+//					}
+//					else {
+//						// we have reached the part of the CT that is only singletons
+//						nonOne=false; 
+//					}
+//				}
+//				if (found) {
+//					codeUsage = auxValue.getUsage();	
+//				}
+//				else { 
+//					logger.error("WO Exception - size !=1 - Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+//				}
+				
+			}
+			else {
+				// we use the onelengthIndex to access directly to the code
+				HashMap<Integer,KItemset> oneLength = ct.getOneLengthCodes(); 
+				if (oneLength.containsKey(code.getItems()[0])) {
+					codeUsage = oneLength.get(code.getItems()[0]).getUsage();
+				}
+				else {
+					logger.error("WO Exception: Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+				}
 			}
 		}
 		return (double) codeUsage / (double) ct.getUsageTotal();

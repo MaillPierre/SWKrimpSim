@@ -135,16 +135,23 @@ public class Measures {
 
 		// first we get the size of the database D1 codified with its own CT
 		CodificationMeasure measure1 = new CodificationMeasure(D1, CT1);
+	
+		long start = System.nanoTime(); 
 		double evalKrimpSize = measure1.codificationLength();
-		
+		logger.debug("Original dataset codification:  "+(((double)(System.nanoTime()-start))/(double)1000000)+" ms"); 
+
 		// we clone the CT2
 		// the usages are updated in the init() method
 		// we reuse as much as possible the information already calculated in the previous CTs
 		CodificationMeasure measure2 = new CodificationMeasure(D1, CT2);
+		start = System.nanoTime();
 		measure2.updateUsages();
+		logger.debug("Update usages: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms"); 
 		
+		start = System.nanoTime(); 
 		double refKrimpSize = measure2.codificationLength(); 
-		
+		logger.debug("Compared dataset codification:  "+(((double)(System.nanoTime()-start))/(double)1000000)+" ms"); 
+
 		assert evalKrimpSize > 0.0; 
 		
 		logger.trace("structuralSimilarityWithoutKeepingDistributionUsingLengths = ( " + refKrimpSize + " + " + measure2.codetableCodeLength() + " / (" + evalKrimpSize + " + " + measure1.codetableCodeLength() + " )");
