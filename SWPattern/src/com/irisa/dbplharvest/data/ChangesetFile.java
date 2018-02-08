@@ -1,8 +1,19 @@
+///////////////////////////////////////////////////////////////////////////////
+//File: ChangeSetFile.java 
+//Author: Pierre Maillot
+//Date: December 2017
+//Comments: Class that stores the information about an update file
+//Modifications:
+///////////////////////////////////////////////////////////////////////////////
+
 package com.irisa.dbplharvest.data;
 
 import com.irisa.utilities.Couple;
 
 public class ChangesetFile extends Couple<String, String> implements AbstractChangeset {
+	
+	public static final String ADDED_EXTENSION =  ".added.nt.gz";
+	public static final String DELETED_EXTENSION =  ".removed.nt.gz";
 
 	protected String _year = "";
 	protected String _month = "";
