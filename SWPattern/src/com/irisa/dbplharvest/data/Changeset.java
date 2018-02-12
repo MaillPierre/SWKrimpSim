@@ -275,7 +275,8 @@ public class Changeset implements AbstractChangeset {
 				boolean objectOk = stat.getObject().isLiteral() 
 						|| (stat.getObject().isResource() 
 								&& filterAcceptURI(stat.getObject().asResource()));
-				return subjectOk && objectOk;
+				boolean relationOK = filterAcceptURI(stat.getPredicate());
+				return subjectOk && objectOk && relationOK;
 			}
 		}).forEachRemaining(new Consumer<Statement>() {
 			@Override
@@ -292,7 +293,8 @@ public class Changeset implements AbstractChangeset {
 				boolean subjectOk = filterAcceptURI(stat.getSubject());
 				boolean objectOk = stat.getObject().isLiteral() || (stat.getObject().isResource() 
 						&& filterAcceptURI(stat.getObject().asResource()));
-				return subjectOk && objectOk;
+				boolean relationOK = filterAcceptURI(stat.getPredicate());
+				return subjectOk && objectOk && relationOK;
 			}
 		}).forEachRemaining(new Consumer<Statement>() {
 			@Override
