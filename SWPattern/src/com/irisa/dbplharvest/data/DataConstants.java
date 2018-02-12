@@ -10,6 +10,11 @@ public class DataConstants {
 		dbpediaResourceTemplate("dbpedia.org/resource/Template"),
 		dbpediaResourceCategory("dbpedia.org/resource/Category"),
 		dbpediaResourceFile("dbpedia.org/resource/File:"),
+		dbpediaOntoWikiPageRevision("http://dbpedia.org/ontology/wikiPageRevisionID"),
+		dbpediaOntoWikiPageOutDegree("http://dbpedia.org/ontology/wikiPageOutDegree"),
+		dbpediaOntoWikiPageModified("http://dbpedia.org/ontology/wikiPageModified"),
+		dbpediaOntoWikiPageLength("http://dbpedia.org/ontology/wikiPageLength"),
+		dbpediaOntoWikiPageExtracted("http://dbpedia.org/ontology/wikiPageExtracted"),
 		;
 		
 		private String _url;

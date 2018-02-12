@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -465,6 +466,28 @@ public class Changeset implements AbstractChangeset {
 		return this._affectedResources; 
 	}
 	
+	/**
+	 * Check if a resource is among the affected ressources of the updates of the changeset
+	 * @param res
+	 * @return
+	 */
+	public boolean isAffectedResource(Resource res) {
+		Iterator<HashSet<Resource>> itAffectSets = this._affectedResources.iterator();
+		while(itAffectSets.hasNext()) {
+			HashSet<Resource> tmpSet = itAffectSets.next();
+			
+			Iterator<Resource> itRes = tmpSet.iterator();
+			while(itRes.hasNext()) {
+				Resource affRes = itRes.next();
+				
+				if(res.equals(affRes)) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
 	
 	
 //	protected HashSet<Resource> extractModifiedResources(final Model data) {
