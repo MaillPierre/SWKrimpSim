@@ -27,12 +27,13 @@ import com.irisa.utilities.Couple;
 
 public class ChangesetTransactionConverter {
 
-private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.class);
-	
+	private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.class);
+
 	private static boolean conversionFailed = false;
 
 	private HashSet<Resource> _individuals = new HashSet<Resource>();
 	private UtilOntology _onto = new UtilOntology();
+	private Model _contextSource = ModelFactory.createDefaultModel();
 
 	private boolean _noTypeBool = false;
 	private boolean _noInBool = false;
@@ -41,7 +42,7 @@ private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.cl
 	private Neighborhood _neighborLevel = Neighborhood.PropertyAndType;
 
 	private HashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
-//	private HashMap<Resource, LabeledTransaction> _buildingSecondaryResTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
+	//	private HashMap<Resource, LabeledTransaction> _buildingSecondaryResTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
 	private HashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new HashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
 
 	public boolean isKnownIndividual(Resource indiv) {
@@ -83,22 +84,92 @@ private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.cl
 	public void setNoOutTriples(boolean noOutBool) {
 		this._noOutBool = noOutBool;
 	}
-	
+
+	public void setContextSource(Model source) {
+		this._contextSource = source;
+	}
+
+	public Model getContextSource() {
+		return this._contextSource;
+	}
+
 
 	/**
 	 * Return a couple of transactions set <delete, add> corresponding to the triples of the update
-	 * @deprecated For testing an example purposes, do not use as it is
 	 * @param chg
 	 * @return
 	 */
 	public Couple<ItemsetSet, ItemsetSet> extractChangesetTransactionsFromChangeset(Changeset chg) {
-		ItemsetSet beforeSet = extractTransactionFromIterator(chg.getDelTriples());
-		ItemsetSet afterSet = extractTransactionFromIterator(chg.getAddTriples());
+		ItemsetSet beforeSet = extractTransactionsFromModel(chg.getDelTriples());
+		ItemsetSet afterSet = extractTransactionsFromModel(chg.getAddTriples(), chg.getDelTriples());
 		return new Couple<ItemsetSet, ItemsetSet>(beforeSet,afterSet);
 	}
-	
-	public ItemsetSet extractTransactionFromIterator(Model source) {
+
+	/**
+	 * Extract the transactions of the triples of the given Model and their contexts
+	 * 
+	 * @param source
+	 * @param exceptThose Model containing triples to be removed from the context
+	 * @return
+	 */
+	protected ItemsetSet extractTransactionsFromModel(Model source, Model exceptThose) {
 		ItemsetSet result = new ItemsetSet();
+
+		Model context = extractContextOfModel(source);
+		if(exceptThose != null) {
+			context.remove(exceptThose);
+		}
+
+		this.fillIndexesFromModel(context);
+
+		if(conversionFailed) {
+			return result;
+		}
+
+		logger.debug("Union of all tmp transactions for " + this._individuals.size() + " individuals");
+		logger.debug(this._individuals);
+		// Union of the transactions
+		Iterator<Resource> itIndiv = this._individuals.iterator();
+		int nbtreatedIndiv = 1;
+		while(itIndiv.hasNext()) {
+			Resource indiv = itIndiv.next();
+
+			KItemset indivTrans = new KItemset();
+			indivTrans.setLabel(indiv.toString());
+			if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
+				this._buildingTransactionsTypeItems.remove(indiv);
+			}
+			if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
+				this._buildingTransactionsPropertyItems.remove(indiv);
+			}
+
+			if(! indivTrans.isEmpty()) {
+				result.addItemset(indivTrans);
+			}
+
+			if(nbtreatedIndiv % 100000 == 0) {
+				logger.debug("Individual n°" + nbtreatedIndiv);
+			}
+			nbtreatedIndiv++;
+		}
+		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
+
+		return result;
+	}
+
+	/**
+	 * Extract the transactions of the triples of the given Model and their contexts
+	 * 
+	 * @param source
+	 * @return
+	 */
+	protected ItemsetSet extractTransactionsFromModel(Model source) {
+		return extractTransactionsFromModel(source, null);
+	}
+
+	protected void fillIndexesFromModel(Model source) {
 
 		logger.debug("Jena loading ...");
 		// First, line by line, fill the indexes
@@ -174,15 +245,11 @@ private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.cl
 		} finally {
 			dataIt.close();
 		}
-		
-		if(conversionFailed) {
-			return result;
-		}
 		logger.debug("End of first reading");
 
 		// we explicitly try to recover the used memory
 		System.gc();
-		
+
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			logger.debug("Second reading of the file fo the property-class conversion");
 			// First, line by line, fill the indexes
@@ -261,40 +328,55 @@ private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.cl
 		model.close();
 
 		System.gc(); 
-		
-		logger.debug("Union of all tmp transactions for " + this._individuals.size() + " individuals");
-		logger.debug(this._individuals);
-		// Union of the transactions
-		Iterator<Resource> itIndiv = this._individuals.iterator();
-		int nbtreatedIndiv = 1;
-		while(itIndiv.hasNext()) {
-			Resource indiv = itIndiv.next();
+	}
 
-			KItemset indivTrans = new KItemset();
-			indivTrans.setLabel(indiv.toString());
-			if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
-				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
-				this._buildingTransactionsTypeItems.remove(indiv);
+	/**
+	 * Extract from the contextSource attributes the triples containing resources appearing in the given Model and return an augmented Model 
+	 * 
+	 * @param source
+	 * @return a Model containing both source and its context
+	 */
+	protected Model extractContextOfModel(Model source) {
+		Model result = ModelFactory.createDefaultModel().add(source);
+
+		StmtIterator dataItSecond = source.listStatements();
+		while(dataItSecond.hasNext()) {
+			Statement stat = dataItSecond.next();
+			Property prop = null;
+			Resource subj = null;
+			RDFNode obj = null;
+			if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
+				subj = stat.getSubject();
 			}
-			if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
-				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
-				this._buildingTransactionsPropertyItems.remove(indiv);
+			if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
+				prop = stat.getPredicate();
+			}
+			if(stat.getObject() != null) {
+				if(stat.getObject().isLiteral()) {
+					obj = stat.getObject().asLiteral();
+				} else if(stat.getObject().isURIResource()) {
+					obj = stat.getObject().asResource();
+				} else if(stat.getObject().isAnon()) {
+					obj = stat.getObject().asResource(); 
+				}
 			}
 
-			if(! indivTrans.isEmpty()) {
-				result.addItemset(indivTrans);
-			}
+			if(subj != null 
+					&& prop != null 
+					&& obj != null 
+					&& obj.isResource() 
+					&& ! obj.isAnon()
+					&& ! _onto.isOntologyPropertyVocabulary(prop) 
+					&& ! _onto.isOntologyClassVocabulary(obj.asResource())) {
 
-			if(nbtreatedIndiv % 100000 == 0) {
-				logger.debug("Individual n°" + nbtreatedIndiv);
+				result.add(this._contextSource.listStatements(subj, null, (RDFNode)null));
+				result.add(this._contextSource.listStatements(null, null, obj));
+
 			}
-			nbtreatedIndiv++;
 		}
-		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
-
 		return result;
 	}
-	
+
 
 	private void addComponentToIndexes(Resource res, RDFPatternComponent compo) {
 		logger.trace("Adding component " + compo + " for resource " + res);
@@ -322,27 +404,27 @@ private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.cl
 		}
 	}
 
-//	/**
-//	 * Should only be used to add typing component for secondary resources
-//	 * @param res
-//	 * @param compo
-//	 */
-//	private void addComponentToSecondaryIndexes(Resource res, RDFPatternComponent compo) {
-//		logger.trace("Adding component " + compo + " for secondary resource " + res);
-//		switch(compo.getType()) {
-//		case TYPE:
-//			if(! this._buildingSecondaryResTypeItems.containsKey(res)) { 
-//				this._buildingSecondaryResTypeItems.put(res, new LabeledTransaction(res));
-//			}
-//			this._buildingSecondaryResTypeItems.get(res).add(compo);
-//			break;
-//		case OUT_PROPERTY:
-//		case IN_PROPERTY:
-//		case OUT_NEIGHBOUR_TYPE: 
-//		case IN_NEIGHBOUR_TYPE: 
-//		default:
-//			throw new LogicException("Unexpected element \""+ compo +"\" to add to the indexes for resource " + res );
-//		}
-//	}
+	//	/**
+	//	 * Should only be used to add typing component for secondary resources
+	//	 * @param res
+	//	 * @param compo
+	//	 */
+	//	private void addComponentToSecondaryIndexes(Resource res, RDFPatternComponent compo) {
+	//		logger.trace("Adding component " + compo + " for secondary resource " + res);
+	//		switch(compo.getType()) {
+	//		case TYPE:
+	//			if(! this._buildingSecondaryResTypeItems.containsKey(res)) { 
+	//				this._buildingSecondaryResTypeItems.put(res, new LabeledTransaction(res));
+	//			}
+	//			this._buildingSecondaryResTypeItems.get(res).add(compo);
+	//			break;
+	//		case OUT_PROPERTY:
+	//		case IN_PROPERTY:
+	//		case OUT_NEIGHBOUR_TYPE: 
+	//		case IN_NEIGHBOUR_TYPE: 
+	//		default:
+	//			throw new LogicException("Unexpected element \""+ compo +"\" to add to the indexes for resource " + res );
+	//		}
+	//	}
 
 }
