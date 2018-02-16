@@ -1,6 +1,10 @@
 package com.irisa.dbplharvest;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.LinkedList;
 
 import org.apache.jena.rdf.model.Model;
@@ -12,7 +16,13 @@ import org.apache.log4j.PropertyConfigurator;
 import com.irisa.dbplharvest.data.Changeset;
 import com.irisa.dbplharvest.data.Changeset.CONTEXT_SOURCE;
 import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
+import com.irisa.swpatterns.data.AttributeIndex;
+import com.irisa.swpatterns.data.big.BigDataTransactionExtractor;
+import com.irisa.utilities.Couple;
 import com.irisa.dbplharvest.data.ChangesetFile;
+import com.irisa.dbplharvest.data.ChangesetTransactionConverter;
+import com.irisa.krimp.data.ItemsetSet;
+import com.irisa.krimp.data.Utils;
 
 public class DBPediaLiveHarvestMain {
 
@@ -44,7 +54,7 @@ public class DBPediaLiveHarvestMain {
 	}
 
 	public static LinkedList<ChangesetFile> harvest(int maxChangesets, boolean online, String changesetPath) {
-		return harvest(2016, 1, 1, 0, maxChangesets, online, "./datasets/");
+		return harvest(2016, 1, 1, 0, maxChangesets, online, changesetPath);
 	}
 	
 	public static LinkedList<ChangesetFile> harvest(int year, int month, int day, int hour, int maxChangesets, boolean online) {
@@ -136,27 +146,52 @@ public class DBPediaLiveHarvestMain {
 		return result;
 	}
 
-	public static void main(String[] args) {
-		BasicConfigurator.configure();
-		PropertyConfigurator.configure("log4j-config.txt");
-		
-		// Set up the index here for index sharing
-
-		LinkedList<ChangesetFile> changesets = harvest(3, false, "/home/pmaillot/git/DBPLiveHarvest/DBPLiveUpdateHarvesting/datasets/"); // TODO: Number of max changesets and path to be modified for deployment
-		LinkedList<Changeset> chTriples = new LinkedList<Changeset>();
-		for(ChangesetFile chgFile : changesets) {
-			chTriples.add(new Changeset(chgFile));
-		}
-
-//		Model dbpediaModel = ModelFactory.createDefaultModel(); // Context extract by loading in memory
-//		dbpediaModel.read("/home/pmaillot/Documents/KRIMP/DBpdedia/3.7/dbpedia.3.7.nt");
-		for(Changeset chg : chTriples) {
-			chg.printModifiedResources();
-//			chg.extractContextTriples(dbpediaModel);
-			chg.extractContextTriples("/home/pmaillot/Documents/KRIMP/DBpdedia/3.7/dbpedia.3.7.nt", CONTEXT_SOURCE.FROM_FILE); // Context extract With grep
-			logger.debug("Got " + chg.getDelTransaction(Neighborhood.Property).size() + " for delete and " + chg.getAddTransaction(Neighborhood.Property).size() + " for add transactions in my pocket");
-			logger.debug(chg);
-		}
-	}
+//	public static void main(String[] args) {
+//		BasicConfigurator.configure();
+//		PropertyConfigurator.configure("log4j-config.txt");
+//		
+//		// Set up the index here for index sharing
+//		AttributeIndex.getInstance().readAttributeIndex("/home/pmaillot/git/SWKrimpSim/SWPattern/newIndex.idx");
+//
+//		LinkedList<ChangesetFile> changesets = harvest(1, false, "/home/pmaillot/git/DBPLiveHarvest/DBPLiveUpdateHarvesting/datasets/"); // TODO: Number of max changesets and path to be modified for deployment
+//		LinkedList<Changeset> chTriples = new LinkedList<Changeset>();
+//		for(ChangesetFile chgFile : changesets) {
+//			chTriples.add(new Changeset(chgFile));
+//		}
+//		
+//		ChangesetTransactionConverter changesetConverter = new ChangesetTransactionConverter();
+//		BigDataTransactionExtractor bdConverter = new BigDataTransactionExtractor();
+//
+//		for(Changeset chg : chTriples) {
+//
+//			PrintWriter outAddPrinter;
+//			try {
+//				outAddPrinter = new PrintWriter(new BufferedWriter(new FileWriter("testAddTrans.nt")));
+//				chg.getAddTriples().write(outAddPrinter, "NT");
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			
+//			PrintWriter outDelPrinter;
+//			try {
+//				outDelPrinter = new PrintWriter(new BufferedWriter(new FileWriter("testDelTrans.nt")));
+//				chg.getDelTriples().write(outDelPrinter, "NT");
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			
+//			
+//			logger.debug(chg);
+//			Couple<ItemsetSet, ItemsetSet> coupleTrans = changesetConverter.extractChangesetTransactionsFromChangeset(chg);
+//			Utils.printTransactions(coupleTrans.getSecond(), "testTransAfter.dat");
+//			logger.debug("After transactions: " + coupleTrans.getSecond().size());
+//			
+//
+//			ItemsetSet transSure = bdConverter.extractTransactionsFromFile("testAddTrans.nt");
+//			Utils.printTransactions(transSure, "officialTrans.dat");
+//		}
+//	}
 
 }

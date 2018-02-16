@@ -3,12 +3,6 @@ package com.irisa.dbplharvest.data;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.apache.jena.graph.Triple;
-import org.apache.jena.rdf.model.AnonId;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -16,8 +10,6 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
-import org.apache.jena.riot.lang.PipedRDFIterator;
-import org.apache.jena.riot.lang.PipedTriplesStream;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
@@ -31,13 +23,11 @@ import com.irisa.swpatterns.data.LabeledTransaction;
 import com.irisa.swpatterns.data.RDFPatternComponent;
 import com.irisa.swpatterns.data.RDFPatternResource;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
-import com.irisa.swpatterns.data.RDFPatternPathFragment;
-import com.irisa.swpatterns.data.big.BigDataTransactionExtractor;
 import com.irisa.utilities.Couple;
 
 public class ChangesetTransactionConverter {
 
-private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.class);
+private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.class);
 	
 	private static boolean conversionFailed = false;
 
@@ -51,7 +41,7 @@ private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.clas
 	private Neighborhood _neighborLevel = Neighborhood.PropertyAndType;
 
 	private HashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
-	private HashMap<Resource, LabeledTransaction> _buildingSecondaryResTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
+//	private HashMap<Resource, LabeledTransaction> _buildingSecondaryResTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
 	private HashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new HashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
 
 	public boolean isKnownIndividual(Resource indiv) {
@@ -105,337 +95,7 @@ private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.clas
 		ItemsetSet beforeSet = extractTransactionFromIterator(chg.getDelTriples());
 		ItemsetSet afterSet = extractTransactionFromIterator(chg.getAddTriples());
 		return new Couple<ItemsetSet, ItemsetSet>(beforeSet,afterSet);
-//		Couple<ItemsetSet, ItemsetSet> result = new Couple<ItemsetSet, ItemsetSet>(, new ItemsetSet());
 	}
-
-//	/**
-//	 * Return a couple of transactions set <before, after> corresponding to the state of the context before and after modification
-//	 * @param chg
-//	 * @return
-//	 */
-//	public Couple<ItemsetSet, ItemsetSet> extractChangesetTransactionsFromContext(Changeset chg) {
-//
-//		Couple<ItemsetSet, ItemsetSet> result = new Couple<ItemsetSet, ItemsetSet>(new ItemsetSet(), new ItemsetSet());
-//
-//		// First, line by line, fill the indexes
-//		Model tmpModel = ModelFactory.createDefaultModel();
-//		tmpModel.add(chg.getUnionTriples());
-////		tmpModel.add(chg.getContextTriples());
-////		tmpModel.remove(chg.getDelTriples()); // Removing the deleted triples
-//		// tmpModel now only contains the triples that are purely contextual, they will not change after the update
-//		StmtIterator dataIt = tmpModel.listStatements();
-//
-//		int nbtriples = 1;
-//		int nbMaxtriples = 0;
-//		int nbParsingErrors = 0;
-//		try {
-//
-//			// Filling the indexes
-//			while(dataIt.hasNext()) {
-//				try {
-//					Statement stat = dataIt.next();
-//					Property prop = stat.getPredicate();
-//					Resource subj = stat.getSubject();
-//					RDFNode obj = stat.getObject();
-//
-//					if(subj != null && prop != null && obj != null) {
-//						logger.trace("triple n° " + nbtriples + " read: " + subj + " " + prop + " " + obj);
-//						if(prop.equals(RDF.type)) {
-//							if( chg.isAffectedResource(subj)) { // Instantiation triple of modified resource
-//								Resource objRes = obj.asResource();
-//								RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
-//								addComponentToIndexes(subj, compoType);
-//							} else { // Instantiation triple of secondary resource
-//								Resource objRes = obj.asResource();
-//								RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
-//								this.addComponentToSecondaryIndexes(subj, compoType);
-//							}
-//						} else if(! _onto.isOntologyPropertyVocabulary(prop) 
-//								&& ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
-//							RDFPatternResource compoPropOut = AttributeIndex.getInstance().getComponent(prop, Type.OUT_PROPERTY);
-//							if( chg.isAffectedResource(subj)) {
-//								addComponentToIndexes(subj, compoPropOut);
-//							} 
-//
-//							if(! obj.isLiteral()){ // Object is not a literal 
-//								Resource objRes = obj.asResource();
-//								if(! _onto.isOntologyClassVocabulary(objRes)) { // Object is not Ontology stuff
-//									RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(prop, Type.IN_PROPERTY);
-//									if( chg.isAffectedResource(subj)) {
-//										addComponentToIndexes(objRes, compoPropIn);
-//									}
-//								}
-//							}
-//						}
-//					}
-//					if(nbtriples % 1000000 == 0) {
-//						logger.trace("Reaching " + nbtriples + " triples, loading...");
-//					}
-//					nbtriples++;
-//					nbMaxtriples++;
-//				} catch(Exception e) { // Catching the neurotic Jena parser exceptions
-//					logger.trace("Exception during this line treatment: ", e);
-//					nbParsingErrors++;
-//				}
-//			}
-//		} finally {
-//			dataIt.close();
-//		}
-//		
-//		if(conversionFailed) {
-//			return result;
-//		}
-//
-//		// we explicitly try to recover the used memory
-//		System.gc();
-//		
-//		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
-//			// First, line by line, fill the indexes
-//			StmtIterator dataItSecond = chg.getUnionTriples().listStatements();
-//
-//			try {
-//				// Filling the indexes
-//				nbtriples = 1;
-//				while(dataItSecond.hasNext()) {
-//					try {
-//						Statement stat = dataIt.next();
-//						Property prop = stat.getPredicate();
-//						Resource subj = stat.getSubject();
-//						RDFNode obj = stat.getObject();
-//
-//						if(subj != null 
-//								&& prop != null 
-//								&& obj != null 
-//								&& obj.isResource() 
-//								&& ! _onto.isOntologyPropertyVocabulary(prop) 
-//								&& ! _onto.isOntologyClassVocabulary(obj.asResource())) {
-//							if(chg.isAffectedResource(subj)) { // Subject is modified resource
-//								if(chg.isAffectedResource(subj) 
-//										&& this._buildingTransactionsTypeItems.get(obj) != null) { // Object is also modified resource
-//									Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
-//									while(itObjType.hasNext()) {
-//										RDFPatternComponent compoObjType = itObjType.next();
-//										Resource objType = ((RDFPatternResource) compoObjType).getResource();
-//	
-//										RDFPatternComponent compoOut = AttributeIndex.getInstance().getComponent(prop, objType, Type.OUT_NEIGHBOUR_TYPE);
-//										addComponentToIndexes(subj, compoOut);
-//									}
-//								} else if(this._buildingSecondaryResTypeItems.get(obj) != null) {
-//									Iterator<RDFPatternComponent> itObjType = this._buildingSecondaryResTypeItems.get(obj).iterator();
-//									while(itObjType.hasNext()) {
-//										RDFPatternComponent compoObjType = itObjType.next();
-//										Resource objType = ((RDFPatternResource) compoObjType).getResource();
-//	
-//										RDFPatternComponent compoOut = AttributeIndex.getInstance().getComponent(prop, objType, Type.OUT_NEIGHBOUR_TYPE);
-//										addComponentToIndexes(subj, compoOut);
-//									}
-//								}
-//							}
-//
-//							if(chg.isAffectedResource(obj.asResource())) { // Object is modified resource
-//								if(chg.isAffectedResource(subj) 
-//										&& this._buildingTransactionsTypeItems.get(subj) != null) { // Subject is also modified resource
-//									Iterator<RDFPatternComponent> itSubjType = this._buildingTransactionsTypeItems.get(subj).iterator();
-//									while(itSubjType.hasNext()) {
-//										RDFPatternComponent compoSubjType = itSubjType.next();
-//										Resource subjType = ((RDFPatternResource) compoSubjType).getResource();
-//	
-//										RDFPatternComponent compoIn = AttributeIndex.getInstance().getComponent(prop, subjType, Type.IN_NEIGHBOUR_TYPE);
-//										addComponentToIndexes(obj.asResource(), compoIn);
-//									}	
-//								} else if(this._buildingSecondaryResTypeItems.get(subj) != null){ // Subject is secondary resource
-//									Iterator<RDFPatternComponent> itSubjType = this._buildingSecondaryResTypeItems.get(subj).iterator();
-//									while(itSubjType.hasNext()) {
-//										RDFPatternComponent compoSubjType = itSubjType.next();
-//										Resource subjType = ((RDFPatternResource) compoSubjType).getResource();
-//	
-//										RDFPatternComponent compoIn = AttributeIndex.getInstance().getComponent(prop, subjType, Type.IN_NEIGHBOUR_TYPE);
-//										addComponentToIndexes(obj.asResource(), compoIn);
-//									}	
-//								}
-//							}
-//						}
-//						if(nbtriples % 1000000 == 0) {
-//							logger.trace("Reaching " + nbtriples + " triples over " + nbMaxtriples + ", loading...");
-//						}
-//						nbtriples++;
-//					} catch(Exception e) { // Catching the neurotic Jena parser exceptions
-//						logger.trace("Exception during this line treatment: ", e);
-//					}
-//				}
-//				logger.debug("End of second reading");
-//			} finally {
-//				dataItSecond.close();
-//			}
-//		}
-//		
-//		tmpModel.close();
-//		// we explicitly try to recover the used memory
-//		System.gc(); 
-//		
-//		// Extraction of the items of the modification of the changeset
-//		HashMap<Resource, LabeledTransaction> deleteResTransactMap = new HashMap<Resource, LabeledTransaction>();
-//		HashMap<Resource, LabeledTransaction> addResTransactMap = new HashMap<Resource, LabeledTransaction>();
-//			// Init the partial transaction for add and delete
-//		
-//		Iterator<HashSet<Resource>> itAffect = chg.getAffectedResources().iterator();
-//		while(itAffect.hasNext()) {
-//			HashSet<Resource> affect = itAffect.next();
-//			Iterator<Resource> itModified = affect.iterator();
-//			while(itModified.hasNext()) {
-//				Resource modifiedRes = itModified.next();
-//				deleteResTransactMap.put(modifiedRes, new LabeledTransaction(modifiedRes));
-//				addResTransactMap.put(modifiedRes, new LabeledTransaction(modifiedRes));
-//			}
-//		}
-//		
-//		// Delete items
-//		StmtIterator itDeleteTriples = chg._deletedTriples.listStatements();
-//		while(itDeleteTriples.hasNext()) {
-//			Statement deleteTriple = itDeleteTriples.next();
-//			Resource subj = deleteTriple.getSubject();
-//			Property prop = deleteTriple.getPredicate();
-//			RDFNode obj = deleteTriple.getObject();
-//			
-//			if(chg.isAffectedResource(subj)) { // Should be true
-//				if(! this._onto.isOntologyPropertyVocabulary(prop)) {
-//					if(prop != RDF.type) {
-//						RDFPatternComponent compoSubjPropOut = new RDFPatternResource(prop, Type.OUT_PROPERTY);
-//						deleteResTransactMap.get(subj).add(compoSubjPropOut);
-//						
-//						if(obj.isResource() 
-//								&& chg.isAffectedResource(obj.asResource())) {
-//								if( this._buildingTransactionsTypeItems.containsKey(obj)) {
-//									LinkedList<RDFPatternComponent> listObjTypeItems = new LinkedList<RDFPatternComponent>();
-//									Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
-//									while(itObjType.hasNext()) {
-//										RDFPatternResource typeCompo = (RDFPatternResource) itObjType.next();
-//										RDFPatternComponent compoSubjPropTypeOut = new RDFPatternPathFragment(prop, typeCompo.getResource(), Type.OUT_NEIGHBOUR_TYPE);
-//										listObjTypeItems.add(compoSubjPropTypeOut);
-//									}
-//									deleteResTransactMap.get(subj).addAll(listObjTypeItems);
-//								}
-//							
-//							RDFPatternComponent compoObjPropIn = new RDFPatternResource(prop, Type.IN_PROPERTY);
-//							deleteResTransactMap.get(obj).add(compoObjPropIn);
-//							if(this._buildingTransactionsTypeItems.containsKey(subj)) {
-//								LinkedList<RDFPatternComponent> listSubjTypeItems = new LinkedList<RDFPatternComponent>();
-//								Iterator<RDFPatternComponent> itSubjType = this._buildingTransactionsTypeItems.get(subj).iterator();
-//								while(itSubjType.hasNext()) {
-//									RDFPatternResource typeCompo = (RDFPatternResource) itSubjType.next();
-//									RDFPatternComponent compoObjPropTypeIn = new RDFPatternPathFragment(prop, typeCompo.getResource(), Type.IN_NEIGHBOUR_TYPE);
-//									listSubjTypeItems.add(compoObjPropTypeIn);
-//								}
-//								deleteResTransactMap.get(obj).addAll(listSubjTypeItems);
-//							}
-//						}
-//					} else { // Its a typing triple
-//						RDFPatternComponent compoSubjType = new RDFPatternResource(obj.asResource(), Type.TYPE);
-//						deleteResTransactMap.get(subj).add(compoSubjType);
-//					}
-//				}
-//			}
-//		}
-//		
-//		// Add items
-//		StmtIterator itAddTriples = chg._addedTriples.listStatements();
-//		while(itAddTriples.hasNext()) {
-//			Statement deleteTriple = itAddTriples.next();
-//			Resource subj = deleteTriple.getSubject();
-//			Property prop = deleteTriple.getPredicate();
-//			RDFNode obj = deleteTriple.getObject();
-//			
-//			if(chg.isAffectedResource(subj)) { // Should be true
-//				if(! this._onto.isOntologyPropertyVocabulary(prop)) {
-//					if(prop != RDF.type) {
-//						RDFPatternComponent compoSubjPropOut = new RDFPatternResource(prop, Type.OUT_PROPERTY);
-//						addResTransactMap.get(subj).add(compoSubjPropOut);
-//						
-//						if(obj.isResource() 
-//								&& chg.isAffectedResource(obj.asResource())) {
-//							if(this._buildingTransactionsTypeItems.containsKey(obj)) {
-//								LinkedList<RDFPatternComponent> listObjTypeItems = new LinkedList<RDFPatternComponent>();
-//								Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
-//								while(itObjType.hasNext()) {
-//									RDFPatternResource typeCompo = (RDFPatternResource) itObjType.next();
-//									RDFPatternComponent compoSubjPropTypeOut = new RDFPatternPathFragment(prop, typeCompo.getResource(), Type.OUT_NEIGHBOUR_TYPE);
-//									listObjTypeItems.add(compoSubjPropTypeOut);
-//								}
-//								addResTransactMap.get(subj).addAll(listObjTypeItems);
-//							}
-//							
-//							RDFPatternComponent compoObjPropIn = new RDFPatternResource(prop, Type.IN_PROPERTY);
-//							addResTransactMap.get(obj).add(compoObjPropIn);
-//							if(this._buildingTransactionsTypeItems.containsKey(subj)) {
-//								LinkedList<RDFPatternComponent> listSubjTypeItems = new LinkedList<RDFPatternComponent>();
-//								Iterator<RDFPatternComponent> itSubjType = this._buildingTransactionsTypeItems.get(subj).iterator();
-//								while(itSubjType.hasNext()) {
-//									RDFPatternResource typeCompo = (RDFPatternResource) itSubjType.next();
-//									RDFPatternComponent compoObjPropTypeIn = new RDFPatternPathFragment(prop, typeCompo.getResource(), Type.IN_NEIGHBOUR_TYPE);
-//									listSubjTypeItems.add(compoObjPropTypeIn);
-//								}
-//								addResTransactMap.get(obj).addAll(listSubjTypeItems);
-//							}
-//						}
-//					} else { // Its a typing triple
-//						RDFPatternComponent compoSubjType = new RDFPatternResource(obj.asResource(), Type.TYPE);
-//						addResTransactMap.get(subj).add(compoSubjType);
-//					}
-//				}
-//			}
-//		}
-//		
-//		// Final union of the building transactions
-//		logger.trace("Union of all tmp transactions for the modified individuals");
-//		
-//		Iterator<HashSet<Resource>> itAffectFinal = chg.getAffectedResources().iterator();
-//		while(itAffectFinal.hasNext()) {
-//			HashSet<Resource> affect = itAffectFinal.next();
-//			Iterator<Resource> itIndiv = affect.iterator();
-//			int nbtreatedIndiv = 1;
-//			while(itIndiv.hasNext()) {
-//				Resource indiv = itIndiv.next();
-//	
-//				KItemset indivAddTrans = new KItemset();
-//				KItemset indivDelTrans = new KItemset();
-//				indivAddTrans.setLabel(indiv.toString());
-//				indivDelTrans.setLabel(indiv.toString());
-//				if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
-//					indivAddTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
-//					indivDelTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
-//					
-//					this._buildingTransactionsTypeItems.remove(indiv);
-//				}
-//				if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
-//					indivAddTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
-//					indivDelTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
-//					
-//					this._buildingTransactionsPropertyItems.remove(indiv);
-//				}
-//				if(addResTransactMap.containsKey(indiv)) {
-//					indivAddTrans.addAll(AttributeIndex.getInstance().convertToTransaction(addResTransactMap.get(indiv)));
-//				}
-//				if(deleteResTransactMap.containsKey(indiv)) {
-//					indivDelTrans.addAll(AttributeIndex.getInstance().convertToTransaction(deleteResTransactMap.get(indiv)));
-//				}
-//	
-//				if(! indivAddTrans.isEmpty()) {
-//					result.getSecond().addItemset(indivAddTrans);
-//				}
-//				if(! indivDelTrans.isEmpty()) {
-//					result.getFirst().addItemset(indivDelTrans);
-//				}
-//	
-//				if(nbtreatedIndiv % 100000 == 0) {
-//					logger.debug("Individual n°" + nbtreatedIndiv);
-//				}
-//				nbtreatedIndiv++;
-//			}
-//		}
-//		logger.trace("All transactions united, (" + result.getFirst().size() + ", " + result.getSecond().size() + ") transactions for " + AttributeIndex.getInstance().size() + " attributes");
-//
-//		return result;
-//	}
 	
 	public ItemsetSet extractTransactionFromIterator(Model source) {
 		ItemsetSet result = new ItemsetSet();
@@ -467,11 +127,11 @@ private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.clas
 					}
 					if(stat.getObject() != null) {
 						if(stat.getObject().isLiteral()) {
-							obj = model.createTypedLiteral(stat.getObject().asLiteral().getValue(), stat.getObject().asLiteral().getDatatype());
+							obj = stat.getObject().asLiteral();
 						} else if(stat.getObject().isURIResource()) {
-							obj = model.createResource(stat.getObject().asResource());
+							obj = stat.getObject().asResource();
 						} else if(stat.getObject().isAnon()) {
-							obj = model.createResource(stat.getObject().asResource().getId()); 
+							obj = stat.getObject().asResource(); 
 						}
 					}
 
@@ -483,12 +143,13 @@ private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.clas
 								RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
 								addComponentToIndexes(subj, compoType);
 							}
-						} else if(! _onto.isOntologyPropertyVocabulary(prop) && ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
+						} else if(! _onto.isOntologyPropertyVocabulary(prop) 
+								&& ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
 
 							RDFPatternResource compoPropOut = AttributeIndex.getInstance().getComponent(prop, Type.OUT_PROPERTY);
 							addComponentToIndexes(subj, compoPropOut);
 
-							if(! obj.isLiteral()){ // Object is not a literal 
+							if(! obj.isLiteral() && ! obj.isAnon()){ // Object is not a literal 
 								Resource objRes = obj.asResource();
 								if(! _onto.isOntologyClassVocabulary(objRes)) { // Object is not Ontology stuff
 									RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(prop, Type.IN_PROPERTY);
@@ -545,11 +206,11 @@ private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.clas
 						}
 						if(stat.getObject() != null) {
 							if(stat.getObject().isLiteral()) {
-								obj = model.createTypedLiteral(stat.getObject().asLiteral().getValue(), stat.getObject().asLiteral().getDatatype());
+								obj = stat.getObject().asLiteral();
 							} else if(stat.getObject().isURIResource()) {
-								obj = model.createResource(stat.getObject().asResource());
+								obj = stat.getObject().asResource();
 							} else if(stat.getObject().isAnon()) {
-								obj = model.createResource(stat.getObject().asResource().getId()); 
+								obj = stat.getObject().asResource(); 
 							}
 						}
 
@@ -557,6 +218,7 @@ private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.clas
 								&& prop != null 
 								&& obj != null 
 								&& obj.isResource() 
+								&& ! obj.isAnon()
 								&& ! _onto.isOntologyPropertyVocabulary(prop) 
 								&& ! _onto.isOntologyClassVocabulary(obj.asResource())) {
 							if(this._buildingTransactionsTypeItems.get(obj) != null) {
@@ -601,6 +263,7 @@ private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.clas
 		System.gc(); 
 		
 		logger.debug("Union of all tmp transactions for " + this._individuals.size() + " individuals");
+		logger.debug(this._individuals);
 		// Union of the transactions
 		Iterator<Resource> itIndiv = this._individuals.iterator();
 		int nbtreatedIndiv = 1;
@@ -659,27 +322,27 @@ private static Logger logger = Logger.getLogger(BigDataTransactionExtractor.clas
 		}
 	}
 
-	/**
-	 * Should only be used to add typing component for secondary resources
-	 * @param res
-	 * @param compo
-	 */
-	private void addComponentToSecondaryIndexes(Resource res, RDFPatternComponent compo) {
-		logger.trace("Adding component " + compo + " for secondary resource " + res);
-		switch(compo.getType()) {
-		case TYPE:
-			if(! this._buildingSecondaryResTypeItems.containsKey(res)) { 
-				this._buildingSecondaryResTypeItems.put(res, new LabeledTransaction(res));
-			}
-			this._buildingSecondaryResTypeItems.get(res).add(compo);
-			break;
-		case OUT_PROPERTY:
-		case IN_PROPERTY:
-		case OUT_NEIGHBOUR_TYPE: 
-		case IN_NEIGHBOUR_TYPE: 
-		default:
-			throw new LogicException("Unexpected element \""+ compo +"\" to add to the indexes for resource " + res );
-		}
-	}
+//	/**
+//	 * Should only be used to add typing component for secondary resources
+//	 * @param res
+//	 * @param compo
+//	 */
+//	private void addComponentToSecondaryIndexes(Resource res, RDFPatternComponent compo) {
+//		logger.trace("Adding component " + compo + " for secondary resource " + res);
+//		switch(compo.getType()) {
+//		case TYPE:
+//			if(! this._buildingSecondaryResTypeItems.containsKey(res)) { 
+//				this._buildingSecondaryResTypeItems.put(res, new LabeledTransaction(res));
+//			}
+//			this._buildingSecondaryResTypeItems.get(res).add(compo);
+//			break;
+//		case OUT_PROPERTY:
+//		case IN_PROPERTY:
+//		case OUT_NEIGHBOUR_TYPE: 
+//		case IN_NEIGHBOUR_TYPE: 
+//		default:
+//			throw new LogicException("Unexpected element \""+ compo +"\" to add to the indexes for resource " + res );
+//		}
+//	}
 
 }

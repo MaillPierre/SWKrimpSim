@@ -17,7 +17,6 @@
 package com.irisa.dbplharvest.data;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
@@ -31,7 +30,6 @@ import java.util.function.Predicate;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
@@ -39,9 +37,6 @@ import org.apache.jena.rdf.model.StmtIterator;
 
 import com.irisa.dbplharvest.DataUtils;
 import com.irisa.dbplharvest.data.DataConstants.ACCEPTED_URI_FILTER;
-import com.irisa.krimp.data.ItemsetSet;
-import com.irisa.swpatterns.TransactionsExtractor.Neighborhood;
-import com.irisa.utilities.Couple;
 
 /**
  * Data representation in memory of a changeset.
