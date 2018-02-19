@@ -103,49 +103,48 @@ public class ChangesetTransactionConverter {
 	 * @param exceptThose Model containing triples to be removed from the context
 	 * @return
 	 */
-	protected ItemsetSet extractTransactionsFromAffectedResources(Changeset chg) {
-		ItemsetSet result = new ItemsetSet();
-
+	protected HashMap<Resource, KItemset> extractTransactionsFromAffectedResources(Changeset chg) {
+		HashMap<Resource, KItemset> result = new HashMap<Resource, KItemset>();
 		Model context = extractContextOfChangeset(chg);
-
 		this.fillIndexesFromModel(context, chg);
 
 		if(conversionFailed) {
 			return result;
 		}
 
-		logger.debug("Union of all tmp transactions for " + this._individuals.size() + " individuals");
-		logger.debug(this._individuals);
 		// Union of the transactions
-		Iterator<Resource> itIndiv = this._individuals.iterator();
-		int nbtreatedIndiv = 1;
-		while(itIndiv.hasNext()) {
-			Resource indiv = itIndiv.next();
-
-			KItemset indivTrans = new KItemset();
-			indivTrans.setLabel(indiv.toString());
-			if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
-				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
-				this._buildingTransactionsTypeItems.remove(indiv);
-			}
-			if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
-				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
-				this._buildingTransactionsPropertyItems.remove(indiv);
-			}
-
-			if(! indivTrans.isEmpty()) {
-				result.addItemset(indivTrans);
-			}
-
-			if(nbtreatedIndiv % 100000 == 0) {
-				logger.debug("Individual n°" + nbtreatedIndiv);
-			}
-			nbtreatedIndiv++;
-		}
-		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
 		
+		Iterator<HashSet<Resource>> itSets = chg.getAffectedResources().iterator(); 
+		Iterator<Resource> itIndiv = null; 
+		int nbtreatedIndiv = 1;
+		while (itSets.hasNext()) { 
+			itIndiv = itSets.next().iterator(); 
+			while(itIndiv.hasNext()) {
+				Resource indiv = itIndiv.next();
+				KItemset indivTrans = new KItemset();
+				indivTrans.setLabel(indiv.toString());
+				if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
+					indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
+					this._buildingTransactionsTypeItems.remove(indiv);
+				}
+				if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
+					indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
+					this._buildingTransactionsPropertyItems.remove(indiv);
+				}
+	
+				if(! indivTrans.isEmpty()) {
+					result.put(indiv, indivTrans);
+				}
+	
+				if(nbtreatedIndiv % 100000 == 0) {
+					logger.debug("Individual n°" + nbtreatedIndiv);
+				}
+				nbtreatedIndiv++;
+			}
+		} 
+		
+		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
 		clearIndexes();
-
 		return result;
 	}
 

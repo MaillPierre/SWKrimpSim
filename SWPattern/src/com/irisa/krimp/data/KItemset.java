@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import org.apache.jena.ext.com.google.common.collect.Lists;
 
@@ -126,6 +127,21 @@ public class KItemset extends HashSet<Integer> {
 		this._label = _label;
 	}
 
+	// required to handle the KItemsets in files 
+	public String toString() { 
+		StringBuilder result = new StringBuilder(); 
+		for (Integer i: this) { 
+			result.append(i); 
+			result.append(" "); 
+		}
+		return result.toString();
+	}
 	
+	public void parseTransactionString (String value) { 
+		StringTokenizer tokenizer = new StringTokenizer(value, " "); 
+		while (tokenizer.hasMoreElements()) { 
+			this.add(Integer.valueOf(tokenizer.nextToken())); 
+		}
+	}
 	
 }

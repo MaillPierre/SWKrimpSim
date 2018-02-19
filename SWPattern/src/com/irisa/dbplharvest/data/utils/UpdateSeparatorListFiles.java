@@ -65,6 +65,7 @@ public class UpdateSeparatorListFiles {
 			} 
 			
 			String fileListFilename = cmd.getOptionValue(FILE_ID_OPTION); 
+			long start = System.nanoTime(); 
 			
 			// first, we read all the file names in memory to paralellize everything
 			List<String> filenames= new ArrayList<String>(); 
@@ -118,7 +119,8 @@ public class UpdateSeparatorListFiles {
 				
 				); 
 			}
-		
+			System.out.println("Processed : "+filenames.size());
+			System.out.println("Finished after: "+ ( ((double)(System.nanoTime()-start))/1000000000)+" s."); 
 			
 		}
 		catch (Exception e) {
