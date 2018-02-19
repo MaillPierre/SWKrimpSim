@@ -8,10 +8,13 @@
 
 package com.irisa.dbplharvest.data.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.PrintWriter;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Stack;
 import java.util.StringTokenizer;
 
@@ -20,6 +23,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+import org.apache.jena.ext.com.google.common.io.Files;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -59,7 +63,7 @@ public class UpdateSeparatorSingleFile {
 			
 			String fileID = cmd.getOptionValue(FILE_ID_OPTION); 
 			
-			File resultsFile = new File(FILE_ID_OPTION+OUTPUT_EXTENSION);
+			File resultsFile = new File(fileID+OUTPUT_EXTENSION);
 			PrintWriter out = null; 
 			if (resultsFile.exists()) {
 				resultsFile.delete(); 
@@ -84,14 +88,48 @@ public class UpdateSeparatorSingleFile {
 			
 			Changeset changeset = new Changeset(changeFile);  
 			
-			changeset.getAffectedResources(); 
+			HashSet<HashSet<Resource>> first = changeset.getAffectedResources(); 
 			System.out.println("Should be writing "+ FILE_ID_OPTION+OUTPUT_EXTENSION); 
 			changeset.writeAffectedResources(out);
-			
-//			out.println(originalCTFilename+";"+comparedCTFilename+";"+datasetFilename+";"+(!cmd.hasOption(VREEKEN_OPTION))+";"
-//					+measure+";"+value+";"+(end-start)/1000000.0); 
 			out.flush();
 			out.close();
+			
+
+			// Testing code
+			
+//			BufferedReader in = new BufferedReader(new FileReader(FILE_ID_OPTION+OUTPUT_EXTENSION)); 
+//			
+//			changeset.readAffectedResources(in);
+//			HashSet<HashSet<Resource>> second = changeset.getAffectedResources(); 
+//			
+//			boolean all = true; 
+//			Iterator<HashSet<Resource>> itSec = second.iterator(); 
+//			HashSet<Resource> aux = null;
+//			HashSet<Resource> aux2 = null; 
+//			Iterator<HashSet<Resource>> itFirst = null; 
+//			
+//			while (itSec.hasNext() && all) { 
+//				aux = itSec.next(); 
+//				itFirst = first.iterator(); 
+//				boolean found = false; 
+//				while (itFirst.hasNext() && !found) { 
+//					aux2 = itFirst.next(); 
+//					found = aux2.containsAll(aux) && aux.containsAll(aux2); 
+//				}
+//				if (!found)
+//					System.out.println(aux2); 
+//				all = all && found; 
+//			}
+//			
+//			if (all ) 
+//				System.out.println("ok"); 
+//			out = new PrintWriter(FILE_ID_OPTION+OUTPUT_EXTENSION+".tmp");
+//			changeset.writeAffectedResources(out);
+//			out.flush();
+//			out.close();
+//			out.println(originalCTFilename+";"+comparedCTFilename+";"+datasetFilename+";"+(!cmd.hasOption(VREEKEN_OPTION))+";"
+//					+measure+";"+value+";"+(end-start)/1000000.0); 
+			
 			
 		}
 		catch (Exception e) {
