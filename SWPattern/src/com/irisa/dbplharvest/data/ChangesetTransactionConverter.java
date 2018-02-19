@@ -3,6 +3,8 @@ package com.irisa.dbplharvest.data;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
+
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -95,32 +97,18 @@ public class ChangesetTransactionConverter {
 
 
 	/**
-	 * Return a couple of transactions set <delete, add> corresponding to the triples of the update
-	 * @param chg
-	 * @return
-	 */
-	public Couple<ItemsetSet, ItemsetSet> extractChangesetTransactionsFromChangeset(Changeset chg) {
-		ItemsetSet beforeSet = extractTransactionsFromModel(chg.getDelTriples());
-		ItemsetSet afterSet = extractTransactionsFromModel(chg.getAddTriples(), chg.getDelTriples());
-		return new Couple<ItemsetSet, ItemsetSet>(beforeSet,afterSet);
-	}
-
-	/**
-	 * Extract the transactions of the triples of the given Model and their contexts
+	 * Extract the transactions of the triples of the changeset from the current context source. Clear the converter indexes after the extraction.
 	 * 
 	 * @param source
 	 * @param exceptThose Model containing triples to be removed from the context
 	 * @return
 	 */
-	protected ItemsetSet extractTransactionsFromModel(Model source, Model exceptThose) {
+	protected ItemsetSet extractTransactionsFromAffectedResources(Changeset chg) {
 		ItemsetSet result = new ItemsetSet();
 
-		Model context = extractContextOfModel(source);
-		if(exceptThose != null) {
-			context.remove(exceptThose);
-		}
+		Model context = extractContextOfChangeset(chg);
 
-		this.fillIndexesFromModel(context);
+		this.fillIndexesFromModel(context, chg);
 
 		if(conversionFailed) {
 			return result;
@@ -155,25 +143,21 @@ public class ChangesetTransactionConverter {
 			nbtreatedIndiv++;
 		}
 		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
+		
+		clearIndexes();
 
 		return result;
 	}
 
 	/**
-	 * Extract the transactions of the triples of the given Model and their contexts
-	 * 
+	 * Will fill the indexes according to the triples in the model, filtering those concerning the affected resources of the changeset
 	 * @param source
-	 * @return
+	 * @param chg
 	 */
-	protected ItemsetSet extractTransactionsFromModel(Model source) {
-		return extractTransactionsFromModel(source, null);
-	}
-
-	protected void fillIndexesFromModel(Model source) {
+	protected void fillIndexesFromModel(Model source, Changeset chg) {
 
 		logger.debug("Jena loading ...");
 		// First, line by line, fill the indexes
-		Model model = ModelFactory.createDefaultModel(); 
 		StmtIterator dataIt = source.listStatements();
 
 		int nbtriples = 1;
@@ -191,10 +175,10 @@ public class ChangesetTransactionConverter {
 					Resource subj = null;
 					RDFNode obj = null;
 					if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
-						subj = model.createResource(stat.getSubject().getURI());
+						subj = stat.getSubject();
 					}
 					if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
-						prop = model.createProperty(stat.getPredicate().getURI());
+						prop = stat.getPredicate();
 					}
 					if(stat.getObject() != null) {
 						if(stat.getObject().isLiteral()) {
@@ -206,7 +190,12 @@ public class ChangesetTransactionConverter {
 						}
 					}
 
-					if(subj != null && prop != null && obj != null) {
+					if(subj != null 
+						&& prop != null 
+						&& obj != null
+						&& (chg.isAffectedResource(subj) 
+								|| (obj.isURIResource() 
+										&& chg.isAffectedResource(obj.asResource()))) ) {
 						logger.trace("triple n° " + nbtriples + " read: " + subj + " " + prop + " " + obj);
 						if(prop.equals(RDF.type)) { // Instantiation triple
 							if(! (obj.isLiteral())) { // checking basic RDF rule respect
@@ -266,10 +255,10 @@ public class ChangesetTransactionConverter {
 						Resource subj = null;
 						RDFNode obj = null;
 						if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
-							subj = model.createResource(stat.getSubject().getURI());
+							subj = stat.getSubject();
 						}
 						if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
-							prop = model.createProperty(stat.getPredicate().getURI());
+							prop = stat.getPredicate();
 						}
 						if(stat.getObject() != null) {
 							if(stat.getObject().isLiteral()) {
@@ -287,7 +276,10 @@ public class ChangesetTransactionConverter {
 								&& obj.isResource() 
 								&& ! obj.isAnon()
 								&& ! _onto.isOntologyPropertyVocabulary(prop) 
-								&& ! _onto.isOntologyClassVocabulary(obj.asResource())) {
+								&& ! _onto.isOntologyClassVocabulary(obj.asResource())
+								&& (chg.isAffectedResource(subj) 
+										|| (obj.isURIResource() 
+												&& chg.isAffectedResource(obj.asResource())))) {
 							if(this._buildingTransactionsTypeItems.get(obj) != null) {
 								Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
 								while(itObjType.hasNext()) {
@@ -314,7 +306,6 @@ public class ChangesetTransactionConverter {
 							logger.debug("Reaching " + nbtriples + " triples over " + nbMaxtriples + ", loading...");
 						}
 						nbtriples++;
-						Thread.sleep(0);
 					} catch(Exception e) { // Catching the neurotic Jena parser exceptions
 						logger.trace("Exception during this line treatment: ", e);
 					}
@@ -325,7 +316,6 @@ public class ChangesetTransactionConverter {
 			}
 			logger.debug("Property-class based items built");
 		}
-		model.close();
 
 		System.gc(); 
 	}
@@ -336,42 +326,24 @@ public class ChangesetTransactionConverter {
 	 * @param source
 	 * @return a Model containing both source and its context
 	 */
-	protected Model extractContextOfModel(Model source) {
-		Model result = ModelFactory.createDefaultModel().add(source);
+	protected Model extractContextOfChangeset(Changeset chg) {
+		Model result = ModelFactory.createDefaultModel();
+		Iterator<HashSet<Resource>> itRes1 = chg.getAffectedResources().iterator();
+		while(itRes1.hasNext()) {
+			HashSet<Resource> hashres = itRes1.next();
+			Iterator<Resource> itRes2 = hashres.iterator();
+			while(itRes2.hasNext()) {
+				Resource affectedRes = itRes2.next();
+				if(affectedRes != null 
+						&& affectedRes.isResource() 
+						&& ! affectedRes.isAnon()
+						&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
+						&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
+	
+					result.add(this._contextSource.listStatements(affectedRes, null, (RDFNode)null));
+					result.add(this._contextSource.listStatements(null, null, affectedRes));
 
-		StmtIterator dataItSecond = source.listStatements();
-		while(dataItSecond.hasNext()) {
-			Statement stat = dataItSecond.next();
-			Property prop = null;
-			Resource subj = null;
-			RDFNode obj = null;
-			if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
-				subj = stat.getSubject();
-			}
-			if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
-				prop = stat.getPredicate();
-			}
-			if(stat.getObject() != null) {
-				if(stat.getObject().isLiteral()) {
-					obj = stat.getObject().asLiteral();
-				} else if(stat.getObject().isURIResource()) {
-					obj = stat.getObject().asResource();
-				} else if(stat.getObject().isAnon()) {
-					obj = stat.getObject().asResource(); 
 				}
-			}
-
-			if(subj != null 
-					&& prop != null 
-					&& obj != null 
-					&& obj.isResource() 
-					&& ! obj.isAnon()
-					&& ! _onto.isOntologyPropertyVocabulary(prop) 
-					&& ! _onto.isOntologyClassVocabulary(obj.asResource())) {
-
-				result.add(this._contextSource.listStatements(subj, null, (RDFNode)null));
-				result.add(this._contextSource.listStatements(null, null, obj));
-
 			}
 		}
 		return result;
@@ -402,6 +374,12 @@ public class ChangesetTransactionConverter {
 		default:
 			throw new LogicException("Unexpected element \""+ compo +"\" to add to the indexes for resource " + res );
 		}
+	}
+	
+	public void clearIndexes() {
+		this._individuals.clear();
+		this._buildingTransactionsPropertyItems.clear();
+		this._buildingTransactionsTypeItems.clear();
 	}
 
 	//	/**
