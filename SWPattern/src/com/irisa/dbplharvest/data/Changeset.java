@@ -17,6 +17,7 @@
 package com.irisa.dbplharvest.data;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
@@ -130,8 +131,15 @@ public class Changeset implements AbstractChangeset {
 //	}
 	
 	public void readDeleteTriples(String filename) {
-		_deletedTriples.read(filename);
-//		this._modifiedResources.addAll(extractModifiedResources(_deletedTriples));
+		
+		// we have to check whether it exists 
+		File aux = new File(filename); 
+		if (aux.exists()) {	
+			_deletedTriples.read(filename);
+		} 
+		// otherwise the deleted model is empty
+
+		//		this._modifiedResources.addAll(extractModifiedResources(_deletedTriples));
 	}
 	
 //	public void readContextTriples(String filename) {
@@ -157,7 +165,13 @@ public class Changeset implements AbstractChangeset {
 //	}
 
 	public void readAddTriples(String filename) {
-		_addedTriples.read(filename);
+		File aux = new File (filename); 
+		if (aux.exists()) { 
+			_addedTriples.read(filename);
+		} 
+		// otherwise the add model is empty 
+		
+		
 //		this._modifiedResources.addAll(extractModifiedResources(_addedTriples));
 	}
 	
