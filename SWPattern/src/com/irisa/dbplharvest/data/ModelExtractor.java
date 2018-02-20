@@ -121,7 +121,6 @@ private static Logger logger = Logger.getLogger(ModelExtractor.class);
 				}
 
 				Model context = converter.extractContextOfChangeset(changeset); 
-				
 				File resultsFile = new File(cmd.getOptionValue(OUTPUT_MODEL_OPTION));
 				
 				if (resultsFile.exists()) {

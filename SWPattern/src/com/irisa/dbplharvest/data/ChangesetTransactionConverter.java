@@ -222,6 +222,7 @@ public class ChangesetTransactionConverter {
 					}
 					nbtriples++;
 					nbMaxtriples++;
+					//Thread.sleep(0);
 				} catch(Exception e) { // Catching the neurotic Jena parser exceptions
 					logger.trace("Exception during this line treatment: ", e);
 					nbParsingErrors++;
@@ -235,7 +236,7 @@ public class ChangesetTransactionConverter {
 		logger.debug("End of first reading");
 
 		// we explicitly try to recover the used memory
-		System.gc();
+		//System.gc();
 
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			logger.debug("Second reading of the file fo the property-class conversion");
@@ -315,7 +316,7 @@ public class ChangesetTransactionConverter {
 			logger.debug("Property-class based items built");
 		}
 
-		System.gc(); 
+		//System.gc(); 
 	}
 
 	/**
