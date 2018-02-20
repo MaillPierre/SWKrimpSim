@@ -222,7 +222,6 @@ public class ChangesetTransactionConverter {
 					}
 					nbtriples++;
 					nbMaxtriples++;
-					Thread.sleep(0);
 				} catch(Exception e) { // Catching the neurotic Jena parser exceptions
 					logger.trace("Exception during this line treatment: ", e);
 					nbParsingErrors++;
@@ -325,7 +324,7 @@ public class ChangesetTransactionConverter {
 	 * @param source
 	 * @return a Model containing both source and its context
 	 */
-	protected Model extractContextOfChangeset(Changeset chg) {
+	public Model extractContextOfChangeset(Changeset chg) {
 		Model result = ModelFactory.createDefaultModel();
 		Iterator<HashSet<Resource>> itRes1 = chg.getAffectedResources().iterator();
 		while(itRes1.hasNext()) {

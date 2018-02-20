@@ -12,6 +12,7 @@ package com.irisa.dbplharvest.data;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -33,6 +34,8 @@ import org.apache.commons.cli.Options;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -54,6 +57,8 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 	
 	public static String TRANSACTIONS_EXTENSION = ".trans"; 
 	public static String SEPARATED_RES_EXTENSION = ".separated.nt";
+	
+	public static String STATES_SEPARATOR="----";
 	
 	public static void main(String[] args) {
 		
@@ -85,7 +90,9 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 			}
 			
 			Model originalModel =  ModelFactory.createDefaultModel();
-			originalModel.read(cmd.getOptionValue(INPUT_MODEL_OPTION)); 
+			RDFDataMgr.read(originalModel, cmd.getOptionValue(INPUT_MODEL_OPTION)); 
+//			originalModel.read(cmd.getOptionValue(INPUT_MODEL_OPTION)); 
+			
 			
 			String fileListFilename = cmd.getOptionValue(UPDATE_LIST_OPTION); 
 			long start = System.nanoTime(); 
@@ -156,15 +163,30 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 					Iterator<HashSet<Resource>> itSets = changeset.getAffectedResources().iterator();
 					HashSet<Resource> auxSet = null; 
 					Iterator<Resource> itRes = null; 
+					Resource auxRes = null; 
+					
 					while (itSets.hasNext()) { 
 						auxSet = itSets.next();
 						// we write the original state
 						itRes = auxSet.iterator(); 
 						while (itRes.hasNext()) { 
-							out.println()
+							auxRes= itRes.next(); 
+							if (initialTransactions.containsKey(auxRes)) { 
+								out.println(initialTransactions.get(auxRes));
+							}
 						}
+						out.println(STATES_SEPARATOR); 
+						// now we write the final state
+						itRes = auxSet.iterator(); 
+						while (itRes.hasNext()) { 
+							auxRes = itRes.next(); 
+							if (finalTransactions.containsKey(auxRes)) { 
+								out.println(finalTransactions.get(auxRes)); 
+							}
+						}
+						// we separate the groups by a blank line
+						out.println(); 
 					}
-					
 					
 					out.flush();
 					out.close();
@@ -172,13 +194,22 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 				catch (IOException e) { 
 					logger.error(currentUpdateFilename+": couldn't be processed"); 
 				}
-				
-				
-				
-				
 			}
 			
-		
+			if (cmd.hasOption(OUTPUT_MODEL_OPTION)) { 
+				
+				File resultsFile = new File(cmd.getOptionValue(INPUT_MODEL_OPTION)+".evol.nt");
+				
+				if (resultsFile.exists()) {
+					resultsFile.delete(); 
+				}
+				FileOutputStream out = new FileOutputStream(resultsFile); 
+				RDFDataMgr.write(out, originalModel, RDFFormat.NTRIPLES_UTF8); 
+				out.flush();
+				out.close();
+			}
+			
+			
 			System.out.println("Processed : "+progress);
 			System.out.println("Finished after: "+ ( ((double)(System.nanoTime()-start))/1000000000)+" s."); 
 			

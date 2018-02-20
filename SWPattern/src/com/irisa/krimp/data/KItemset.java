@@ -16,6 +16,7 @@ public class KItemset extends HashSet<Integer> {
 	private int _usage = 0;
 
 	public KItemset() {
+		super(); 
 	}
 
 	public KItemset(Collection<? extends Integer> arg0) {
@@ -44,6 +45,11 @@ public class KItemset extends HashSet<Integer> {
 		super(initialCapacity, loadFactor);
 	}
 
+	public KItemset(String parseable) { 
+		super(); 
+		this.parseTransactionString(parseable);
+	}
+	
 	public int getSupport() {
 		return this._support;
 	}
@@ -143,5 +149,16 @@ public class KItemset extends HashSet<Integer> {
 			this.add(Integer.valueOf(tokenizer.nextToken())); 
 		}
 	}
-	
+	// small test for the latest parsing additions
+	public static void main(String[] args) {
+		KItemset test = new KItemset(); 
+		test.parseTransactionString("1 2 3 4 5");
+		System.out.println(test); 
+		test.add(6); 
+		System.out.println(test); 
+		System.out.println(test.toString()); 
+		
+		KItemset test2 = new KItemset(test.toString());
+		System.out.println("test2: "+test2);
+	}
 }
