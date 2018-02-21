@@ -259,7 +259,7 @@ public class ChangesetTransactionConverter {
 
 				// Filling the indexes
 				// this should be exactly equivalent as the previous version
-				StreamSupport.stream(Spliterators.spliteratorUnknownSize(dataIt, Spliterator.CONCURRENT), true).forEach( stat -> {
+				StreamSupport.stream(Spliterators.spliteratorUnknownSize(dataItSecond, Spliterator.CONCURRENT), true).forEach( stat -> {
 						try {
 //							Statement stat = dataItSecond.next();
 							Property prop = null;
