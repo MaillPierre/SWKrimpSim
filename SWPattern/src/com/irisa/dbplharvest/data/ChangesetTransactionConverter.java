@@ -4,6 +4,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.StreamSupport;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -43,10 +47,15 @@ public class ChangesetTransactionConverter {
 
 	private Neighborhood _neighborLevel = Neighborhood.PropertyAndType;
 
-	private HashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
+	// CB: change to ConcurrentHashMap 
+//	 private HashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
+	private ConcurrentHashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new ConcurrentHashMap<Resource, LabeledTransaction>(); // TYPE items per resource
+	
 	//	private HashMap<Resource, LabeledTransaction> _buildingSecondaryResTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
-	private HashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new HashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
-
+	// CB: change to ConcurrentHashMap
+	// private HashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new HashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
+	private ConcurrentHashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new ConcurrentHashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
+	
 	public boolean isKnownIndividual(Resource indiv) {
 		return _individuals.contains(indiv);
 	}
@@ -159,77 +168,80 @@ public class ChangesetTransactionConverter {
 		// First, line by line, fill the indexes
 		StmtIterator dataIt = source.listStatements();
 
-		int nbtriples = 1;
-		int nbMaxtriples = 0;
-		int nbParsingErrors = 0;
+//		int nbtriples = 1;
+//		int nbMaxtriples = 0;
+//		int nbParsingErrors = 0;
 		try {
 
 			logger.debug("Jena loading ended");
-
-			// Filling the indexes
-			while(dataIt.hasNext()) {
-				try {
-					Statement stat = dataIt.next();
-					Property prop = null;
-					Resource subj = null;
-					RDFNode obj = null;
-					if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
-						subj = stat.getSubject();
-					}
-					if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
-						prop = stat.getPredicate();
-					}
-					if(stat.getObject() != null) {
-						if(stat.getObject().isLiteral()) {
-							obj = stat.getObject().asLiteral();
-						} else if(stat.getObject().isURIResource()) {
-							obj = stat.getObject().asResource();
-						} else if(stat.getObject().isAnon()) {
-							obj = stat.getObject().asResource(); 
-						}
-					}
-
-					if(subj != null 
-						&& prop != null 
-						&& obj != null
-						&& (chg.isAffectedResource(subj) 
-								|| (obj.isURIResource() 
-										&& chg.isAffectedResource(obj.asResource()))) ) {
-						logger.trace("triple n° " + nbtriples + " read: " + subj + " " + prop + " " + obj);
-						if(prop.equals(RDF.type)) { // Instantiation triple
-							if(! (obj.isLiteral())) { // checking basic RDF rule respect
-								Resource objRes = obj.asResource();
-								RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
-								addComponentToIndexes(subj, compoType);
+			
+			// this should be exactly equivalent as the previous version
+			StreamSupport.stream(Spliterators.spliteratorUnknownSize(dataIt, Spliterator.CONCURRENT), true).forEach( stat -> 
+					{
+					// Filling the indexes
+						try {
+							Property prop = null;
+							Resource subj = null;
+							RDFNode obj = null;
+							if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
+								subj = stat.getSubject();
 							}
-						} else if(! _onto.isOntologyPropertyVocabulary(prop) 
-								&& ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
-
-							RDFPatternResource compoPropOut = AttributeIndex.getInstance().getComponent(prop, Type.OUT_PROPERTY);
-							addComponentToIndexes(subj, compoPropOut);
-
-							if(! obj.isLiteral() && ! obj.isAnon()){ // Object is not a literal 
-								Resource objRes = obj.asResource();
-								if(! _onto.isOntologyClassVocabulary(objRes)) { // Object is not Ontology stuff
-									RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(prop, Type.IN_PROPERTY);
-									addComponentToIndexes(objRes, compoPropIn);
+							if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
+								prop = stat.getPredicate();
+							}
+							if(stat.getObject() != null) {
+								if(stat.getObject().isLiteral()) {
+									obj = stat.getObject().asLiteral();
+								} else if(stat.getObject().isURIResource()) {
+									obj = stat.getObject().asResource();
+								} else if(stat.getObject().isAnon()) {
+									obj = stat.getObject().asResource(); 
 								}
 							}
+
+							if(subj != null 
+								&& prop != null 
+								&& obj != null
+								&& (chg.isAffectedResource(subj) 
+										|| (obj.isURIResource() 
+												&& chg.isAffectedResource(obj.asResource()))) ) {
+//								logger.trace("triple n° " + nbtriples + " read: " + subj + " " + prop + " " + obj);
+								if(prop.equals(RDF.type)) { // Instantiation triple
+									if(! (obj.isLiteral())) { // checking basic RDF rule respect
+										Resource objRes = obj.asResource();
+										RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
+										addComponentToIndexes(subj, compoType);
+									}
+								} else if(! _onto.isOntologyPropertyVocabulary(prop) 
+										&& ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
+
+									RDFPatternResource compoPropOut = AttributeIndex.getInstance().getComponent(prop, Type.OUT_PROPERTY);
+									addComponentToIndexes(subj, compoPropOut);
+
+									if(! obj.isLiteral() && ! obj.isAnon()){ // Object is not a literal 
+										Resource objRes = obj.asResource();
+										if(! _onto.isOntologyClassVocabulary(objRes)) { // Object is not Ontology stuff
+											RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(prop, Type.IN_PROPERTY);
+											addComponentToIndexes(objRes, compoPropIn);
+										}
+									}
+								}
+							}
+//							if(nbtriples % 1000000 == 0) {
+//								logger.debug("Reaching " + nbtriples + " triples, loading...");
+//							}
+//							nbtriples++;
+//							nbMaxtriples++;
+							//Thread.sleep(0);
+						} catch(Exception e) { // Catching the neurotic Jena parser exceptions
+							logger.trace("Exception during this line treatment: ", e);
+//							nbParsingErrors++;
 						}
 					}
-					if(nbtriples % 1000000 == 0) {
-						logger.debug("Reaching " + nbtriples + " triples, loading...");
-					}
-					nbtriples++;
-					nbMaxtriples++;
-					//Thread.sleep(0);
-				} catch(Exception e) { // Catching the neurotic Jena parser exceptions
-					logger.trace("Exception during this line treatment: ", e);
-					nbParsingErrors++;
-				}
-			}
+				); 
+						
 			logger.debug("Property based items built");
-			logger.debug(nbParsingErrors + " parsing errors");
+//			logger.debug(nbParsingErrors + " parsing errors");
 		} finally {
 			dataIt.close();
 		}
@@ -246,69 +258,72 @@ public class ChangesetTransactionConverter {
 			try {
 
 				// Filling the indexes
-				nbtriples = 1;
-				while(dataItSecond.hasNext()) {
-					try {
-						Statement stat = dataItSecond.next();
-						Property prop = null;
-						Resource subj = null;
-						RDFNode obj = null;
-						if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
-							subj = stat.getSubject();
-						}
-						if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
-							prop = stat.getPredicate();
-						}
-						if(stat.getObject() != null) {
-							if(stat.getObject().isLiteral()) {
-								obj = stat.getObject().asLiteral();
-							} else if(stat.getObject().isURIResource()) {
-								obj = stat.getObject().asResource();
-							} else if(stat.getObject().isAnon()) {
-								obj = stat.getObject().asResource(); 
+				// this should be exactly equivalent as the previous version
+				StreamSupport.stream(Spliterators.spliteratorUnknownSize(dataIt, Spliterator.CONCURRENT), true).forEach( stat -> {
+						try {
+//							Statement stat = dataItSecond.next();
+							Property prop = null;
+							Resource subj = null;
+							RDFNode obj = null;
+							if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
+								subj = stat.getSubject();
 							}
-						}
-
-						if(subj != null 
-								&& prop != null 
-								&& obj != null 
-								&& obj.isResource() 
-								&& ! obj.isAnon()
-								&& ! _onto.isOntologyPropertyVocabulary(prop) 
-								&& ! _onto.isOntologyClassVocabulary(obj.asResource())
-								&& (chg.isAffectedResource(subj) 
-										|| (obj.isURIResource() 
-												&& chg.isAffectedResource(obj.asResource())))) {
-							if(this._buildingTransactionsTypeItems.get(obj) != null) {
-								Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
-								while(itObjType.hasNext()) {
-									RDFPatternComponent compoObjType = itObjType.next();
-									Resource objType = ((RDFPatternResource) compoObjType).getResource();
-
-									RDFPatternComponent compoOut = AttributeIndex.getInstance().getComponent(prop, objType, Type.OUT_NEIGHBOUR_TYPE);
-									addComponentToIndexes(subj, compoOut);
+							if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
+								prop = stat.getPredicate();
+							}
+							if(stat.getObject() != null) {
+								if(stat.getObject().isLiteral()) {
+									obj = stat.getObject().asLiteral();
+								} else if(stat.getObject().isURIResource()) {
+									obj = stat.getObject().asResource();
+								} else if(stat.getObject().isAnon()) {
+									obj = stat.getObject().asResource(); 
 								}
 							}
 
-							if(this._buildingTransactionsTypeItems.get(subj) != null) {
-								Iterator<RDFPatternComponent> itSubjType = this._buildingTransactionsTypeItems.get(subj).iterator();
-								while(itSubjType.hasNext()) {
-									RDFPatternComponent compoSubjType = itSubjType.next();
-									Resource subjType = ((RDFPatternResource) compoSubjType).getResource();
+							if(subj != null 
+									&& prop != null 
+									&& obj != null 
+									&& obj.isResource() 
+									&& ! obj.isAnon()
+									&& ! _onto.isOntologyPropertyVocabulary(prop) 
+									&& ! _onto.isOntologyClassVocabulary(obj.asResource())
+									&& (chg.isAffectedResource(subj) 
+											|| (obj.isURIResource() 
+													&& chg.isAffectedResource(obj.asResource())))) {
+								if(this._buildingTransactionsTypeItems.get(obj) != null) {
+									Iterator<RDFPatternComponent> itObjType = this._buildingTransactionsTypeItems.get(obj).iterator();
+									while(itObjType.hasNext()) {
+										RDFPatternComponent compoObjType = itObjType.next();
+										Resource objType = ((RDFPatternResource) compoObjType).getResource();
 
-									RDFPatternComponent compoIn = AttributeIndex.getInstance().getComponent(prop, subjType, Type.IN_NEIGHBOUR_TYPE);
-									addComponentToIndexes(obj.asResource(), compoIn);
-								}	
+										RDFPatternComponent compoOut = AttributeIndex.getInstance().getComponent(prop, objType, Type.OUT_NEIGHBOUR_TYPE);
+										addComponentToIndexes(subj, compoOut);
+									}
+								}
+
+								if(this._buildingTransactionsTypeItems.get(subj) != null) {
+									Iterator<RDFPatternComponent> itSubjType = this._buildingTransactionsTypeItems.get(subj).iterator();
+									while(itSubjType.hasNext()) {
+										RDFPatternComponent compoSubjType = itSubjType.next();
+										Resource subjType = ((RDFPatternResource) compoSubjType).getResource();
+
+										RDFPatternComponent compoIn = AttributeIndex.getInstance().getComponent(prop, subjType, Type.IN_NEIGHBOUR_TYPE);
+										addComponentToIndexes(obj.asResource(), compoIn);
+									}	
+								}
 							}
+//							if(nbtriples % 1000000 == 0) {
+//								logger.debug("Reaching " + nbtriples + " triples over " + nbMaxtriples + ", loading...");
+//							}
+//							nbtriples++;
+						} catch(Exception e) { // Catching the neurotic Jena parser exceptions
+							logger.trace("Exception during this line treatment: ", e);
 						}
-						if(nbtriples % 1000000 == 0) {
-							logger.debug("Reaching " + nbtriples + " triples over " + nbMaxtriples + ", loading...");
-						}
-						nbtriples++;
-					} catch(Exception e) { // Catching the neurotic Jena parser exceptions
-						logger.trace("Exception during this line treatment: ", e);
-					}
-				}
+				});  								
+//				
+//				nbtriples = 1;
+				
 				logger.debug("End of second reading");
 			} finally {
 				dataItSecond.close();
@@ -351,23 +366,24 @@ public class ChangesetTransactionConverter {
 
 	private void addComponentToIndexes(Resource res, RDFPatternComponent compo) {
 		logger.trace("Adding component " + compo + " for resource " + res);
-		if(!this._individuals.contains(res)) {
-			this._individuals.add(res);
-		}
+			
+//		if(!this._individuals.contains(res)) {
+//			this._individuals.add(res);
+//		}
+		// CB: directly adding should not change the result
+		this._individuals.add(res); 
+		
+		// CB: we use putIfAbsent now, it is assured to be thread-safe
 		switch(compo.getType()) {
 		case OUT_PROPERTY:
 		case IN_PROPERTY:
 		case OUT_NEIGHBOUR_TYPE: 
 		case IN_NEIGHBOUR_TYPE: 
-			if(! this._buildingTransactionsPropertyItems.containsKey(res)) { 
-				this._buildingTransactionsPropertyItems.put(res, new LabeledTransaction(res));
-			}
+			this._buildingTransactionsPropertyItems.putIfAbsent(res, new LabeledTransaction(res));
 			this._buildingTransactionsPropertyItems.get(res).add(compo);
 			break;
 		case TYPE:
-			if(! this._buildingTransactionsTypeItems.containsKey(res)) { 
-				this._buildingTransactionsTypeItems.put(res, new LabeledTransaction(res));
-			}
+			this._buildingTransactionsTypeItems.putIfAbsent(res, new LabeledTransaction(res));
 			this._buildingTransactionsTypeItems.get(res).add(compo);
 			break;
 		default:

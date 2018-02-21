@@ -60,6 +60,8 @@ public class Changeset implements AbstractChangeset {
 	// it is initialized on demand
 	protected HashSet<HashSet<Resource>> _affectedResources = null; 
 	
+	protected HashSet<Resource> _flattenedAffectedResources = null; 
+	
 //	protected Model _contextTriples = ModelFactory.createDefaultModel();
 	
 //	protected HashSet<Resource> _modifiedResources = new HashSet<Resource>();
@@ -324,7 +326,6 @@ public class Changeset implements AbstractChangeset {
 	public HashSet<HashSet<Resource>> getAffectedResources () {
 		
 		if (this._affectedResources == null) {
-		
 			this._affectedResources = new HashSet<HashSet<Resource>>(); 
 			HashMap<Resource,HashSet<Resource>> invertedIndex = new HashMap<Resource, HashSet<Resource>>();
 			Statement stmt = null; 
@@ -398,7 +399,6 @@ public class Changeset implements AbstractChangeset {
 					}
 				}
 			}
-			
 			// we could work on top of a join model, but given the volume of operations
 			// we prefer not to do so
 			
@@ -469,6 +469,9 @@ public class Changeset implements AbstractChangeset {
 					}
 				}
 			}
+			
+			this._flattenedAffectedResources = new HashSet<Resource>(); 
+			this._affectedResources.forEach( e-> this._flattenedAffectedResources.addAll(e));
 			// end of
 		}
 		
@@ -476,24 +479,28 @@ public class Changeset implements AbstractChangeset {
 	}
 	
 	/**
-	 * Check if a resource is among the affected ressources of the updates of the changeset
+	 * Check if a resource is among the affected resources of the updates of the changeset
 	 * @param res
 	 * @return
 	 */
 	public boolean isAffectedResource(Resource res) {
-		Iterator<HashSet<Resource>> itAffectSets = this._affectedResources.iterator();
-		while(itAffectSets.hasNext()) {
-			HashSet<Resource> tmpSet = itAffectSets.next();
-			
-			Iterator<Resource> itRes = tmpSet.iterator();
-			while(itRes.hasNext()) {
-				Resource affRes = itRes.next();
-				
-				if(res.equals(affRes)) {
-					return true;
-				}
-			}
+		
+		if (this._flattenedAffectedResources != null) { 
+			return this._flattenedAffectedResources.contains(res); 
 		}
+//		Iterator<HashSet<Resource>> itAffectSets = this._affectedResources.iterator();
+//		while(itAffectSets.hasNext()) {
+//			HashSet<Resource> tmpSet = itAffectSets.next();
+//			
+//			Iterator<Resource> itRes = tmpSet.iterator();
+//			while(itRes.hasNext()) {
+//				Resource affRes = itRes.next();
+//				
+//				if(res.equals(affRes)) {
+//					return true;
+//				}
+//			}
+//		}
 		
 		return false;
 	}
@@ -646,23 +653,34 @@ public class Changeset implements AbstractChangeset {
 	
 	public void readAffectedResources (BufferedReader in) throws IOException { 
 		this._affectedResources = new HashSet<HashSet<Resource>> (); 
+		this._flattenedAffectedResources = new HashSet<Resource> (); 
 		HashSet<Resource> auxiliar = new HashSet<Resource>(); 
 		String line = null; 
 		while ( (line = in.readLine()) != null ) {
 			if ("".equals(line)) { 
 				// an empty line == new set
 				this._affectedResources.add(auxiliar);
+				this._flattenedAffectedResources.addAll(auxiliar); 
 				auxiliar = new HashSet<Resource>(); 
 			}
 			else { 
 				auxiliar.add(ResourceFactory.createResource(line)); 
 			}
 		}
+		// we add the last one
 		if (!auxiliar.isEmpty()) { 
 			this._affectedResources.add(auxiliar); 
+			this._flattenedAffectedResources.addAll(auxiliar); 
 		}
 	}
 	
+	
+	public HashSet<Resource> getFlattenedAffectedResources () { 
+		if (this._flattenedAffectedResources == null) { 
+			this.getAffectedResources(); 
+		}
+		return this._flattenedAffectedResources; 
+	}
 	
 	
 }
