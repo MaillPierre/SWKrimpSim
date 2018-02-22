@@ -57,6 +57,11 @@ public class Changeset implements AbstractChangeset {
 	protected Model _addedTriples = ModelFactory.createDefaultModel();
 	protected Model _deletedTriples = ModelFactory.createDefaultModel();
 	
+	protected long _numberFilteredTriples = 0; 
+	
+	
+
+
 	// it is initialized on demand
 	protected HashSet<HashSet<Resource>> _affectedResources = null; 
 	
@@ -314,9 +319,10 @@ public class Changeset implements AbstractChangeset {
 				removedStatToRemove.add(stat);
 			}
 		});
-		
+		this._numberFilteredTriples = addStatToRemove.size()+removedStatToRemove.size(); 
 		this._addedTriples.remove(addStatToRemove);
 		this._deletedTriples.remove(removedStatToRemove);
+		
 	}
 	
 	/** 
@@ -605,15 +611,15 @@ public class Changeset implements AbstractChangeset {
 		return filterAcceptURI(res, ontologyString);
 	}
 	
-	/**
-	 * Check if the resource is from dbpedia/property
-	 * @param res
-	 * @return
-	 */
-	public static boolean filterPropertyURI(Resource res) {
-		List<String> ontologyString = Collections.singletonList(ACCEPTED_URI_FILTER.dbpediaProperty.getString());
-		return filterAcceptURI(res, ontologyString);
-	}
+//	/**
+//	 * Check if the resource is from dbpedia/property
+//	 * @param res
+//	 * @return
+//	 */
+//	public static boolean filterPropertyURI(Resource res) {
+//		List<String> ontologyString = Collections.singletonList(ACCEPTED_URI_FILTER.dbpediaProperty.getString());
+//		return filterAcceptURI(res, ontologyString);
+//	}
 	
 	/**
 	 * Check if the resource is from dbpedia/property
@@ -682,5 +688,7 @@ public class Changeset implements AbstractChangeset {
 		return this._flattenedAffectedResources; 
 	}
 	
-	
+	public long getNumberFilteredTriples() {
+		return _numberFilteredTriples;
+	}
 }

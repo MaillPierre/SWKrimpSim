@@ -123,34 +123,36 @@ public class ChangesetTransactionConverter {
 
 		// Union of the transactions
 		
-		Iterator<HashSet<Resource>> itSets = chg.getAffectedResources().iterator(); 
+		Iterator<HashSet<Resource>> itSets = chg.getAffectedResources().iterator();
 		Iterator<Resource> itIndiv = null; 
 		int nbtreatedIndiv = 1;
-		while (itSets.hasNext()) { 
-			itIndiv = itSets.next().iterator(); 
-			while(itIndiv.hasNext()) {
-				Resource indiv = itIndiv.next();
-				KItemset indivTrans = new KItemset();
-				indivTrans.setLabel(indiv.toString());
-				if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
-					indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
-					this._buildingTransactionsTypeItems.remove(indiv);
-				}
-				if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
-					indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
-					this._buildingTransactionsPropertyItems.remove(indiv);
-				}
-	
-				if(! indivTrans.isEmpty()) {
-					result.put(indiv, indivTrans);
-				}
-	
-				if(nbtreatedIndiv % 100000 == 0) {
-					logger.debug("Individual n°" + nbtreatedIndiv);
-				}
-				nbtreatedIndiv++;
+		
+//		while (itSets.hasNext()) { 
+		itIndiv = chg.getFlattenedAffectedResources().iterator(); 
+//			itIndiv = itSets.next().iterator(); 
+		while(itIndiv.hasNext()) {
+			Resource indiv = itIndiv.next();
+			KItemset indivTrans = new KItemset();
+			indivTrans.setLabel(indiv.toString());
+			if(this._buildingTransactionsTypeItems.containsKey(indiv)) {
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsTypeItems.get(indiv)));
+				this._buildingTransactionsTypeItems.remove(indiv);
 			}
-		} 
+			if(this._buildingTransactionsPropertyItems.containsKey(indiv)) {
+				indivTrans.addAll(AttributeIndex.getInstance().convertToTransaction(this._buildingTransactionsPropertyItems.get(indiv)));
+				this._buildingTransactionsPropertyItems.remove(indiv);
+			}
+
+			if(! indivTrans.isEmpty()) {
+				result.put(indiv, indivTrans);
+			}
+
+			if(nbtreatedIndiv % 100000 == 0) {
+				logger.debug("Individual n°" + nbtreatedIndiv);
+			}
+			nbtreatedIndiv++;
+		}
+//		} 
 		
 		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
 		clearIndexes();
@@ -343,23 +345,39 @@ public class ChangesetTransactionConverter {
 	public Model extractContextOfChangeset(Changeset chg) {
 		Model result = ModelFactory.createDefaultModel();
 		Iterator<HashSet<Resource>> itRes1 = chg.getAffectedResources().iterator();
-		while(itRes1.hasNext()) {
-			HashSet<Resource> hashres = itRes1.next();
-			Iterator<Resource> itRes2 = hashres.iterator();
-			while(itRes2.hasNext()) {
-				Resource affectedRes = itRes2.next();
-				if(affectedRes != null 
-						&& affectedRes.isResource() 
-						&& ! affectedRes.isAnon()
-						&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
-						&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
-	
-					result.add(this._contextSource.listStatements(affectedRes, null, (RDFNode)null));
-					result.add(this._contextSource.listStatements(null, null, affectedRes));
+		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator(); 
+		// cannot be further paralelized as Model is not thread-safe
+		while (itRes.hasNext()) { 
+			Resource affectedRes = itRes.next();
+			if(affectedRes != null 
+					&& affectedRes.isResource() 
+					&& ! affectedRes.isAnon()
+					&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
+					&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
 
-				}
+				result.add(this._contextSource.listStatements(affectedRes, null, (RDFNode)null));
+				result.add(this._contextSource.listStatements(null, null, affectedRes));
+
 			}
 		}
+		
+//		while(itRes1.hasNext()) {
+//			HashSet<Resource> hashres = itRes1.next();
+//			Iterator<Resource> itRes2 = hashres.iterator();
+//			while(itRes2.hasNext()) {
+//				Resource affectedRes = itRes2.next();
+//				if(affectedRes != null 
+//						&& affectedRes.isResource() 
+//						&& ! affectedRes.isAnon()
+//						&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
+//						&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
+//	
+//					result.add(this._contextSource.listStatements(affectedRes, null, (RDFNode)null));
+//					result.add(this._contextSource.listStatements(null, null, affectedRes));
+//
+//				}
+//			}
+//		}
 		return result;
 	}
 
