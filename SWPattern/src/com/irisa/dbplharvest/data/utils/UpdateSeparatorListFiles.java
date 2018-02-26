@@ -105,7 +105,8 @@ public class UpdateSeparatorListFiles {
 						ChangesetFile changeFile = new ChangesetFile(year, month, day, hour, number, 
 													fileID+ChangesetFile.ADDED_EXTENSION, fileID+ChangesetFile.DELETED_EXTENSION); 
 						
-						Changeset changeset = new Changeset(changeFile);  
+						// we force the canonization
+						Changeset changeset = new Changeset(changeFile, true);  
 						
 						HashSet<HashSet<Resource>> first = changeset.getAffectedResources(); 
 						changeset.writeAffectedResources(out);

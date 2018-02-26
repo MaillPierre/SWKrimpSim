@@ -55,11 +55,14 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 	public static String OUTPUT_INDEX = "outputIndex"; 
 	public static String UPDATE_LIST_OPTION = "updateList"; 
 	public static String OUTPUT_STATS_OPTION = "outputStats"; 
+	public static String PREVIOUSLY_CANONIZED_OPTION = "alreadyCanonized"; 
 	public static String HELP_OPTION = "help";
 	
 	public static String TRANSACTIONS_EXTENSION = ".trans"; 
 	public static String NO_TRANSACTIONS_EXTENSION = ".noTrans";
 	public static String SEPARATED_RES_EXTENSION = ".separated.nt";
+	
+	
 	
 	public static String STATES_SEPARATOR="----";
 	
@@ -76,6 +79,7 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 		options.addOption(OUTPUT_STATS_OPTION, true, "output file for the stats");
 		options.addOption(OUTPUT_INDEX, true, "filename of the resulting index, useful to check non-seen properties"); 
 		options.addOption(UPDATE_LIST_OPTION, true, "filename with the list of update files, ordered by date and hour");
+		options.addOption(PREVIOUSLY_CANONIZED_OPTION, false, "forces to work with the already canonized version of the updates");
 		options.addOption(HELP_OPTION, false, "display this help"); 
 		try  {
 			CommandLine cmd = parser.parse( options, args);
@@ -124,8 +128,10 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 			
 			while ( (currentUpdateFilename = br.readLine()) != null) { 
 				progress++; 
-				if (progress%10000 == 0) { 
+				if (progress%100 == 0) { 
 					System.out.println(progress + " already processed "); 
+					// after checking the memory issues, 
+					// we force collection more frequently
 					System.gc();
 				}
 				
@@ -145,10 +151,22 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 					String month = auxStack.pop(); 
 					String year = auxStack.pop();
 					
-					ChangesetFile changeFile = new ChangesetFile(year, month, day, hour, number, 
-												currentUpdateFilename+ChangesetFile.ADDED_EXTENSION, currentUpdateFilename+ChangesetFile.DELETED_EXTENSION); 
+					// if they haven't been previously canonized, we have to do it 
+					// at creation time
+					boolean canonizing = !cmd.hasOption(PREVIOUSLY_CANONIZED_OPTION); 
 					
-					Changeset changeset = new Changeset(changeFile);  
+					ChangesetFile changeFile = null; 
+					
+					if (canonizing) { 
+						changeFile = new ChangesetFile(year, month, day, hour, number, 
+												currentUpdateFilename+ChangesetFile.ADDED_EXTENSION, currentUpdateFilename+ChangesetFile.DELETED_EXTENSION); 
+					} 
+					else { 
+						changeFile = new ChangesetFile(year, month, day, hour, number, 
+								currentUpdateFilename+ChangesetFile.ADDED_CANONIZED_EXTENSION, 
+								currentUpdateFilename+ChangesetFile.DELETED_CANONIZED_EXTENSION);
+					}
+					Changeset changeset = new Changeset(changeFile, canonizing);  
 					
 					if (Files.exists(Paths.get(currentUpdateFilename+SEPARATED_RES_EXTENSION))) { 
 						logger.debug("reading the affected resources ...");

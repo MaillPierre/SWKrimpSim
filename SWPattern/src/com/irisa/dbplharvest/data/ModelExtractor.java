@@ -50,6 +50,7 @@ private static Logger logger = Logger.getLogger(ModelExtractor.class);
 	
 	public static String INPUT_MODEL_OPTION = "inputModel"; 
 	public static String OUTPUT_MODEL_OPTION = "writeOutputModel"; 
+	public static String PREVIOUSLY_CANONIZED_OPTION = "alreadyCanonized"; 
 	public static String FILE_ID_OPTION = "fileID"; 
 	public static String HELP_OPTION = "help";
 	
@@ -66,7 +67,9 @@ private static Logger logger = Logger.getLogger(ModelExtractor.class);
 		Options options = new Options();
 		options.addOption(INPUT_MODEL_OPTION, true, "filename with the model to be evolved");
 		options.addOption(OUTPUT_MODEL_OPTION, true, "write the output of the evolution"); 
+		options.addOption(PREVIOUSLY_CANONIZED_OPTION, false, "forces to work with the already canonized version of the updates");
 		options.addOption(FILE_ID_OPTION, true, "filename with the list of update files, ordered by date and hour");
+		
 		options.addOption(HELP_OPTION, false, "display this help"); 
 		try  {
 			CommandLine cmd = parser.parse( options, args);
@@ -109,7 +112,8 @@ private static Logger logger = Logger.getLogger(ModelExtractor.class);
 				ChangesetFile changeFile = new ChangesetFile(year, month, day, hour, number, 
 											updateFilename+ChangesetFile.ADDED_EXTENSION, updateFilename+ChangesetFile.DELETED_EXTENSION); 
 				
-				Changeset changeset = new Changeset(changeFile);  
+				boolean canonize = !cmd.hasOption(PREVIOUSLY_CANONIZED_OPTION); 
+				Changeset changeset = new Changeset(changeFile, canonize);  
 				
 				if (Files.exists(Paths.get(updateFilename+SEPARATED_RES_EXTENSION))) { 
 					changeset.readAffectedResources(Files.newBufferedReader(Paths.get(updateFilename+SEPARATED_RES_EXTENSION)));

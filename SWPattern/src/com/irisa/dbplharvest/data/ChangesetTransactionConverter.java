@@ -170,80 +170,76 @@ public class ChangesetTransactionConverter {
 		// First, line by line, fill the indexes
 		StmtIterator dataIt = source.listStatements();
 
-//		int nbtriples = 1;
-//		int nbMaxtriples = 0;
-//		int nbParsingErrors = 0;
+		int nbtriples = 1;
+		int nbMaxtriples = 0;
+		int nbParsingErrors = 0;
 		try {
 
 			logger.debug("Jena loading ended");
-			
-			// this should be exactly equivalent as the previous version
-			StreamSupport.stream(Spliterators.spliteratorUnknownSize(dataIt, Spliterator.CONCURRENT), true).forEach( stat -> 
-					{
-					// Filling the indexes
-						try {
-							Property prop = null;
-							Resource subj = null;
-							RDFNode obj = null;
-							if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
-								subj = stat.getSubject();
-							}
-							if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
-								prop = stat.getPredicate();
-							}
-							if(stat.getObject() != null) {
-								if(stat.getObject().isLiteral()) {
-									obj = stat.getObject().asLiteral();
-								} else if(stat.getObject().isURIResource()) {
-									obj = stat.getObject().asResource();
-								} else if(stat.getObject().isAnon()) {
-									obj = stat.getObject().asResource(); 
-								}
-							}
-
-							if(subj != null 
-								&& prop != null 
-								&& obj != null
-								&& (chg.isAffectedResource(subj) 
-										|| (obj.isURIResource() 
-												&& chg.isAffectedResource(obj.asResource()))) ) {
-//								logger.trace("triple n° " + nbtriples + " read: " + subj + " " + prop + " " + obj);
-								if(prop.equals(RDF.type)) { // Instantiation triple
-									if(! (obj.isLiteral())) { // checking basic RDF rule respect
-										Resource objRes = obj.asResource();
-										RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
-										addComponentToIndexes(subj, compoType);
-									}
-								} else if(! _onto.isOntologyPropertyVocabulary(prop) 
-										&& ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
-
-									RDFPatternResource compoPropOut = AttributeIndex.getInstance().getComponent(prop, Type.OUT_PROPERTY);
-									addComponentToIndexes(subj, compoPropOut);
-
-									if(! obj.isLiteral() && ! obj.isAnon()){ // Object is not a literal 
-										Resource objRes = obj.asResource();
-										if(! _onto.isOntologyClassVocabulary(objRes)) { // Object is not Ontology stuff
-											RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(prop, Type.IN_PROPERTY);
-											addComponentToIndexes(objRes, compoPropIn);
-										}
-									}
-								}
-							}
-//							if(nbtriples % 1000000 == 0) {
-//								logger.debug("Reaching " + nbtriples + " triples, loading...");
-//							}
-//							nbtriples++;
-//							nbMaxtriples++;
-							//Thread.sleep(0);
-						} catch(Exception e) { // Catching the neurotic Jena parser exceptions
-							logger.trace("Exception during this line treatment: ", e);
-//							nbParsingErrors++;
+			while (dataIt.hasNext() ) { 
+				// this should be exactly equivalent as the previous version
+				try {
+					Statement stat = dataIt.next(); 
+					Property prop = null;
+					Resource subj = null;
+					RDFNode obj = null;
+					if(stat.getSubject() != null && stat.getSubject().getURI() != null) {
+						subj = stat.getSubject();
+					}
+					if(stat.getPredicate() != null && stat.getPredicate().getURI() != null) {
+						prop = stat.getPredicate();
+					}
+					if(stat.getObject() != null) {
+						if(stat.getObject().isLiteral()) {
+							obj = stat.getObject().asLiteral();
+						} else if(stat.getObject().isURIResource()) {
+							obj = stat.getObject().asResource();
+						} else if(stat.getObject().isAnon()) {
+							obj = stat.getObject().asResource(); 
 						}
 					}
-				); 
-						
+	
+					if(subj != null 
+						&& prop != null 
+						&& obj != null
+						&& (chg.isAffectedResource(subj) 
+								|| (obj.isURIResource() 
+										&& chg.isAffectedResource(obj.asResource()))) ) {
+	//								logger.trace("triple n° " + nbtriples + " read: " + subj + " " + prop + " " + obj);
+						if(prop.equals(RDF.type)) { // Instantiation triple
+							if(! (obj.isLiteral())) { // checking basic RDF rule respect
+								Resource objRes = obj.asResource();
+								RDFPatternResource compoType = AttributeIndex.getInstance().getComponent(objRes, Type.TYPE);
+								addComponentToIndexes(subj, compoType);
+							}
+						} else if(! _onto.isOntologyPropertyVocabulary(prop) 
+								&& ! _onto.isOntologyClassVocabulary(subj)) { // property and subject not ontology stuff
+	
+							RDFPatternResource compoPropOut = AttributeIndex.getInstance().getComponent(prop, Type.OUT_PROPERTY);
+							addComponentToIndexes(subj, compoPropOut);
+	
+							if(! obj.isLiteral() && ! obj.isAnon()){ // Object is not a literal 
+								Resource objRes = obj.asResource();
+								if(! _onto.isOntologyClassVocabulary(objRes)) { // Object is not Ontology stuff
+									RDFPatternResource compoPropIn = AttributeIndex.getInstance().getComponent(prop, Type.IN_PROPERTY);
+									addComponentToIndexes(objRes, compoPropIn);
+								}
+							}
+						}
+					}
+					if(nbtriples % 1000000 == 0) {
+						logger.debug("Reaching " + nbtriples + " triples, loading...");
+					}
+					nbtriples++;
+					nbMaxtriples++;
+					//Thread.sleep(0);
+				} catch(Exception e) { // Catching the neurotic Jena parser exceptions
+					logger.trace("Exception during this line treatment: ", e);
+	//							nbParsingErrors++;
+				}
+			}		
 			logger.debug("Property based items built");
-//			logger.debug(nbParsingErrors + " parsing errors");
+			logger.debug(nbParsingErrors + " parsing errors");
 		} finally {
 			dataIt.close();
 		}
@@ -260,10 +256,11 @@ public class ChangesetTransactionConverter {
 			try {
 
 				// Filling the indexes
+				nbtriples = 1;
 				// this should be exactly equivalent as the previous version
-				StreamSupport.stream(Spliterators.spliteratorUnknownSize(dataItSecond, Spliterator.CONCURRENT), true).forEach( stat -> {
-						try {
-//							Statement stat = dataItSecond.next();
+				while(dataItSecond.hasNext()) {
+					try {
+							Statement stat = dataItSecond.next();
 							Property prop = null;
 							Resource subj = null;
 							RDFNode obj = null;
@@ -315,17 +312,15 @@ public class ChangesetTransactionConverter {
 									}	
 								}
 							}
-//							if(nbtriples % 1000000 == 0) {
-//								logger.debug("Reaching " + nbtriples + " triples over " + nbMaxtriples + ", loading...");
-//							}
-//							nbtriples++;
+							if(nbtriples % 1000000 == 0) {
+								logger.debug("Reaching " + nbtriples + " triples over " + nbMaxtriples + ", loading...");
+							}
+							nbtriples++;
 						} catch(Exception e) { // Catching the neurotic Jena parser exceptions
 							logger.trace("Exception during this line treatment: ", e);
 						}
-				});  								
-//				
-//				nbtriples = 1;
-				
+				} 								
+		
 				logger.debug("End of second reading");
 			} finally {
 				dataItSecond.close();

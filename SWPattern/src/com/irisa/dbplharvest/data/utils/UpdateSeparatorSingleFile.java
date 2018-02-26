@@ -86,7 +86,8 @@ public class UpdateSeparatorSingleFile {
 			ChangesetFile changeFile = new ChangesetFile(year, month, day, hour, number, 
 										fileID+ChangesetFile.ADDED_EXTENSION, fileID+ChangesetFile.DELETED_EXTENSION); 
 			
-			Changeset changeset = new Changeset(changeFile);  
+			// we force the canonization
+			Changeset changeset = new Changeset(changeFile, true);  
 			
 			HashSet<HashSet<Resource>> first = changeset.getAffectedResources(); 
 			System.out.println("Should be writing "+ FILE_ID_OPTION+OUTPUT_EXTENSION); 

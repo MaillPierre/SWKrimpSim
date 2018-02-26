@@ -14,6 +14,9 @@ public class ChangesetFile extends Couple<String, String> implements AbstractCha
 	
 	public static final String ADDED_EXTENSION =  ".added.nt.gz";
 	public static final String DELETED_EXTENSION =  ".removed.nt.gz";
+	
+	public static final String ADDED_CANONIZED_EXTENSION = ".added.canonized.nt.gz"; 
+	public static final String DELETED_CANONIZED_EXTENSION = ".removed.canonized.nt.gz"; 
 
 	protected String _year = "";
 	protected String _month = "";

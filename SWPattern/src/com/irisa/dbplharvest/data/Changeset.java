@@ -58,9 +58,6 @@ public class Changeset implements AbstractChangeset {
 	protected Model _deletedTriples = ModelFactory.createDefaultModel();
 	
 	protected long _numberFilteredTriples = 0; 
-	
-	
-
 
 	// it is initialized on demand
 	protected HashSet<HashSet<Resource>> _affectedResources = null; 
@@ -92,13 +89,14 @@ public class Changeset implements AbstractChangeset {
 		this._number = number;
 	}
 	
-	public Changeset(ChangesetFile chFile) {
+	public Changeset(ChangesetFile chFile, boolean canonizing) {
 		this.setYear(chFile.getYear());
 		this.setMonth(chFile.getMonth());
 		this.setDay(chFile.getDay());
 		this.setHour(chFile.getHour());
 		this.setNumber(chFile.getNumber());
-		readFiles(chFile);
+		// if canonizing is false, it just read the file
+		readFiles(chFile, canonizing);
 	}
 	
 	protected String modifFilename() {
@@ -182,14 +180,16 @@ public class Changeset implements AbstractChangeset {
 //		this._modifiedResources.addAll(extractModifiedResources(_addedTriples));
 	}
 	
-	public void readFiles(ChangesetFile chFile) {
+	public void readFiles(ChangesetFile chFile, boolean canonize) {
 		if(chFile.getAddFile() != null) {
 			readAddTriples(chFile.getAddFile());
 		}
 		if(chFile.getDelFile() != null) {
 			readDeleteTriples(chFile.getDelFile());
 		}
-		this.canonize();
+		if (canonize) { 
+			this.canonize();
+		} 
 	}
 	
 //	public boolean printModifiedResources() {
