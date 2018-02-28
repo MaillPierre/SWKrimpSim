@@ -378,7 +378,7 @@ public class ChangesetTransactionConverter {
 
 
 	private void addComponentToIndexes(Resource res, RDFPatternComponent compo) {
-		logger.trace("Adding component " + compo + " for resource " + res);
+//		logger.trace("Adding component " + compo + " for resource " + res);
 			
 //		if(!this._individuals.contains(res)) {
 //			this._individuals.add(res);

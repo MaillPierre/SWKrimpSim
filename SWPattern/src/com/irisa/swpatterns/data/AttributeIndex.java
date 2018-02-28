@@ -91,9 +91,7 @@ public class AttributeIndex {
 	}
 	
 	public int getItem(RDFPatternComponent compo) {
-		if(! _attributeItemIndex.containsKey(compo)) {
-			add(compo);
-		}
+		add(compo);
 		return _attributeItemIndex.get(compo);
 	}
 	
@@ -103,28 +101,23 @@ public class AttributeIndex {
 	
 	public RDFPatternResource getComponent(Resource res, Type type) {
 		RDFPatternResource compo = new RDFPatternResource(res, type);
-		if(! contains(compo)){
-			add(compo);
-		}
+		add(compo);
 		return (RDFPatternResource) _instantiationIndex.get(compo);
 	}
 	
 	public RDFPatternPathFragment getComponent(Resource res1, Resource res2, Type type) {
-		RDFPatternPathFragment compo = new RDFPatternPathFragment(res1, res2, type);
-		if(! contains(compo)){
-			add(compo);
-		}
+		RDFPatternPathFragment compo = new RDFPatternPathFragment(res1, res2, type);	
+		add(compo);		
 		return (RDFPatternPathFragment) _instantiationIndex.get(compo);
 	}
 	
 	public void add(RDFPatternComponent attribute) {
-		if(! contains(attribute)) {
-			_attributes.add(attribute);
-			_instantiationIndex.put(attribute, attribute); 
-			if(! _attributeItemIndex.containsKey(attribute)) {
-				_attributeItemIndex.put(attribute, getAttributeNumber());
-				_itemAttributeIndex.put(_attributeItemIndex.get(attribute), attribute );
-			}
+		_attributes.add(attribute); 
+		_instantiationIndex.putIfAbsent(attribute, attribute); 
+		// I have to keep the conditional due to the way attributeNumbers are handled
+		if(! _attributeItemIndex.containsKey(attribute)) {
+			_attributeItemIndex.put(attribute, getAttributeNumber());
+			_itemAttributeIndex.put(_attributeItemIndex.get(attribute), attribute );
 		}
 	}
 

@@ -40,8 +40,6 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import com.irisa.dbplharvest.data.utils.UpdateSeparatorListFiles;
-import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
 import com.irisa.swpatterns.data.AttributeIndex;
 
@@ -170,7 +168,9 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 					
 					if (Files.exists(Paths.get(currentUpdateFilename+SEPARATED_RES_EXTENSION))) { 
 						logger.debug("reading the affected resources ...");
-						changeset.readAffectedResources(Files.newBufferedReader(Paths.get(currentUpdateFilename+SEPARATED_RES_EXTENSION)));
+						BufferedReader in = Files.newBufferedReader(Paths.get(currentUpdateFilename+SEPARATED_RES_EXTENSION)); 
+						changeset.readAffectedResources(in);
+						in.close();
 					}
 					else { 
 						// we force to calculate them if they are not precalculated
