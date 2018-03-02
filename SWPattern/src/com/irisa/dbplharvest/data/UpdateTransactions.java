@@ -59,7 +59,7 @@ public class UpdateTransactions implements AbstractChangeset {
 		this.setDay(upFile.getDay());
 		this.setHour(upFile.getHour());
 		this.setNumber(upFile.getNumber());
-		
+		logger.debug("reading "+upFile.getBaseFilename());
 		if (upFile.isNonEmptyTrans()) { 
 			this.readFile(upFile.getBaseFilename()+UpdateTransactionsFile.TRANSACTIONS_EXTENSION); 
 		}
@@ -214,14 +214,5 @@ public class UpdateTransactions implements AbstractChangeset {
 		strBldr.append("-");
 		strBldr.append(this._number);
 		return strBldr.toString(); 
-		
-		
-		
-		
-		
-		
-		
-		
-		
 	}
 }

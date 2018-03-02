@@ -21,8 +21,10 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import com.irisa.dbplharvest.data.ModelEvolver;
 import com.irisa.dbplharvest.data.UpdateTransactions;
 import com.irisa.dbplharvest.data.UpdateTransactionsFile;
 import com.irisa.krimp.CodeTable;
@@ -32,6 +34,8 @@ import com.irisa.swpatterns.measures.Measures;
 import com.irisa.utilities.Couple;
 
 public class UpdateMeasuresCalculatorSingleFile {
+	
+	private static Logger logger = Logger.getLogger(UpdateMeasuresCalculatorSingleFile.class);
 	
 	public static String RESULTS_FILE_OPTION = "resultsFile"; 
 	public static String CT_OPTION = "CT"; 
@@ -87,6 +91,8 @@ public class UpdateMeasuresCalculatorSingleFile {
 			else {
 				itemCT = Utils.readItemsetSetFile(CTFilename);  
 			}
+			logger.debug("itemCT"); 
+			logger.debug(itemCT); 
 			
 			// we load the updateFile 
 			StringTokenizer filenameParser = new StringTokenizer(updateFileID, File.separator);
@@ -115,19 +121,24 @@ public class UpdateMeasuresCalculatorSingleFile {
 				long firstCodTime = 0; 
 				long secondCodTime = 0; 
 				long start = 0; 
+				logger.debug(updates.getUpdateTransactions()+ " updates");
 				for (Couple<ItemsetSet, ItemsetSet> upd: updates.getUpdateTransactions() ) {
 					firstCodLength = 0.0; 
 					secondCodLength = 0.0; 
 					firstTransNumber = 0; 
 					secondTransNumber = 0;
 					innerID++; 
-					start = System.nanoTime(); 
+					start = System.nanoTime();
+					logger.debug("--- first");
+					logger.debug(upd.getFirst()); 
 					if (!upd.getFirst().isEmpty()) { 
 						firstCodLength = Measures.codificationLengthApplyingLaplaceSmoothing(upd.getFirst(), CT); 
 						firstTransNumber = upd.getFirst().size(); 
 					} 
 					firstCodTime = System.nanoTime()-start; 
-					start = System.nanoTime(); 
+					start = System.nanoTime();
+					logger.debug("second");
+					logger.debug(upd.getSecond());
 					if (!upd.getSecond().isEmpty()) { 
 						secondCodLength = Measures.codificationLengthApplyingLaplaceSmoothing(upd.getSecond(), CT); 
 						secondTransNumber = upd.getSecond().size(); 

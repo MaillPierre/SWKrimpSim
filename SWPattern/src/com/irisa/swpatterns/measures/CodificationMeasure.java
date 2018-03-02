@@ -2,6 +2,7 @@ package com.irisa.swpatterns.measures;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -247,6 +248,8 @@ public class CodificationMeasure {
 	
 	/** 
 	 * Codifying function according to the KRIMP paper
+	 * It updates the code table with the non-seen singletons 
+	 * as it is oriented to scenarios where we have to update the 
 	 * 
 	 * @param trans
 	 * @return
@@ -351,17 +354,41 @@ public class CodificationMeasure {
 	 */
 	
 	private Couple<ItemsetSet, KItemset> codifyAware (KItemset trans)  {
+		
 		KItemset auxTrans = new KItemset(trans);
 		ItemsetSet result = new ItemsetSet(); 
 		Iterator<KItemset> itIs = this._codetable.codeIterator();
 		KItemset auxCode = null; 
-		while (itIs.hasNext() && (auxTrans.size() != 0) ) {
+		boolean lengthOneReached = false;
+
+		while (itIs.hasNext() && (auxTrans.size() != 0) && (!lengthOneReached))  { // Searching for the cover
 			auxCode = itIs.next(); 
-			if (auxTrans.containsAll(auxCode)) {
-				result.add(auxCode); 
-				auxTrans = auxTrans.substraction(auxCode); 
+			if (auxCode.size()!=1) {
+				// we check all the codes that are not singletons
+				if (auxTrans.containsAll(auxCode)) {
+					result.add(auxCode); 
+					auxTrans = auxTrans.substraction(auxCode); 
+				}
+			}
+			else {
+				lengthOneReached = true;
 			}
 		}
+		// now we treat all the remaining elements in auxTrans as 
+		// singletons
+
+		if (!auxTrans.isEmpty()) {
+			KItemset remainingSingletons = new KItemset(auxTrans);
+			HashMap<Integer, KItemset> oneLength = this._codetable.getOneLengthCodes();
+ 			for(int item : remainingSingletons) {
+				if (oneLength.containsKey(item)) {
+					auxTrans=auxTrans.substraction(oneLength.get(item));
+					result.add(oneLength.get(item));
+				}
+				// auxTrans keep the singletons that haven't been found 
+			}
+		}
+		
 		// currently, trans can be non-empty
 		// we return both the codes used, and the remaining non-covered part of the transaction (new items) 
 		return new Couple<ItemsetSet, KItemset>(result, auxTrans); 
@@ -404,23 +431,38 @@ public class CodificationMeasure {
 	
 	
 	public void applyLaplaceSmoothingToUsages () {
-		
-		for (KItemset key: this._codetable.getCodes()) {
-			key.setUsage(key.getUsage()+1);
-		}
+			
+		HashSet<Integer> addedItems = new HashSet<Integer>();  
 		
 		// we now add the singletons that might not have been seen in the new database
 		Integer currentItem = null;
-		KItemset currentKey = null; 
+		KItemset currentKey = null;
+		HashMap<Integer, KItemset> oneLength = this._codetable.getOneLengthCodes();
+//		logger.debug("List of items: "+ this._transactions.knownItems()); 
 	    for (Iterator<Integer> itemIter = this._transactions.knownItems().iterator(); itemIter.hasNext(); ){
 	    	currentItem = itemIter.next(); 
-	    	currentKey = Utils.createCodeSingleton(currentItem); 
-	    	
-	    	if (!this._codetable.contains(currentKey)) {
-	    		currentKey.setUsage(1);
-	    		this._codetable.addSingleton(currentKey); 
+	    	if (!oneLength.containsKey(currentItem)) {
+	    		KItemset singleton = Utils.createCodeSingleton(currentItem, 0, 1); 
+	    		this._codetable.addSingleton(singleton);
+	    		addedItems.add(currentItem); 
+	    	}
+	    	else { 
+	    		// the items used in the transactions might be exposed, and not being used by any upper code
+	    		KItemset aux = oneLength.get(currentItem); 
+	    		aux.setUsage(aux.getUsage()+1);
 	    	}
 	    }	
+//	    logger.debug("List of new items: "+addedItems);
+	    
+	    if (!addedItems.isEmpty()) { 
+	    	// we have to apply +1 to all the ones of not length 1 that were already in the code table
+		    for (KItemset key: this._codetable.getCodes()) {
+		    	if (key.size() > 1) { 
+		    		key.setUsage(key.getUsage()+1);
+		    	} 
+			}
+	    }
+	    
 		this._codetable.recomputeUsageTotal(); 
 	}
 	
@@ -455,8 +497,5 @@ public class CodificationMeasure {
 		}
 		return r.toString();
 	}
-	
-	
-	
 	
 }
