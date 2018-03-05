@@ -142,7 +142,6 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 						auxStack.push(filenameParser.nextToken());
 					}
 					
-					String filenameBase = auxStack.pop(); 
 					String number = auxStack.pop(); 
 					String hour = auxStack.pop(); 
 					String day = auxStack.pop(); 

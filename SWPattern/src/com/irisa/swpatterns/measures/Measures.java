@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
+import com.irisa.utilities.Couple;
 
 public class Measures {
 	
@@ -235,7 +236,34 @@ public class Measures {
 		return measure.codificationLength();  		
 	}
 	
+	/** 
+	 * Codify a set of transactions using a CT that might not include all the items
+	 * To avoid potential problems with previously non-used singletons and new singletons 
+	 * introduced by new items, this method assumes to the new items
+	 * by giving them the longest codes (result of the laplace Smoothing). 
+	 * 
+	 * Returns also the codification length using the SCT associated to CT
+	 *
+	 * @param D1
+	 * @param CT1 
+	 * @return 
+	 */
 	
+	public static Couple<Double, Double> codificationLengthApplyingLaplaceSmoothingIncludingSCT (ItemsetSet D1, CodeTable CT1) {
+		
+		Couple<Double, Double> result = null; 
+		// we have to clone and smooth the codeTable 
+		CodificationMeasure measure = new CodificationMeasure(D1, CT1);
+		// we change the database without updating anything but the dataIndex
+		// we applyLaplaceSmoothing for perplexity purposes
+		measure.applyLaplaceSmoothingToUsages();
+		
+		double resultCT = measure.codificationLength(); 
+		double resultSCT = measure.codificationLengthAccordingSCT(); 
+		
+		// second we get the size of the database D1 codified with the
+		return new Couple(resultCT, resultSCT) ;  		
+	}
 	
 	
 }

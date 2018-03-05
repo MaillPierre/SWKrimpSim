@@ -408,6 +408,17 @@ public class CodificationMeasure {
 		return result; 
 	}
 	
+	public double codificationLengthAccordingSCT () {
+		double result = 0.0;
+		result = this._transactions.parallelStream().mapToDouble(e ->transactionCodificationLengthAccordingSCT(e)).sum();
+		
+		// nonparallel for debugging purposes 
+//		result = this._transactions.stream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+
+		return result; 
+	}
+	
+	
 	public double transactionCodificationLength (KItemset it) {
 		ItemsetSet codes = null; 
 		double result = 0.0; 
@@ -429,38 +440,85 @@ public class CodificationMeasure {
 		return result; 
 	}
 	
+	public double transactionCodificationLengthAccordingSCT  (KItemset it) { 
+		double result = 0.0; 
+		if (!this._codetable.isStandard()) {
+			for (Integer id: it.getItems()) { 
+				double codelength = codeLengthOfcode(this._codetable.getStandardCodeTable(), 
+											this._codetable.getStandardCodeTable().getOneLengthCodes().get(id));
+//				logger.debug(code + " codelength: "+codelength);
+				try {
+					assert ! Double.isInfinite(codelength);
+				}
+				catch (AssertionError e) {
+					logger.debug(id + " codelength: "+codelength);
+
+					System.exit(-1);
+				}
+				result += codelength; 				
+			}
+		}
+		return result; 
+	}
+	
+	/* only to be applied to non-stc code tables */ 
 	
 	public void applyLaplaceSmoothingToUsages () {
 			
-		HashSet<Integer> addedItems = new HashSet<Integer>();  
+		HashSet<Integer> addedItems = new HashSet<Integer>(); 
+		ArrayList<KItemset> addedSingletons = new ArrayList<KItemset>(); 
 		
 		// we now add the singletons that might not have been seen in the new database
 		Integer currentItem = null;
-		KItemset currentKey = null;
 		HashMap<Integer, KItemset> oneLength = this._codetable.getOneLengthCodes();
 //		logger.debug("List of items: "+ this._transactions.knownItems()); 
 	    for (Iterator<Integer> itemIter = this._transactions.knownItems().iterator(); itemIter.hasNext(); ){
 	    	currentItem = itemIter.next(); 
-	    	if (!oneLength.containsKey(currentItem)) {
-	    		KItemset singleton = Utils.createCodeSingleton(currentItem, 0, 1); 
-	    		this._codetable.addSingleton(singleton);
-	    		addedItems.add(currentItem); 
-	    	}
-	    	else { 
-	    		// the items used in the transactions might be exposed, and not being used by any upper code
-	    		KItemset aux = oneLength.get(currentItem); 
-	    		aux.setUsage(aux.getUsage()+1);
-	    	}
+	    	if (!addedItems.contains(currentItem)) { 
+		    	if (!oneLength.containsKey(currentItem) ) {
+		    		KItemset singleton = Utils.createCodeSingleton(currentItem, 0, 1); 
+		    		addedSingletons.add(singleton); 
+		    		addedItems.add(currentItem); 
+		    	}
+		    	else { 
+		    		// the items used in the transactions might be exposed, and not being used by any upper code
+		    		KItemset aux = oneLength.get(currentItem); 
+		    		aux.setUsage(aux.getUsage()+1);
+		    	}
+	    	} 
 	    }	
+	    
+	   
 //	    logger.debug("List of new items: "+addedItems);
 	    
-	    if (!addedItems.isEmpty()) { 
+	    if (!addedItems.isEmpty()) {
+	    	
+	    	// first of all, we add them 
+	    	// before it was done one by one ... with an ordering op for each of them
+	    	this._codetable.addSingletons(addedSingletons);
+	    	
 	    	// we have to apply +1 to all the ones of not length 1 that were already in the code table
 		    for (KItemset key: this._codetable.getCodes()) {
 		    	if (key.size() > 1) { 
 		    		key.setUsage(key.getUsage()+1);
 		    	} 
 			}
+		    
+		    // we have also to update the codes in the STC 
+		    // its a little bit tricky, as we don't have to 
+		    // update the ones exposed (as they are already well updated in the STC)
+		    CodeTable stc = this._codetable.getStandardCodeTable();
+		    stc.getOneLengthCodes().keySet().forEach(key -> { 
+		    	int currentValue = stc.getOneLengthCodes().get(key).getUsage(); 
+		    	assert stc.getOneLengthCodes().get(key).getUsage() == 
+		    			stc.getOneLengthCodes().get(key).getSupport(); 
+		    	
+		    	currentValue++; 
+		    	stc.getOneLengthCodes().get(key).setUsage(currentValue);
+		    	stc.getOneLengthCodes().get(key).setSupport(currentValue);
+		    });
+		    stc.addSingletons(addedSingletons);
+		    stc.recomputeUsageTotal();
 	    }
 	    
 		this._codetable.recomputeUsageTotal(); 
@@ -473,6 +531,8 @@ public class CodificationMeasure {
 	public double codeLengthOfCode(KItemset code) {
 		return codeLengthOfcode(_codetable, code);
 	}
+	
+	
 
 	public String toString() {
 		

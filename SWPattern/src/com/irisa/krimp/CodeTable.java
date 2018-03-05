@@ -115,13 +115,15 @@ public class CodeTable {
 	private static ItemsetSet generateStandardCodeTableCodes(ItemsetSet codes) {
 		ItemsetSet stdCodes = new ItemsetSet();
 		HashMap<Integer, Integer> stdUsagesMap = new HashMap<Integer, Integer>();
-		
+		int totalUsage = 0; 
 		for(KItemset code : codes) {
+			// we have to update the total usage also of the STC
+			totalUsage += code.getUsage()*code.size(); 
 			for(int item : code) {
 				if(stdUsagesMap.get(item) == null) {
 					stdUsagesMap.put(item, 0);
 				}
-				stdUsagesMap.put(item, stdUsagesMap.get(item) + code.getUsage());
+				stdUsagesMap.put(item, stdUsagesMap.get(item) + code.getUsage());				
 			}
 		}
 		
@@ -129,9 +131,9 @@ public class CodeTable {
 			KItemset singleton = Utils.createCodeSingleton(item);
 			singleton.setSupport(stdUsagesMap.get(item));
 			singleton.setUsage(stdUsagesMap.get(item));
-			
 			stdCodes.add(singleton);
 		}
+		
 		
 		return stdCodes;
 	}

@@ -51,7 +51,7 @@ public class UpdateMeasuresCalculator {
 	public static String VREEKEN_OPTION = "vreekenFormat"; 
 	public static String HELP_OPTION = "help"; 
 	
-	public static String RESULTS_HEADERS = "CT;updateID;prevCodSize;postCodSize;#prevTransactions;#postTransactions;prevCodTime;postCodTime";  
+	public static String RESULTS_HEADERS = "CT;updateID;prevCodSize;prevCodSizeSCT;postCodSize;postCodSizeSCT;#prevTransactions;#postTransactions;prevCodTime;postCodTime";  
 			
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
@@ -118,7 +118,6 @@ public class UpdateMeasuresCalculator {
 						auxStack.push(filenameParser.nextToken());
 					}
 					
-					String filenameBase = auxStack.pop(); 
 					String number = auxStack.pop(); 
 					String hour = auxStack.pop(); 
 					String day = auxStack.pop(); 
@@ -130,32 +129,36 @@ public class UpdateMeasuresCalculator {
 				
 					if (!updates.isEmpty()) { 
 						CodeTable CT = new CodeTable(itemCT);
-						double firstCodLength = 0.0; 
-						double secondCodLength = 0.0; 
+						Couple<Double,Double> firstCodLength; 
+						Couple<Double,Double> secondCodLength; 
 						long firstTransNumber = 0; 
 						long secondTransNumber = 0; 
 						long innerID = 0; 
 						long firstCodTime = 0; 
 						long secondCodTime = 0; 
 						long start = 0; 
-						for (Couple<ItemsetSet, ItemsetSet> upd: updates.getUpdateTransactions() ) {
-							firstCodLength = 0.0; 
-							secondCodLength = 0.0; 
+						for (Couple<ItemsetSet, ItemsetSet> upd: updates.getUpdateTransactions() ) { 
 							firstTransNumber = 0; 
 							secondTransNumber = 0;
 							innerID++; 
 							start = System.nanoTime();
 							
 							if (!upd.getFirst().isEmpty()) { 
-								firstCodLength = Measures.codificationLengthApplyingLaplaceSmoothing(upd.getFirst(), CT); 
+								firstCodLength = Measures.codificationLengthApplyingLaplaceSmoothingIncludingSCT(upd.getFirst(), CT); 
 								firstTransNumber = upd.getFirst().size(); 
 							} 
+							else { 
+								firstCodLength = new Couple<Double, Double>(0.0,0.0);
+							}
 							firstCodTime = System.nanoTime()-start; 
 							start = System.nanoTime();
 							
 							if (!upd.getSecond().isEmpty()) { 
-								secondCodLength = Measures.codificationLengthApplyingLaplaceSmoothing(upd.getSecond(), CT); 
+								secondCodLength = Measures.codificationLengthApplyingLaplaceSmoothingIncludingSCT(upd.getSecond(), CT); 
 								secondTransNumber = upd.getSecond().size(); 
+							}
+							else { 
+								secondCodLength = new Couple<Double, Double> (0.0,0.0);
 							}
 							secondCodTime = System.nanoTime()-start; 
 							
@@ -164,11 +167,15 @@ public class UpdateMeasuresCalculator {
 							strBldr.append(";");
 							strBldr.append(updates.getID());
 							strBldr.append("-"); 
-							strBldr.append(innerID); 
+							strBldr.append(String.format("%010d", innerID)); 
 							strBldr.append(";");
-							strBldr.append(firstCodLength); 
+							strBldr.append(firstCodLength.getFirst());
+							strBldr.append(";"); 
+							strBldr.append(firstCodLength.getSecond());
 							strBldr.append(";");
-							strBldr.append(secondCodLength);
+							strBldr.append(secondCodLength.getFirst());
+							strBldr.append(";");
+							strBldr.append(secondCodLength.getSecond());
 							strBldr.append(";");
 							strBldr.append(firstTransNumber);
 							strBldr.append(";");

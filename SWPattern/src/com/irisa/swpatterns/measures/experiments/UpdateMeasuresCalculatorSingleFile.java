@@ -44,7 +44,7 @@ public class UpdateMeasuresCalculatorSingleFile {
 	public static String VREEKEN_OPTION = "vreekenFormat"; 
 	public static String HELP_OPTION = "help"; 
 	
-	public static String RESULTS_HEADERS = "CT;updateID;prevCodSize;postCodSize;#prevTransactions;#postTransactions;prevCodTime;postCodTime";  
+	public static String RESULTS_HEADERS = "CT;updateID;prevCodSize;prevCodSizeSCT;postCodSize;postCodSizeSCT;#prevTransactions;#postTransactions;prevCodTime;postCodTime";  
 			
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
@@ -101,7 +101,6 @@ public class UpdateMeasuresCalculatorSingleFile {
 				auxStack.push(filenameParser.nextToken());
 			}
 			
-			String filenameBase = auxStack.pop(); 
 			String number = auxStack.pop(); 
 			String hour = auxStack.pop(); 
 			String day = auxStack.pop(); 
@@ -113,8 +112,8 @@ public class UpdateMeasuresCalculatorSingleFile {
 		
 			if (!updates.isEmpty()) { 
 				CodeTable CT = new CodeTable(itemCT);
-				double firstCodLength = 0.0; 
-				double secondCodLength = 0.0; 
+				Couple<Double, Double> firstCodLength; 
+				Couple<Double, Double> secondCodLength; 
 				long firstTransNumber = 0; 
 				long secondTransNumber = 0; 
 				long innerID = 0; 
@@ -123,8 +122,6 @@ public class UpdateMeasuresCalculatorSingleFile {
 				long start = 0; 
 				logger.debug(updates.getUpdateTransactions()+ " updates");
 				for (Couple<ItemsetSet, ItemsetSet> upd: updates.getUpdateTransactions() ) {
-					firstCodLength = 0.0; 
-					secondCodLength = 0.0; 
 					firstTransNumber = 0; 
 					secondTransNumber = 0;
 					innerID++; 
@@ -132,29 +129,54 @@ public class UpdateMeasuresCalculatorSingleFile {
 					logger.debug("--- first");
 					logger.debug(upd.getFirst()); 
 					if (!upd.getFirst().isEmpty()) { 
-						firstCodLength = Measures.codificationLengthApplyingLaplaceSmoothing(upd.getFirst(), CT); 
+						firstCodLength = Measures.codificationLengthApplyingLaplaceSmoothingIncludingSCT(upd.getFirst(), CT); 
 						firstTransNumber = upd.getFirst().size(); 
 					} 
+					else { 
+						firstCodLength = new Couple<Double, Double>(0.0,0.0); 
+					}
 					firstCodTime = System.nanoTime()-start; 
 					start = System.nanoTime();
 					logger.debug("second");
 					logger.debug(upd.getSecond());
 					if (!upd.getSecond().isEmpty()) { 
-						secondCodLength = Measures.codificationLengthApplyingLaplaceSmoothing(upd.getSecond(), CT); 
+						secondCodLength = Measures.codificationLengthApplyingLaplaceSmoothingIncludingSCT(upd.getSecond(), CT); 
 						secondTransNumber = upd.getSecond().size(); 
+					}
+					else { 
+						secondCodLength = new Couple<Double, Double>(0.0, 0.0); 
 					}
 					secondCodTime = System.nanoTime()-start; 
 					
 					StringBuilder strBldr = new StringBuilder(); 
 					strBldr.append(CTFilename); 
 					strBldr.append(";");
+					logger.debug(updates.getID()); 
+					logger.debug(updFile.getBaseFilename());
+					logger.debug(updFile.getYear());
+					logger.debug(updFile.getMonth());
+					logger.debug(updFile.getDay());
+					logger.debug(updFile.getHour());
+					logger.debug(updFile.getNumber());
+					logger.debug("--------");
+					logger.debug(updates.getYear());
+					logger.debug(updates.getMonth());
+					logger.debug(updates.getDay());
+					logger.debug(updates.getHour());
+					logger.debug(updates.getNumber());
+					
+					
 					strBldr.append(updates.getID());
 					strBldr.append("-"); 
-					strBldr.append(innerID); 
+					strBldr.append(String.format("%010d", innerID));
 					strBldr.append(";");
-					strBldr.append(firstCodLength); 
+					strBldr.append(firstCodLength.getFirst());
+					strBldr.append(";"); 
+					strBldr.append(firstCodLength.getSecond());
 					strBldr.append(";");
-					strBldr.append(secondCodLength);
+					strBldr.append(secondCodLength.getFirst());
+					strBldr.append(";");
+					strBldr.append(secondCodLength.getSecond());
 					strBldr.append(";");
 					strBldr.append(firstTransNumber);
 					strBldr.append(";");
