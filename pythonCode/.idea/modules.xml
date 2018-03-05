@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$USER_HOME$/pycharmWorkspace/CoverageAreas-Python/.idea/CoverageAreas-Python.iml" filepath="$USER_HOME$/pycharmWorkspace/CoverageAreas-Python/.idea/CoverageAreas-Python.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pythonCode.iml" filepath="$PROJECT_DIR$/.idea/pythonCode.iml" />
+    </modules>
+  </component>
+</project>
