@@ -3,7 +3,7 @@ package com.irisa.swpatterns.data;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.log4j.Logger;
 
-import com.irisa.jenautils.Couple;
+import com.irisa.utilities.Couple;
 
 /**
  * Encapsulate elements from Jena, either a resource or a couple of resources

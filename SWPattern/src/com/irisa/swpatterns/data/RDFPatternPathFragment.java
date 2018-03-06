@@ -6,7 +6,7 @@ import java.util.List;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.jena.rdf.model.Resource;
 
-import com.irisa.jenautils.Couple;
+import com.irisa.utilities.Couple;
 
 public class RDFPatternPathFragment extends RDFPatternComponent {
 

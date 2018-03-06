@@ -46,9 +46,12 @@ public abstract class RDFPatternComponent {
 	protected RDFPatternElement _element = null; 
 	protected Type _type;
 	
+	protected final int _elementHashcode;
+	
 	protected RDFPatternComponent(RDFPatternElement element, Type type) {
 		this._element = element;
 		this._type = type;
+		this._elementHashcode = this._element.hashCode(); 
 	}
 	
 	protected RDFPatternElement getElement() {
@@ -110,11 +113,20 @@ public abstract class RDFPatternComponent {
 	@Override
 	public boolean equals(Object o) {
 		if(o instanceof RDFPatternComponent) {
-			return ((RDFPatternComponent) o).getElement().toString().equals(this.getElement().toString()) && ((RDFPatternComponent) o).getType().toString().equals(this.getType().toString());
+			
+			return ( ((RDFPatternComponent)o).getElementHashcode() == this._elementHashcode) && 
+					  ( ((RDFPatternComponent)o).getType() == this._type ); 
+			
+//			return ((RDFPatternComponent) o).getElement().toString().equals(this.getElement().toString()) && 
+//						((RDFPatternComponent) o).getType().toString().equals(this.getType().toString());
 		}
 		return false;
 	}
 	
+	public int getElementHashcode() {
+		return _elementHashcode;
+	}
+
 	public static Comparator<RDFPatternComponent> getComparator() {
 		return new Comparator<RDFPatternComponent>() {
 			@Override

@@ -138,13 +138,13 @@ public class TestMeasures {
 			double opposedValue = -1.0; 
 			double refValue =-1.0; 
 			double evalValue = -1.0; 
-			double oldMeasure = -1.0; 
 			
 			System.out.println("Measure: " + measure);
 			
 			switch (measure) {
 			case "regular":
 				value = Measures.structuralSimilarityWithoutKeepingDistribution(transactions, comparedCT, originalCT);
+				System.err.println("one direction value: "+value); 
 				opposedValue  = Measures.structuralSimilarityWithoutKeepingDistribution(originalTransactions, originalCT, comparedCT);
 				break; 
 			case "usingLengths": 
@@ -158,22 +158,13 @@ public class TestMeasures {
 			default: 
 				break; 
 			}
-
-			CodificationMeasure oldCodMeasure1 = new CodificationMeasure(transactions, comparedCT);
-			evalValue = oldCodMeasure1.codificationLength(); 
 			
-			CodificationMeasure oldCodMeasure2 = new CodificationMeasure(transactions, originalCT);
-			oldCodMeasure2.updateUsages();
-			refValue = oldCodMeasure2.codificationLength();
-			
-			oldMeasure = refValue / evalValue; 
 						
 			System.out.println("OriginalCTFilename: "+originalCTFilename);
 			System.out.println("ComparedCTFilename: "+comparedCTFilename); 
 			System.out.println("OriginalDatasetFilename: "+originalDatasetFilename); 
 			System.out.println("DatasetFilename: "+datasetFilename); 
 			System.out.println("Vreeken Format: "+cmd.hasOption(VREEKEN_OPTION)); 
-			System.out.println("OldMeasure: "+oldMeasure);
 			System.out.println("Measure: "+value);
 			System.out.println("Opposed Measure: "+opposedValue);
 			

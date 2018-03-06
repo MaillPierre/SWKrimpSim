@@ -1,15 +1,17 @@
 package com.irisa.krimp;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import org.apache.jena.sparql.function.library.e;
 import org.apache.log4j.Logger;
 
 import com.irisa.exception.LogicException;
-import com.irisa.jenautils.Couple;
+import com.irisa.utilities.Couple;
 import com.irisa.krimp.data.DataIndexes;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
@@ -40,6 +42,10 @@ public class CodeTable {
 	
 	private boolean _standardFlag = false; // Set true if it is the standard codetable
 	private CodeTable _standardCT = null; // Codetable containing only singletons for the coding length of a CT
+	
+	// CB: speed up for codification purposes
+	private HashMap<Integer, KItemset> _oneLengthCodes = new HashMap<Integer, KItemset> (); 
+	
 	
 	@Deprecated
 	/**
@@ -88,9 +94,14 @@ public class CodeTable {
 		this._standardFlag = standard;
 		if(standard) {
 			this._codes = generateStandardCodeTableCodes(codes);
+			// CB: we add all of them to the oneLengthCodes
+			this._codes.forEach(e -> this._oneLengthCodes.put(e.getItems()[0], e));
 			
 		} else {
 			this._codes = codes;
+			// CB: we only add the oneLengthCodes
+			this._codes.forEach(e -> {if (e.size()==1) 
+											this._oneLengthCodes.put(e.getItems()[0], e); }); 
 			this._standardCT = new CodeTable(codes, true);
 		}
 		recomputeUsageTotal();
@@ -104,13 +115,15 @@ public class CodeTable {
 	private static ItemsetSet generateStandardCodeTableCodes(ItemsetSet codes) {
 		ItemsetSet stdCodes = new ItemsetSet();
 		HashMap<Integer, Integer> stdUsagesMap = new HashMap<Integer, Integer>();
-		
+		int totalUsage = 0; 
 		for(KItemset code : codes) {
+			// we have to update the total usage also of the STC
+			totalUsage += code.getUsage()*code.size(); 
 			for(int item : code) {
 				if(stdUsagesMap.get(item) == null) {
 					stdUsagesMap.put(item, 0);
 				}
-				stdUsagesMap.put(item, stdUsagesMap.get(item) + code.getUsage());
+				stdUsagesMap.put(item, stdUsagesMap.get(item) + code.getUsage());				
 			}
 		}
 		
@@ -118,9 +131,9 @@ public class CodeTable {
 			KItemset singleton = Utils.createCodeSingleton(item);
 			singleton.setSupport(stdUsagesMap.get(item));
 			singleton.setUsage(stdUsagesMap.get(item));
-			
 			stdCodes.add(singleton);
 		}
+		
 		
 		return stdCodes;
 	}
@@ -672,11 +685,43 @@ public class CodeTable {
 	 * @param code
 	 */
 	public void addSingleton(KItemset code) {
-		if(code.size() == 1 && ! this._codes.contains(code)) {
-			for(KItemset otherCode: this._codes) {
-				assert (! otherCode.contains(code)); // tmp safety test to check if their is no need to update usages
+
+//		if(code.size() == 1 && ! this._codes.contains(code) && !this._oneLengthCodes.containsKey(code.getItems()[0])) {			
+		// CB: we get rid of the search in the Linked list (contains) and check among the one size codes
+		if(code.size() == 1 && !this._oneLengthCodes.containsKey(code.getItems()[0])) {			
+			
+			if (!this._oneLengthCodes.containsKey(code.getItems()[0])) {
+				this._codes.addLast(code);
+				this._oneLengthCodes.put(code.getItems()[0], code);
+				// we only call the ordering if something has been modified
+				orderCodesStandardCoverageOrder();
+				logger.debug(code + " added");
 			}
-			this._codes.addLast(code);
+		}
+//		else{
+//			logger.debug(code+" already included");
+//		}
+	}
+	
+	/**
+	 * Add a set of codes to the end of the code table before reordering in coverageOrder. This code MUST NOT overlap with any existing code
+	 * @param codes
+	 */
+	public void addSingletons(ArrayList<KItemset> codes) {
+		
+		for (KItemset code: codes) {
+//			if(code.size() == 1 && ! this._codes.contains(code)) {
+			// CB: substituted the mo
+			if(code.size() == 1 && !this._oneLengthCodes.containsKey(code.getItems()[0])) {
+//				for(KItemset otherCode: this._codes) {
+//					assert (! otherCode.contains(code)); // tmp safety test to check if their is no need to update usages
+//				}
+				this._codes.addLast(code);
+				this._oneLengthCodes.put(code.getItems()[0], code);
+			}
+//			else{
+//				logger.debug(code+" already included");
+//			}
 		}
 		orderCodesStandardCoverageOrder();
 	}
@@ -758,6 +803,10 @@ public class CodeTable {
 	    	}
 	    }	
 		_usageTotal += totalAdded; 
+	}
+	
+	public HashMap<Integer,KItemset> getOneLengthCodes () {
+		return _oneLengthCodes; 
 	}
 	
 }

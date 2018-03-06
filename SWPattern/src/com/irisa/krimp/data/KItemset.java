@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import org.apache.jena.ext.com.google.common.collect.Lists;
 
@@ -15,6 +16,7 @@ public class KItemset extends HashSet<Integer> {
 	private int _usage = 0;
 
 	public KItemset() {
+		super(); 
 	}
 
 	public KItemset(Collection<? extends Integer> arg0) {
@@ -43,6 +45,11 @@ public class KItemset extends HashSet<Integer> {
 		super(initialCapacity, loadFactor);
 	}
 
+	public KItemset(String parseable) { 
+		super(); 
+		this.parseTransactionString(parseable);
+	}
+	
 	public int getSupport() {
 		return this._support;
 	}
@@ -112,6 +119,11 @@ public class KItemset extends HashSet<Integer> {
 	public void setUsage(int usage) {
 		this._usage = usage;
 	}
+	
+	/** to be able to use streams and parallelization when updating the usages **/ 
+	public synchronized void incrementUsageAtomically() {
+		this._usage++; 
+	}
 
 	public String getLabel() {
 		return _label;
@@ -121,4 +133,32 @@ public class KItemset extends HashSet<Integer> {
 		this._label = _label;
 	}
 
+	// required to handle the KItemsets in files 
+	public String toString() { 
+		StringBuilder result = new StringBuilder(); 
+		for (Integer i: this) { 
+			result.append(i); 
+			result.append(" "); 
+		}
+		return result.toString();
+	}
+	
+	public void parseTransactionString (String value) { 
+		StringTokenizer tokenizer = new StringTokenizer(value, " "); 
+		while (tokenizer.hasMoreElements()) { 
+			this.add(Integer.valueOf(tokenizer.nextToken())); 
+		}
+	}
+	// small test for the latest parsing additions
+	public static void main(String[] args) {
+		KItemset test = new KItemset(); 
+		test.parseTransactionString("1 2 3 4 5");
+		System.out.println(test); 
+		test.add(6); 
+		System.out.println(test); 
+		System.out.println(test.toString()); 
+		
+		KItemset test2 = new KItemset(test.toString());
+		System.out.println("test2: "+test2);
+	}
 }

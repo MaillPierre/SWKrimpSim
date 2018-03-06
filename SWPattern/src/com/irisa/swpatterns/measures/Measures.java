@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
+import com.irisa.utilities.Couple;
 
 public class Measures {
 	
@@ -46,27 +47,35 @@ public class Measures {
 		// first we get the size of the database D1 codified with its own CT
 		CodificationMeasure measure1 = new CodificationMeasure(D1, CT1);
 		double evalKrimpSize = 0.0;
+		long start = System.nanoTime(); 
 		try {
 			evalKrimpSize = measure1.codificationLength();
+			logger.debug("Original dataset codification:  "+(((double)(System.nanoTime()-start))/(double)1000000)+" ms"); 
+			
 		} catch(AssertionError e) {
 			logger.debug(CT1);
 			throw e;
 		}
+		logger.debug("evalSize: "+evalKrimpSize);
 		
 		// we clone the CT2
 		// the usages are updated in the init() method
 		// we reuse as much as possible the information already calculated in the previous CTs
 		CodificationMeasure measure2 = new CodificationMeasure(D1, CT2);
+		start = System.nanoTime(); 
 		measure2.updateUsages();
+		logger.debug("Update usages: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms"); 
 		
 		double refKrimpSize = 0.0; 
 		try {
-			refKrimpSize = measure2.codificationLength(); 
+			logger.debug("OUT: "+D1.size());
+			start = System.nanoTime(); 
+			refKrimpSize = measure2.codificationLength();
+			logger.debug("Compared dataset codification:  "+(((double)(System.nanoTime()-start))/(double)1000000)+" ms"); 
 		} catch(AssertionError e) {
 			logger.debug(CT2);
 			throw e;
 		}
-		
 //		logger.debug("structuralSimilarityWithoutKeepingDistribution " + refKrimpSize +  " / " + evalKrimpSize);
 		assert evalKrimpSize > 0.0; 
 		return refKrimpSize / evalKrimpSize; 		
@@ -127,16 +136,23 @@ public class Measures {
 
 		// first we get the size of the database D1 codified with its own CT
 		CodificationMeasure measure1 = new CodificationMeasure(D1, CT1);
+	
+		long start = System.nanoTime(); 
 		double evalKrimpSize = measure1.codificationLength();
-		
+		logger.debug("Original dataset codification:  "+(((double)(System.nanoTime()-start))/(double)1000000)+" ms"); 
+
 		// we clone the CT2
 		// the usages are updated in the init() method
 		// we reuse as much as possible the information already calculated in the previous CTs
 		CodificationMeasure measure2 = new CodificationMeasure(D1, CT2);
+		start = System.nanoTime();
 		measure2.updateUsages();
+		logger.debug("Update usages: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms"); 
 		
+		start = System.nanoTime(); 
 		double refKrimpSize = measure2.codificationLength(); 
-		
+		logger.debug("Compared dataset codification:  "+(((double)(System.nanoTime()-start))/(double)1000000)+" ms"); 
+
 		assert evalKrimpSize > 0.0; 
 		
 		logger.trace("structuralSimilarityWithoutKeepingDistributionUsingLengths = ( " + refKrimpSize + " + " + measure2.codetableCodeLength() + " / (" + evalKrimpSize + " + " + measure1.codetableCodeLength() + " )");
@@ -220,7 +236,67 @@ public class Measures {
 		return measure.codificationLength();  		
 	}
 	
+	/** 
+	 * Codify a set of transactions using a CT that might not include all the items
+	 * To avoid potential problems with previously non-used singletons and new singletons 
+	 * introduced by new items, this method assumes to the new items
+	 * by giving them the longest codes (result of the laplace Smoothing). 
+	 * 
+	 * Returns also the codification length using the SCT associated to CT
+	 *
+	 * @param D1
+	 * @param CT1 
+	 * @return 
+	 */
+	
+	public static Couple<Double, Double> codificationLengthApplyingLaplaceSmoothingIncludingSCT (ItemsetSet D1, CodeTable CT1) {
+		
+		Couple<Double, Double> result = null; 
+		// we have to clone and smooth the codeTable 
+		CodificationMeasure measure = new CodificationMeasure(D1, CT1);
+		// we change the database without updating anything but the dataIndex
+		// we applyLaplaceSmoothing for perplexity purposes
+		measure.applyLaplaceSmoothingToUsages();
+		
+		double resultCT = measure.codificationLength(); 
+		double resultSCT = measure.codificationLengthAccordingSCT(); 
+		
+		// second we get the size of the database D1 codified with the
+		return new Couple<Double, Double>(resultCT, resultSCT) ;  		
+	}
 	
 	
+	/** 
+	 * Codify both states q and q' of an update using the same CT 
+	 * in the same status
+	 *
+	 * @param q 
+	 * @param qPrima 
+	 * @param CT1 
+	 * @return 
+	 */
+	
+	public static Couple<Couple<Double, Double>, Couple<Double, Double>> codifyUpdateStatesApplyingLaplaceSmoothingIncludingSCT (ItemsetSet q, ItemsetSet qPrima, CodeTable CT1) {
+		
+		ItemsetSet union = new ItemsetSet(); 
+		union.addAll(q); 
+		union.addAll(qPrima); 
+		// we have to clone and smooth the codeTable 
+		CodificationMeasure measure = new CodificationMeasure(union, CT1);
+		// we change the database without updating anything but the dataIndex
+		// we applyLaplaceSmoothing for perplexity purposes
+		measure.applyLaplaceSmoothingToUsages();
+		
+		// now, with the same codeTable, already containing the union
+		// we codify the transactions separatedly
+		
+		double resultQCT = measure.codificationLengthExternal(q); 
+		double resultQSCT = measure.codificationLengthAccordingSCTExternal(q);
+		double resultQPrimaCT = measure.codificationLengthExternal(qPrima); 
+		double resultQPrimaSCT = measure.codificationLengthAccordingSCTExternal(qPrima); 
+		
+		// second we get the size of the database D1 codified with the
+		return new Couple<>	(new Couple<>(resultQCT, resultQSCT), new Couple<>(resultQPrimaCT, resultQPrimaSCT)) ;  		
+	}
 	
 }

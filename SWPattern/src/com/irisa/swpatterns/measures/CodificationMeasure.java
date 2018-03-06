@@ -1,11 +1,14 @@
 package com.irisa.swpatterns.measures;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import com.irisa.exception.LogicException;
-import com.irisa.jenautils.Couple;
+import com.irisa.utilities.Couple;
 import com.irisa.krimp.CodeTable;
 import com.irisa.krimp.data.ItemsetSet;
 import com.irisa.krimp.data.KItemset;
@@ -57,15 +60,54 @@ public class CodificationMeasure {
 	 */
 	private static double probabilisticDistrib(CodeTable ct, KItemset code) {
 		int codeUsage = code.getUsage();
-		if(codeUsage == 0 && ct.contains(code)) {
-			try { // Using a bit of code using java8 and lambda stuff found on the web
-			Optional<KItemset> value = ct.getCodes()
-	            .stream()
-	            .filter(a -> a.equals(code))
-	            .findFirst();
-			codeUsage = value.get().getUsage();
-			} catch(NoSuchElementException e) {
-				logger.error("Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+//		if(codeUsage == 0 && ct.contains(code)) {	
+		if(codeUsage == 0) {
+			// we look for it in the table
+			if (code.size() != 1) {
+				Optional<KItemset> value = ct.getCodes()
+		            .parallelStream()
+					.filter(a -> a.size() != 1)
+		            .filter(a -> a.equals(code))
+		            .findFirst();
+					
+				if (value.isPresent()) {
+					codeUsage = value.get().getUsage();
+				}
+				else {
+					logger.error("WO Exception: Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+				}
+				
+//				Iterator<KItemset> codes = ct.getCodes().iterator();
+//				KItemset auxValue = null; 
+//				boolean nonOne = true; 
+//				boolean found = false;
+//				while (codes.hasNext() && nonOne && !found) { 
+//					auxValue = codes.next(); 
+//					if (auxValue.size() != 1) {
+//						found = auxValue.equals(code);
+//					}
+//					else {
+//						// we have reached the part of the CT that is only singletons
+//						nonOne=false; 
+//					}
+//				}
+//				if (found) {
+//					codeUsage = auxValue.getUsage();	
+//				}
+//				else { 
+//					logger.error("WO Exception - size !=1 - Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+//				}
+				
+			}
+			else {
+				// we use the onelengthIndex to access directly to the code
+				HashMap<Integer,KItemset> oneLength = ct.getOneLengthCodes(); 
+				if (oneLength.containsKey(code.getItems()[0])) {
+					codeUsage = oneLength.get(code.getItems()[0]).getUsage();
+				}
+				else {
+					logger.error("WO Exception: Unable to retrieve probabilistic distribution of " + code +  " from the codetable.");
+				}
 			}
 		}
 		return (double) codeUsage / (double) ct.getUsageTotal();
@@ -147,26 +189,67 @@ public class CodificationMeasure {
 	 * PRE: the codeTable must be in standardCoverTable order
 	 */
 	public void updateUsages() {
-				
-		Iterator<KItemset> itCodes = this._codetable.codeIterator();
-		while(itCodes.hasNext()) {
-			KItemset code = itCodes.next();
-			code.setUsage(0); 
-		}
 		
-		for (KItemset t: this._transactions) {
-			ItemsetSet codes = this.codify(t); 
-			for (KItemset code: codes) { 
-				code.setUsage(code.getUsage()+1);
+		// we first extend the singletons with the non-seen ones to 
+		// avoid concurrent modifications
+		ArrayList<KItemset> newOnes = new ArrayList<>();
+		logger.debug("known Items: "+this._transactions.knownItems().size()); 
+		HashMap<Integer,KItemset> oneLengthCodes = this._codetable.getOneLengthCodes();
+		for (Integer codeInt: this._transactions.knownItems()) {
+			
+//			Optional<KItemset> value = this._codetable.getCodes()
+//	            .stream()
+//	            .filter(a -> a.equals(Utils.createCodeSingleton(codeInt)))
+//	            .findFirst();
+//			if (!value.isPresent()) {
+//				// we create them with support 0 on purpose to them being 
+//				// added to the end of the code table in standard cover order
+//				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1)); 
+//			}		
+			
+			if (!oneLengthCodes.containsKey(codeInt)) {
+				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1));
 			}
+		}
+//		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
+		if (!newOnes.isEmpty()) {
+			this._codetable.addSingletons(newOnes);
+			logger.debug("Singletons added: "+newOnes.size());
+			logger.debug("---");
+//			logger.debug(this._codetable.toString());
+//			logger.debug(this._codetable.getOneLengthCodes().keySet());
 			
 		}
+		long start = System.nanoTime();
+		// it should already be in standard coverage order
+		this._codetable.orderCodesStandardCoverageOrder();
+		logger.debug("Ordering CT: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		// we should be now safe 
 		
+		start = System.nanoTime(); 
+		this._codetable.getCodes().parallelStream().forEach(e -> e.setUsage(0));
+		logger.debug("Setting 0: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		start = System.nanoTime(); 
+		this._transactions.parallelStream().forEach(e -> this.updateUsagesTransaction(e));
+		logger.debug("UpdateTransactions: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		start = System.nanoTime(); 
 		this._codetable.recomputeUsageTotal();
+		logger.debug("RecomputingUsageTotal: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		
 	}
+	
+	public void updateUsagesTransaction (KItemset transaction) {
+		ItemsetSet codes = this.codify(transaction);
+		for (KItemset code: codes) { 
+			code.incrementUsageAtomically(); 
+		}
+	}
+	
 	
 	/** 
 	 * Codifying function according to the KRIMP paper
+	 * It updates the code table with the non-seen singletons 
+	 * as it is oriented to scenarios where we have to update the 
 	 * 
 	 * @param trans
 	 * @return
@@ -176,23 +259,85 @@ public class CodificationMeasure {
 		ItemsetSet result = new ItemsetSet(); 
 		Iterator<KItemset> itIs = this._codetable.codeIterator();
 		KItemset auxCode = null; 
-		while (itIs.hasNext() && (auxTrans.size() != 0) ) { // Searching for the cover
+		boolean lengthOneReached = false;
+//		int execs = 0; 
+//		long start = System.nanoTime();
+		while (itIs.hasNext() && (auxTrans.size() != 0) && (!lengthOneReached))  { // Searching for the cover
 			auxCode = itIs.next(); 
-			if (auxTrans.containsAll(auxCode)) {
-				result.add(auxCode); 
-				auxTrans = auxTrans.substraction(auxCode); 
+			if (auxCode.size()!=1) {
+				// we check all the codes that are not singletons
+				if (auxTrans.containsAll(auxCode)) {
+					result.add(auxCode); 
+					auxTrans = auxTrans.substraction(auxCode); 
+				}
+			}
+			else {
+				lengthOneReached = true;
+			}
+		}
+		// now we treat all the remaining elements in auxTrans as 
+		// singletons
+
+		if (!auxTrans.isEmpty()) {
+			KItemset remainingSingletons = new KItemset(auxTrans);
+			HashMap<Integer, KItemset> oneLength = this._codetable.getOneLengthCodes();
+ 			for(int item : remainingSingletons) {
+				if (oneLength.containsKey(item)) {
+					auxTrans=auxTrans.substraction(oneLength.get(item));
+					result.add(oneLength.get(item));
+				}
+				else { 
+					KItemset singleton = Utils.createCodeSingleton(item, 0, 1); 
+					result.add(singleton); 
+					this._codetable.addSingleton(singleton);
+				}
 			}
 		}
 		
 		// adding the codes that appear in the transaction but not in the code table
-		if(! auxTrans.isEmpty()) {
-			for(int item : auxTrans) {
-				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
-				result.add(sinlgton);
-				this._codetable.addSingleton(sinlgton);
-			}
-		}
-		auxTrans.clear();
+//		if(! auxTrans.isEmpty()) {
+//			for(int item : auxTrans) {
+//				
+//				
+//				
+//				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
+//				result.add(sinlgton);
+//				this._codetable.addSingleton(sinlgton);
+//			}
+//		}
+//		logger.debug("new approach: "+(((double)System.nanoTime()-start)/(double)1000000)+ " ms.");
+//		logger.debug(result);
+
+		
+		
+//		// old code
+//		
+//		KItemset auxTrans2 = new KItemset(trans);
+//		ItemsetSet result2 = new ItemsetSet(); 
+//		Iterator<KItemset> itIs2 = this._codetable.codeIterator();
+//		KItemset auxCode2 = null; 
+//		start = System.nanoTime();
+//		
+//		while (itIs2.hasNext() && (auxTrans2.size() != 0))  { // Searching for the cover
+//			auxCode2 = itIs2.next(); 
+//				// we check all the codes that are not singletons
+//			if (auxTrans2.containsAll(auxCode2)) {
+//				result2.add(auxCode2); 
+//				auxTrans2 = auxTrans2.substraction(auxCode2); 
+//			}
+//		}
+//		
+//		// adding the codes that appear in the transaction but not in the code table
+//		if(! auxTrans2.isEmpty()) {
+//			for(int item : auxTrans2) {
+//				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
+//				result2.add(sinlgton);
+//				this._codetable.addSingleton(sinlgton);
+//			}
+//		}
+//		logger.debug("old approach: "+(((double)System.nanoTime()-start)/(double)1000000)+ " ms.");
+//		logger.debug(result2);
+		
 		
 		return result; 
 	}
@@ -209,17 +354,41 @@ public class CodificationMeasure {
 	 */
 	
 	private Couple<ItemsetSet, KItemset> codifyAware (KItemset trans)  {
+		
 		KItemset auxTrans = new KItemset(trans);
 		ItemsetSet result = new ItemsetSet(); 
 		Iterator<KItemset> itIs = this._codetable.codeIterator();
 		KItemset auxCode = null; 
-		while (itIs.hasNext() && (auxTrans.size() != 0) ) {
+		boolean lengthOneReached = false;
+
+		while (itIs.hasNext() && (auxTrans.size() != 0) && (!lengthOneReached))  { // Searching for the cover
 			auxCode = itIs.next(); 
-			if (auxTrans.containsAll(auxCode)) {
-				result.add(auxCode); 
-				auxTrans = auxTrans.substraction(auxCode); 
+			if (auxCode.size()!=1) {
+				// we check all the codes that are not singletons
+				if (auxTrans.containsAll(auxCode)) {
+					result.add(auxCode); 
+					auxTrans = auxTrans.substraction(auxCode); 
+				}
+			}
+			else {
+				lengthOneReached = true;
 			}
 		}
+		// now we treat all the remaining elements in auxTrans as 
+		// singletons
+
+		if (!auxTrans.isEmpty()) {
+			KItemset remainingSingletons = new KItemset(auxTrans);
+			HashMap<Integer, KItemset> oneLength = this._codetable.getOneLengthCodes();
+ 			for(int item : remainingSingletons) {
+				if (oneLength.containsKey(item)) {
+					auxTrans=auxTrans.substraction(oneLength.get(item));
+					result.add(oneLength.get(item));
+				}
+				// auxTrans keep the singletons that haven't been found 
+			}
+		}
+		
 		// currently, trans can be non-empty
 		// we return both the codes used, and the remaining non-covered part of the transaction (new items) 
 		return new Couple<ItemsetSet, KItemset>(result, auxTrans); 
@@ -231,36 +400,145 @@ public class CodificationMeasure {
 	 */
 	public double codificationLength () {
 		double result = 0.0;
+		result = this._transactions.parallelStream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+		
+		// nonparallel for debugging purposes 
+//		result = this._transactions.stream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+
+		return result; 
+	}
+	
+	public double codificationLengthExternal(ItemsetSet transactions) { 
+		double result = 0.0; 
+		result = transactions.parallelStream().mapToDouble(e -> transactionCodificationLength(e)).sum(); 
+		return result; 
+	}
+	
+	
+	public double codificationLengthAccordingSCT () {
+		double result = 0.0;
+		result = this._transactions.parallelStream().mapToDouble(e ->transactionCodificationLengthAccordingSCT(e)).sum();
+		
+		// nonparallel for debugging purposes 
+//		result = this._transactions.stream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+
+		return result; 
+	}
+	
+	public double codificationLengthAccordingSCTExternal (ItemsetSet transactions) {
+		double result = 0.0;
+		result = transactions.parallelStream().mapToDouble(e ->transactionCodificationLengthAccordingSCT(e)).sum();
+		
+		// nonparallel for debugging purposes 
+//		result = this._transactions.stream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+
+		return result; 
+	}
+	
+	
+	
+	public double transactionCodificationLength (KItemset it) {
 		ItemsetSet codes = null; 
-		for (KItemset it: this._transactions) {
-			codes = this.codify(it); 
-			for (KItemset code: codes) {
-				double codelength = codeLengthOfcode(this._codetable, code);
+		double result = 0.0; 
+		codes = this.codify(it); 
+	
+		for (KItemset code: codes) {
+			double codelength = codeLengthOfcode(this._codetable, code);
+//			logger.debug(code + " codelength: "+codelength);
+			try {
 				assert ! Double.isInfinite(codelength);
-				result += codelength; 
+			}
+			catch (AssertionError e) {
+				logger.debug(code + " codelength: "+codelength);
+
+				System.exit(-1);
+			}
+			result += codelength; 
+		}
+		return result; 
+	}
+	
+	public double transactionCodificationLengthAccordingSCT  (KItemset it) { 
+		double result = 0.0; 
+		if (!this._codetable.isStandard()) {
+			for (Integer id: it.getItems()) { 
+				double codelength = codeLengthOfcode(this._codetable.getStandardCodeTable(), 
+											this._codetable.getStandardCodeTable().getOneLengthCodes().get(id));
+//				logger.debug(code + " codelength: "+codelength);
+				try {
+					assert ! Double.isInfinite(codelength);
+				}
+				catch (AssertionError e) {
+					logger.debug(id + " codelength: "+codelength);
+
+					System.exit(-1);
+				}
+				result += codelength; 				
 			}
 		}
 		return result; 
 	}
 	
+	/* only to be applied to non-stc code tables */ 
+	
 	public void applyLaplaceSmoothingToUsages () {
-		
-		for (KItemset key: this._codetable.getCodes()) {
-			key.setUsage(key.getUsage()+1);
-		}
+			
+		HashSet<Integer> addedItems = new HashSet<Integer>(); 
+		ArrayList<KItemset> addedSingletons = new ArrayList<KItemset>(); 
 		
 		// we now add the singletons that might not have been seen in the new database
 		Integer currentItem = null;
-		KItemset currentKey = null; 
+		HashMap<Integer, KItemset> oneLength = this._codetable.getOneLengthCodes();
+//		logger.debug("List of items: "+ this._transactions.knownItems()); 
 	    for (Iterator<Integer> itemIter = this._transactions.knownItems().iterator(); itemIter.hasNext(); ){
 	    	currentItem = itemIter.next(); 
-	    	currentKey = Utils.createCodeSingleton(currentItem); 
-	    	
-	    	if (!this._codetable.contains(currentKey)) {
-	    		currentKey.setUsage(1);
-	    		this._codetable.addSingleton(currentKey); 
-	    	}
+	    	if (!addedItems.contains(currentItem)) { 
+		    	if (!oneLength.containsKey(currentItem) ) {
+		    		KItemset singleton = Utils.createCodeSingleton(currentItem, 0, 1); 
+		    		addedSingletons.add(singleton); 
+		    		addedItems.add(currentItem); 
+		    	}
+		    	else { 
+		    		// the items used in the transactions might be exposed, and not being used by any upper code
+		    		KItemset aux = oneLength.get(currentItem); 
+		    		aux.setUsage(aux.getUsage()+1);
+		    	}
+	    	} 
 	    }	
+	    
+	   
+//	    logger.debug("List of new items: "+addedItems);
+	    
+	    if (!addedItems.isEmpty()) {
+	    	
+	    	// first of all, we add them 
+	    	// before it was done one by one ... with an ordering op for each of them
+	    	this._codetable.addSingletons(addedSingletons);
+	    	
+	    	// we have to apply +1 to all the ones of not length 1 that were already in the code table
+		    for (KItemset key: this._codetable.getCodes()) {
+		    	if (key.size() > 1) { 
+		    		key.setUsage(key.getUsage()+1);
+		    	} 
+			}
+		    
+		    // we have also to update the codes in the STC 
+		    // its a little bit tricky, as we don't have to 
+		    // update the ones exposed (as they are already well updated in the STC)
+		    CodeTable stc = this._codetable.getStandardCodeTable();
+		    stc.getOneLengthCodes().keySet().forEach(key -> { 
+		    	int currentValue = stc.getOneLengthCodes().get(key).getUsage(); 
+		    	assert stc.getOneLengthCodes().get(key).getUsage() == 
+		    			stc.getOneLengthCodes().get(key).getSupport(); 
+		    	
+		    	currentValue++; 
+		    	stc.getOneLengthCodes().get(key).setUsage(currentValue);
+		    	stc.getOneLengthCodes().get(key).setSupport(currentValue);
+		    });
+		    stc.addSingletons(addedSingletons);
+		    stc.recomputeUsageTotal();
+	    }
+	    
 		this._codetable.recomputeUsageTotal(); 
 	}
 	
@@ -271,6 +549,8 @@ public class CodificationMeasure {
 	public double codeLengthOfCode(KItemset code) {
 		return codeLengthOfcode(_codetable, code);
 	}
+	
+	
 
 	public String toString() {
 		
@@ -295,8 +575,5 @@ public class CodificationMeasure {
 		}
 		return r.toString();
 	}
-	
-	
-	
 	
 }

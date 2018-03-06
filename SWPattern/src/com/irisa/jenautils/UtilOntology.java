@@ -7,6 +7,9 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+
+import com.irisa.utilities.Couple;
+
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.rdf.model.Model;
