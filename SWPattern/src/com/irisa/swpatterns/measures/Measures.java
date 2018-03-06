@@ -262,8 +262,41 @@ public class Measures {
 		double resultSCT = measure.codificationLengthAccordingSCT(); 
 		
 		// second we get the size of the database D1 codified with the
-		return new Couple(resultCT, resultSCT) ;  		
+		return new Couple<Double, Double>(resultCT, resultSCT) ;  		
 	}
 	
+	
+	/** 
+	 * Codify both states q and q' of an update using the same CT 
+	 * in the same status
+	 *
+	 * @param q 
+	 * @param qPrima 
+	 * @param CT1 
+	 * @return 
+	 */
+	
+	public static Couple<Couple<Double, Double>, Couple<Double, Double>> codifyUpdateStatesApplyingLaplaceSmoothingIncludingSCT (ItemsetSet q, ItemsetSet qPrima, CodeTable CT1) {
+		
+		ItemsetSet union = new ItemsetSet(); 
+		union.addAll(q); 
+		union.addAll(qPrima); 
+		// we have to clone and smooth the codeTable 
+		CodificationMeasure measure = new CodificationMeasure(union, CT1);
+		// we change the database without updating anything but the dataIndex
+		// we applyLaplaceSmoothing for perplexity purposes
+		measure.applyLaplaceSmoothingToUsages();
+		
+		// now, with the same codeTable, already containing the union
+		// we codify the transactions separatedly
+		
+		double resultQCT = measure.codificationLengthExternal(q); 
+		double resultQSCT = measure.codificationLengthAccordingSCTExternal(q);
+		double resultQPrimaCT = measure.codificationLengthExternal(qPrima); 
+		double resultQPrimaSCT = measure.codificationLengthAccordingSCTExternal(qPrima); 
+		
+		// second we get the size of the database D1 codified with the
+		return new Couple<>	(new Couple<>(resultQCT, resultQSCT), new Couple<>(resultQPrimaCT, resultQPrimaSCT)) ;  		
+	}
 	
 }

@@ -408,6 +408,13 @@ public class CodificationMeasure {
 		return result; 
 	}
 	
+	public double codificationLengthExternal(ItemsetSet transactions) { 
+		double result = 0.0; 
+		result = transactions.parallelStream().mapToDouble(e -> transactionCodificationLength(e)).sum(); 
+		return result; 
+	}
+	
+	
 	public double codificationLengthAccordingSCT () {
 		double result = 0.0;
 		result = this._transactions.parallelStream().mapToDouble(e ->transactionCodificationLengthAccordingSCT(e)).sum();
@@ -417,6 +424,17 @@ public class CodificationMeasure {
 
 		return result; 
 	}
+	
+	public double codificationLengthAccordingSCTExternal (ItemsetSet transactions) {
+		double result = 0.0;
+		result = transactions.parallelStream().mapToDouble(e ->transactionCodificationLengthAccordingSCT(e)).sum();
+		
+		// nonparallel for debugging purposes 
+//		result = this._transactions.stream().mapToDouble(e ->transactionCodificationLength(e)).sum();
+
+		return result; 
+	}
+	
 	
 	
 	public double transactionCodificationLength (KItemset it) {

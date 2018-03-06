@@ -129,38 +129,54 @@ public class UpdateMeasuresCalculator {
 				
 					if (!updates.isEmpty()) { 
 						CodeTable CT = new CodeTable(itemCT);
-						Couple<Double,Double> firstCodLength; 
-						Couple<Double,Double> secondCodLength; 
+//						Couple<Double,Double> firstCodLength; 
+//						Couple<Double,Double> secondCodLength; 
+						Couple<Couple<Double, Double>, Couple<Double, Double>> lengths; 
 						long firstTransNumber = 0; 
 						long secondTransNumber = 0; 
 						long innerID = 0; 
 						long firstCodTime = 0; 
-						long secondCodTime = 0; 
+						long secondCodTime = -1; 
 						long start = 0; 
 						for (Couple<ItemsetSet, ItemsetSet> upd: updates.getUpdateTransactions() ) { 
 							firstTransNumber = 0; 
 							secondTransNumber = 0;
 							innerID++; 
-							start = System.nanoTime();
+//							start = System.nanoTime();
+//							
+//							if (!upd.getFirst().isEmpty()) { 
+//								firstCodLength = Measures.codificationLengthApplyingLaplaceSmoothingIncludingSCT(upd.getFirst(), CT); 
+//								firstTransNumber = upd.getFirst().size(); 
+//							} 
+//							else { 
+//								firstCodLength = new Couple<Double, Double>(0.0,0.0);
+//							}
+//							firstCodTime = System.nanoTime()-start; 
+//							start = System.nanoTime();
+//							
+//							if (!upd.getSecond().isEmpty()) { 
+//								secondCodLength = Measures.codificationLengthApplyingLaplaceSmoothingIncludingSCT(upd.getSecond(), CT); 
+//								secondTransNumber = upd.getSecond().size(); 
+//							}
+//							else { 
+//								secondCodLength = new Couple<Double, Double> (0.0,0.0);
+//							}
+//							secondCodTime = System.nanoTime()-start; 
 							
-							if (!upd.getFirst().isEmpty()) { 
-								firstCodLength = Measures.codificationLengthApplyingLaplaceSmoothingIncludingSCT(upd.getFirst(), CT); 
+							start=System.nanoTime(); 
+							if (!upd.getFirst().isEmpty() || !upd.getSecond().isEmpty()) {
+							
 								firstTransNumber = upd.getFirst().size(); 
-							} 
+								secondTransNumber = upd.getSecond().size(); 
+								
+								lengths = Measures.codifyUpdateStatesApplyingLaplaceSmoothingIncludingSCT(upd.getFirst(), upd.getSecond(), CT); 
+
+							}
 							else { 
-								firstCodLength = new Couple<Double, Double>(0.0,0.0);
+								lengths = new Couple<> (new Couple<>(0.0, 0.0), new Couple<>(0.0,0.0)); 
 							}
 							firstCodTime = System.nanoTime()-start; 
-							start = System.nanoTime();
 							
-							if (!upd.getSecond().isEmpty()) { 
-								secondCodLength = Measures.codificationLengthApplyingLaplaceSmoothingIncludingSCT(upd.getSecond(), CT); 
-								secondTransNumber = upd.getSecond().size(); 
-							}
-							else { 
-								secondCodLength = new Couple<Double, Double> (0.0,0.0);
-							}
-							secondCodTime = System.nanoTime()-start; 
 							
 							StringBuilder strBldr = new StringBuilder(); 
 							strBldr.append(CTFilename); 
@@ -169,13 +185,13 @@ public class UpdateMeasuresCalculator {
 							strBldr.append("-"); 
 							strBldr.append(String.format("%010d", innerID)); 
 							strBldr.append(";");
-							strBldr.append(firstCodLength.getFirst());
+							strBldr.append(lengths.getFirst().getFirst());
 							strBldr.append(";"); 
-							strBldr.append(firstCodLength.getSecond());
+							strBldr.append(lengths.getFirst().getSecond());
 							strBldr.append(";");
-							strBldr.append(secondCodLength.getFirst());
+							strBldr.append(lengths.getSecond().getFirst());
 							strBldr.append(";");
-							strBldr.append(secondCodLength.getSecond());
+							strBldr.append(lengths.getSecond().getSecond());
 							strBldr.append(";");
 							strBldr.append(firstTransNumber);
 							strBldr.append(";");
