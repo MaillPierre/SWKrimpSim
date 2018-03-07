@@ -36,3 +36,16 @@ class BasicHeaders:
     # calculated fields in the table
     compressionRatioPrevTable = "compRatioPrev"
     compressionRatioPostTable = "compRatioPost"
+
+
+    prev2015Post2015Header = "prev2015Post2015"
+    prev2015PostBothHeader = "prev2015PostBoth"
+    prev2015Post2016Header = "prev2015Post2016"
+
+    prevBothPost2015Header = "prevBothPost2015"
+    prevBothPostBothHeader = "prevBothPostBoth"
+    prevBothPost2016Header = "prevBothPost2016"
+
+    prev2016Post2015Header = "prev2016Post2015"
+    prev2016PostBothHeader = "prev2016PostBoth"
+    prev2016Post2016Header = "prev2016Post2016"

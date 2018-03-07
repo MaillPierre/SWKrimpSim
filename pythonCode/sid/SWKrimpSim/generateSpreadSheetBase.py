@@ -1,12 +1,10 @@
 ###############################################################################
 # File: generateSpreadSheetGranules-CH-T-D.py
 # Author: Carlos Bobed
-# Date: June 2016
+# Date: March 2019
 # Comment: script to build the spreadsheets with the data grouped in
 #       different ways
 # Modifications:
-#       * Feb 2017: 23-2-2017 => modifid to handle the data of the MOBICOM
-#           Experiments
 ###############################################################################
 
 import sys
@@ -15,71 +13,63 @@ import sqlite3 as lite
 from xlwt import Workbook, easyxf
 import math
 
-rangeSentence = " CASE WHEN "+BasicHeaders.occupiedPercentageTable +" BETWEEN 0.0 and 0.1 then ' 0.0 - 0.1 ' "+\
-         " WHEN "+BasicHeaders.occupiedPercentageTable +" BETWEEN 0.1 and 0.2 then ' 0.1 - 0.2 ' "+\
-         " WHEN "+BasicHeaders.occupiedPercentageTable +" BETWEEN 0.2 and 0.3 then ' 0.2 - 0.3 ' "+\
-         " WHEN "+BasicHeaders.occupiedPercentageTable +" BETWEEN 0.3 and 0.4 then ' 0.3 - 0.4 ' "+\
-         " WHEN "+BasicHeaders.occupiedPercentageTable +" BETWEEN 0.4 and 0.5 then ' 0.4 - 0.5 ' "+\
-         " WHEN "+BasicHeaders.occupiedPercentageTable +" BETWEEN 0.5 and 0.6 then ' 0.5 - 0.6 ' "+\
-         " WHEN "+BasicHeaders.occupiedPercentageTable +" BETWEEN 0.6 and 0.7 then ' 0.6 - 0.7 ' "+\
-         " ELSE 'other' END AS "+BasicHeaders.occupiedRangeTable
-
 def obtainExecutionParameters (databaseName, tableName):
     con = lite.connect(databaseName)
     with con:
         con.row_factory = lite.Row
         cur = con.cursor()
-        statement = "SELECT DISTINCT "+rangeSentence+", "+BasicHeaders.numObjectsTable+", "+ \
-                    BasicHeaders.alphaTable +" FROM "+tableName
+        statement = "SELECT DISTINCT "+BasicHeaders.CTTable+" FROM "+tableName
         print statement
         cur.execute(statement)
         parameters = cur.fetchall()
     return parameters
 
-def obtainAlphas (databaseName, tableName):
+# def obtainAlphas (databaseName, tableName):
+#     con = lite.connect(databaseName)
+#     with con:
+#         con.row_factory = lite.Row
+#         cur = con.cursor()
+#         statement = "SELECT DISTINCT "+\
+#                     BasicHeaders.alphaTable +" FROM "+tableName
+#         print statement
+#         cur.execute(statement)
+#         parameters = cur.fetchall()
+#     return parameters
+#
+#
+# def groupExecutionStatistics (databaseName, tableName, executionParams):
+#     con = lite.connect(databaseName)
+#     with con:
+#         con.row_factory = lite.Row
+#         cur = con.cursor()
+#         statement = "SELECT "+rangeSentence+", count(*), sum("+ BasicHeaders.FCoverTable+") / count(*), "+\
+#                     "sum("+BasicHeaders.execTimeTable+") / count(*) FROM "+tableName+" WHERE "+ \
+#             BasicHeaders.occupiedRangeTable +" = ? AND "+\
+#             BasicHeaders.numObjectsTable+ " = ? AND "+ \
+#             BasicHeaders.alphaTable+ " >= ? AND "+ \
+#             BasicHeaders.alphaTable+ " <= ? "
+#
+#         cur.execute(statement, (executionParams[BasicHeaders.occupiedRangeTable],
+#                                 executionParams[BasicHeaders.numObjectsTable],
+#                                 executionParams[BasicHeaders.alphaTable]-0.01,
+#                                 executionParams[BasicHeaders.alphaTable]+0.01))
+#         executionRow = cur.fetchone()
+#         return executionRow
+
+def loadData (databaseName, tablename, block, executionData):
     con = lite.connect(databaseName)
+    if (executionData[BasicHeaders.CTTable] not in block):
+        block[executionData[BasicHeaders.CTTable]] = {}
     with con:
         con.row_factory = lite.Row
         cur = con.cursor()
-        statement = "SELECT DISTINCT "+\
-                    BasicHeaders.alphaTable +" FROM "+tableName
+        statement = "SELECT * FROM "+tablename+" WHERE "+BasicHeaders.CTTable+" LIKE '"+\
+            executionData[BasicHeaders.CTTable]+"'"
         print statement
         cur.execute(statement)
-        parameters = cur.fetchall()
-    return parameters
-
-
-def groupExecutionStatistics (databaseName, tableName, executionParams):
-    con = lite.connect(databaseName)
-    with con:
-        con.row_factory = lite.Row
-        cur = con.cursor()
-        statement = "SELECT "+rangeSentence+", count(*), sum("+ BasicHeaders.FCoverTable+") / count(*), "+\
-                    "sum("+BasicHeaders.execTimeTable+") / count(*) FROM "+tableName+" WHERE "+ \
-            BasicHeaders.occupiedRangeTable +" = ? AND "+\
-            BasicHeaders.numObjectsTable+ " = ? AND "+ \
-            BasicHeaders.alphaTable+ " >= ? AND "+ \
-            BasicHeaders.alphaTable+ " <= ? "
-
-        cur.execute(statement, (executionParams[BasicHeaders.occupiedRangeTable],
-                                executionParams[BasicHeaders.numObjectsTable],
-                                executionParams[BasicHeaders.alphaTable]-0.01,
-                                executionParams[BasicHeaders.alphaTable]+0.01))
-        executionRow = cur.fetchone()
-        return executionRow
-
-def insertDataStatistics (block, executionParams, executionData):
-    numObjects = executionParams[BasicHeaders.numObjectsTable]
-    alpha = executionParams[BasicHeaders.alphaTable]
-    range = executionParams[BasicHeaders.occupiedRangeTable]
-    if (range not in block):
-        block[range] = {}
-    if (numObjects not in block[range]):
-        block[range][numObjects] = {}
-    if (alpha not in block[range][numObjects]):
-        block[range][numObjects][alpha] = {}
-    block[range][numObjects][alpha][BasicHeaders.FCoverTable] = executionData[2]
-    block[range][numObjects][alpha][BasicHeaders.execTimeTable] = executionData[3]
+        rows = cur.fetchall()
+        for row in rows:
+            block[executionData[BasicHeaders.CTTable]][row[BasicHeaders.updateIDTable]] = row
 
 def writeDataGraphGroupedAlpha(sheet, data, alpha):
 
@@ -141,49 +131,145 @@ def writeData(sheet, executionParams, executionData, rowPos):
     sheet.write(rowPos, 4, executionData[2] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
     sheet.write(rowPos, 5, executionData[3] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
 
+def writeMatrixData(sheet, compResults, rowPos):
+
+    sheet.write(rowPos, 1, 'Post 2015',
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    sheet.write(rowPos, 2, 'Post Both',
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    sheet.write(rowPos, 3, 'Post 2016',
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    rowPos += 1
+    sheet.write(rowPos, 0, 'Prev 2015',
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    sheet.write(rowPos, 1, compResults[BasicHeaders.prev2015Post2015Header], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 2, compResults[BasicHeaders.prev2015PostBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 3, compResults[BasicHeaders.prev2015Post2016Header] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+
+    rowPos += 1
+    sheet.write(rowPos, 0, 'Prev Both',
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    sheet.write(rowPos, 1, compResults[BasicHeaders.prevBothPost2015Header],
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 2, compResults[BasicHeaders.prevBothPostBothHeader],
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 3, compResults[BasicHeaders.prevBothPost2016Header],
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+
+    rowPos += 1
+    sheet.write(rowPos, 0, 'Prev 2016',
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    sheet.write(rowPos, 1, compResults[BasicHeaders.prev2016Post2015Header], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 2, compResults[BasicHeaders.prev2016PostBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 3, compResults[BasicHeaders.prev2016Post2016Header] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+
 ####### MAIN #######
 if __name__ == "__main__":
 
     print sys.argv
 
-    if (len(sys.argv) != 4):
-        print ("uso: python generateSpreadsheetGranules-CH-T.py databaseName [both|convex|nonConvex] spreadSheetFilename")
+    if (len(sys.argv) != 3):
+        print ("uso: python generateSpreadsheetBase.py databaseName spreadSheetFilename")
         sys.exit()
 
     databaseFilename = sys.argv[1]
-    spreadSheetFilename = sys.argv[3]
+    spreadSheetFilename = sys.argv[2]
     book = Workbook(style_compression=2)
     print "processing data table ... "
     dataSheet = book.add_sheet("data")
-    writeHeaders(dataSheet)
-    parameters = obtainExecutionParameters(databaseFilename, "data")
+    parameters = obtainExecutionParameters(databaseFilename, "updates")
+    print parameters
     print "writing the parameters"
     rowPos = 1
     percentage = 0
     data = {}
     count = 0
+    anyParam = []
     for executionParams in parameters:
-        if (count % 10 == 0):
-            print str(count) +" out of "+str(len(parameters)) + " sets of parameters"
-        executionData = groupExecutionStatistics(databaseFilename, "data", executionParams)
-        insertDataStatistics(data, executionParams, executionData)
-        writeData(dataSheet, executionParams, executionData, rowPos)
-        rowPos += 1
-        count+=1
-    book.save(spreadSheetFilename)
+        anyParam.append(executionParams[BasicHeaders.CTTable])
+        loadData(databaseFilename, "updates", data, executionParams)
+    print anyParam
 
-    alphas = obtainAlphas(databaseFilename, "data")
-    for alpha in alphas:
-        dataSheet = book.add_sheet("data - Alpha "+str(alpha[BasicHeaders.alphaTable]))
-        # writeHeaders(dataSheet)
-        # rowPos = 1
-        # for executionParams in parameters:
-        #     if executionParams[BasicHeaders.alphaHeader] ==  alpha[BasicHeaders.alphaTable]:
-        #         executionData = groupExecutionStatistics(databaseFilename, "data", executionParams)
-        #         writeData(dataSheet, executionParams, executionData, rowPos)
-        #         rowPos+=1
+    compResults = {}
+    compResults[BasicHeaders.prev2015Post2015Header] = 0
+    compResults[BasicHeaders.prev2015PostBothHeader] = 0
+    compResults[BasicHeaders.prev2015Post2016Header] = 0
 
-        writeDataGraphGroupedAlpha(dataSheet, data, alpha[BasicHeaders.alphaTable])
+    compResults[BasicHeaders.prevBothPost2015Header] = 0
+    compResults[BasicHeaders.prevBothPostBothHeader] = 0
+    compResults[BasicHeaders.prevBothPost2016Header] = 0
+
+    compResults[BasicHeaders.prev2016Post2015Header] = 0
+    compResults[BasicHeaders.prev2016PostBothHeader] = 0
+    compResults[BasicHeaders.prev2016Post2016Header] = 0
+
+    compResultsRatio = {}
+    compResultsRatio[BasicHeaders.prev2015Post2015Header] = 0
+    compResultsRatio[BasicHeaders.prev2015PostBothHeader] = 0
+    compResultsRatio[BasicHeaders.prev2015Post2016Header] = 0
+
+    compResultsRatio[BasicHeaders.prevBothPost2015Header] = 0
+    compResultsRatio[BasicHeaders.prevBothPostBothHeader] = 0
+    compResultsRatio[BasicHeaders.prevBothPost2016Header] = 0
+
+    compResultsRatio[BasicHeaders.prev2016Post2015Header] = 0
+    compResultsRatio[BasicHeaders.prev2016PostBothHeader] = 0
+    compResultsRatio[BasicHeaders.prev2016Post2016Header] = 0
+
+    print data.keys()
+    print len(data[anyParam[0]])
+    print len(data[anyParam[1]])
+
+    for id in data[anyParam[0]]:
+
+        if data[anyParam[0]][id][BasicHeaders.prevCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.prevCodSizeHeader]:
+            if data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
+                compResults[BasicHeaders.prev2015Post2015Header] += 1
+            elif data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] == data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
+                compResults[BasicHeaders.prev2015PostBothHeader] += 1
+            else:
+                compResults[BasicHeaders.prev2015Post2016Header] += 1
+        elif data[anyParam[0]][id][BasicHeaders.prevCodSizeHeader] == data[anyParam[1]][id][BasicHeaders.prevCodSizeHeader]:
+            if data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
+                compResults[BasicHeaders.prevBothPost2015Header] += 1
+            elif data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] == data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
+                compResults[BasicHeaders.prevBothPostBothHeader] += 1
+            else:
+                compResults[BasicHeaders.prevBothPost2016Header] += 1
+        else:
+            if data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
+                compResults[BasicHeaders.prev2016Post2015Header] += 1
+            elif data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] == data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
+                compResults[BasicHeaders.prev2016PostBothHeader] += 1
+            else:
+                compResults[BasicHeaders.prev2016Post2016Header] += 1
+
+        if data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable]:
+            if data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
+                compResultsRatio[BasicHeaders.prev2015Post2015Header] += 1
+            elif data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
+                compResultsRatio[BasicHeaders.prev2015PostBothHeader] += 1
+            else:
+                compResultsRatio[BasicHeaders.prev2015Post2016Header] += 1
+        elif data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable]:
+            if data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
+                compResultsRatio[BasicHeaders.prevBothPost2015Header] += 1
+            elif data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
+                compResultsRatio[BasicHeaders.prevBothPostBothHeader] += 1
+            else:
+                compResultsRatio[BasicHeaders.prevBothPost2016Header] += 1
+        else:
+            if data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
+                compResultsRatio[BasicHeaders.prev2016Post2015Header] += 1
+            elif data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
+                compResultsRatio[BasicHeaders.prev2016PostBothHeader] += 1
+            else:
+                compResultsRatio[BasicHeaders.prev2016Post2016Header] += 1
+
+    writeMatrixData(dataSheet, compResults, rowPos)
+    rowPos += 5
+
+    writeMatrixData(dataSheet, compResultsRatio, rowPos)
 
     book.save(spreadSheetFilename)
 
