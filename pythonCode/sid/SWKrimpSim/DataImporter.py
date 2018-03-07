@@ -79,7 +79,7 @@ if __name__ == "__main__":
                 # BasicHeaders.compressionRatioPrevTable + " REAL, " + \
                 # BasicHeaders.compressionRatioPostTable + " REAL )"
                 SQLInsertSentence = "INSERT INTO "+sys.argv[3]+" VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-                print row
+                # print row
                 if (row[BasicHeaders.prevCodSizeSCTHeader] == '0.0'):
                     prevRatio = 0.0
                 else:

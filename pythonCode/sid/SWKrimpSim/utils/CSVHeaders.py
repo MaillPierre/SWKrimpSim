@@ -49,3 +49,7 @@ class BasicHeaders:
     prev2016Post2015Header = "prev2016Post2015"
     prev2016PostBothHeader = "prev2016PostBoth"
     prev2016Post2016Header = "prev2016Post2016"
+
+    beforeHeader = "beforeBeter"
+    equalHeader = "equal"
+    afterHeader = "afterBeter"

@@ -163,6 +163,22 @@ def writeMatrixData(sheet, compResults, rowPos):
     sheet.write(rowPos, 2, compResults[BasicHeaders.prev2016PostBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
     sheet.write(rowPos, 3, compResults[BasicHeaders.prev2016Post2016Header] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
 
+def writeRowData(sheet, compResults, rowPos, rowName):
+
+    sheet.write(rowPos, 1, BasicHeaders.beforeHeader,
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    sheet.write(rowPos, 2, BasicHeaders.equalHeader,
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    sheet.write(rowPos, 3, BasicHeaders.afterHeader,
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    rowPos += 1
+    sheet.write(rowPos, 0, rowName,
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    sheet.write(rowPos, 1, compResults[BasicHeaders.beforeHeader], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 2, compResults[BasicHeaders.equalHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 3, compResults[BasicHeaders.afterHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+
+
 ####### MAIN #######
 if __name__ == "__main__":
 
@@ -220,6 +236,16 @@ if __name__ == "__main__":
     print len(data[anyParam[0]])
     print len(data[anyParam[1]])
 
+    compResultsEvol2015 = {}
+    compResultsEvol2015[BasicHeaders.beforeHeader] = 0
+    compResultsEvol2015[BasicHeaders.equalHeader] = 0
+    compResultsEvol2015[BasicHeaders.afterHeader] = 0
+
+    compResultsEvol2016 = {}
+    compResultsEvol2016[BasicHeaders.beforeHeader] = 0
+    compResultsEvol2016[BasicHeaders.equalHeader] = 0
+    compResultsEvol2016[BasicHeaders.afterHeader] = 0
+
     for id in data[anyParam[0]]:
 
         if data[anyParam[0]][id][BasicHeaders.prevCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.prevCodSizeHeader]:
@@ -266,12 +292,35 @@ if __name__ == "__main__":
             else:
                 compResultsRatio[BasicHeaders.prev2016Post2016Header] += 1
 
+        if data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable]:
+            compResultsEvol2015[BasicHeaders.beforeHeader] += 1
+        elif data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable]:
+            compResultsEvol2015[BasicHeaders.equalHeader] += 1
+        else:
+            compResultsEvol2015[BasicHeaders.afterHeader] += 1
+
+        if data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
+            compResultsEvol2016[BasicHeaders.beforeHeader] += 1
+        elif data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
+            compResultsEvol2016[BasicHeaders.equalHeader] += 1
+        else:
+            compResultsEvol2016[BasicHeaders.afterHeader] += 1
+
     writeMatrixData(dataSheet, compResults, rowPos)
     rowPos += 5
 
     writeMatrixData(dataSheet, compResultsRatio, rowPos)
 
+    rowPos += 5
+
+    writeRowData(dataSheet, compResultsEvol2015, rowPos, "201510-CT")
+
+    rowPos += 3
+
+    writeRowData(dataSheet, compResultsEvol2016, rowPos, "201610-CT")
+
     book.save(spreadSheetFilename)
+
 
     # dataSheet = book.add_sheet("data-FGraph-graph")
     # writeDataGraph(dataSheet,data, BasicHeaders.FCoverTable)
