@@ -50,6 +50,18 @@ class BasicHeaders:
     prev2016PostBothHeader = "prev2016PostBoth"
     prev2016Post2016Header = "prev2016Post2016"
 
-    beforeHeader = "beforeBeter"
+    beforeHeader = "beforeBetter"
     equalHeader = "equal"
-    afterHeader = "afterBeter"
+    afterHeader = "afterBetter"
+
+    prevBeforePostBeforeHeader = "prevB4PostB4"
+    prevBeforePostBothHeader = "prevB4PostBoth"
+    prevBeforePostAfterHeader = "prevB4PostAft"
+
+    prevBothPostBeforeHeader = "prevBothPostB4"
+    prevBothPostBothHeader = "prevBothPostBoth"
+    prevBothPostAfterHeader = "prevBothPostAfter"
+
+    prevAfterPostBeforeHeader = "prevAftPostB4"
+    prevAfterPostBothHeader = "prevAftPostBoth"
+    prevAfterPostAfterHeader = "prevAftPostAft"

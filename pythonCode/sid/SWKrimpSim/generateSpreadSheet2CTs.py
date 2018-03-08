@@ -58,18 +58,18 @@ def obtainExecutionParameters (databaseName, tableName):
 
 def loadData (databaseName, tablename, block, executionData):
     con = lite.connect(databaseName)
-    if (executionData[BasicHeaders.CTTable] not in block):
-        block[executionData[BasicHeaders.CTTable]] = {}
+    if (executionData not in block):
+        block[executionData] = {}
     with con:
         con.row_factory = lite.Row
         cur = con.cursor()
         statement = "SELECT * FROM "+tablename+" WHERE "+BasicHeaders.CTTable+" LIKE '"+\
-            executionData[BasicHeaders.CTTable]+"'"
+            executionData+"'"
         print statement
         cur.execute(statement)
         rows = cur.fetchall()
         for row in rows:
-            block[executionData[BasicHeaders.CTTable]][row[BasicHeaders.updateIDTable]] = row
+            block[executionData][row[BasicHeaders.updateIDTable]] = row
 
 def writeDataGraphGroupedAlpha(sheet, data, alpha):
 
@@ -216,9 +216,9 @@ def writeRowData(sheet, compResults, rowPos, rowName):
 if __name__ == "__main__":
 
     print sys.argv
-
-    if (len(sys.argv) != 3):
-        print ("uso: python generateSpreadsheetBase.py databaseName spreadSheetFilename")
+    print len(sys.argv)
+    if (len(sys.argv) != 5):
+        print ("uso: python generateSpreadsheetBase.py databaseName spreadSheetFilename CT1 CT2")
         sys.exit()
 
     databaseFilename = sys.argv[1]
@@ -227,6 +227,8 @@ if __name__ == "__main__":
     print "processing data table ... "
     dataSheet = book.add_sheet("data")
     parameters = obtainExecutionParameters(databaseFilename, "updates")
+
+    parameters = (sys.argv[3], sys.argv[4])
     print parameters
     print "writing the parameters"
     rowPos = 1
@@ -235,7 +237,7 @@ if __name__ == "__main__":
     count = 0
     anyParam = []
     for executionParams in parameters:
-        anyParam.append(executionParams[BasicHeaders.CTTable])
+        anyParam.append(executionParams)
         loadData(databaseFilename, "updates", data, executionParams)
     print anyParam
 
