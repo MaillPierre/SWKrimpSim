@@ -1,7 +1,7 @@
 ###############################################################################
 # File: generateSpreadSheetGranules-CH-T-D.py
 # Author: Carlos Bobed
-# Date: March 2019
+# Date: March 2018
 # Comment: script to build the spreadsheets with the data grouped in
 #       different ways
 # Modifications:

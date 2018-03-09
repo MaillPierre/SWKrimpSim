@@ -37,31 +37,17 @@ class BasicHeaders:
     compressionRatioPrevTable = "compRatioPrev"
     compressionRatioPostTable = "compRatioPost"
 
+    prevCT1Header = "prevCT1"
+    prevBothHeader = "prevBoth"
+    prevCT2Header = "prevCT2"
 
-    prev2015Post2015Header = "prev2015Post2015"
-    prev2015PostBothHeader = "prev2015PostBoth"
-    prev2015Post2016Header = "prev2015Post2016"
-
-    prevBothPost2015Header = "prevBothPost2015"
-    prevBothPostBothHeader = "prevBothPostBoth"
-    prevBothPost2016Header = "prevBothPost2016"
-
-    prev2016Post2015Header = "prev2016Post2015"
-    prev2016PostBothHeader = "prev2016PostBoth"
-    prev2016Post2016Header = "prev2016Post2016"
+    postCT1Header = "postCT1"
+    postBothHeader = "postBoth"
+    postCT2Header = "postCT2"
 
     beforeHeader = "beforeBetter"
     equalHeader = "equal"
     afterHeader = "afterBetter"
 
-    prevBeforePostBeforeHeader = "prevB4PostB4"
-    prevBeforePostBothHeader = "prevB4PostBoth"
-    prevBeforePostAfterHeader = "prevB4PostAft"
-
-    prevBothPostBeforeHeader = "prevBothPostB4"
-    prevBothPostBothHeader = "prevBothPostBoth"
-    prevBothPostAfterHeader = "prevBothPostAfter"
-
-    prevAfterPostBeforeHeader = "prevAftPostB4"
-    prevAfterPostBothHeader = "prevAftPostBoth"
-    prevAfterPostAfterHeader = "prevAftPostAft"
+    prevCTHeader = "prevCT"
+    postCTHeader = "postCT"

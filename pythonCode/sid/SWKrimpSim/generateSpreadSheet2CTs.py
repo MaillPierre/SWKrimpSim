@@ -1,60 +1,18 @@
 ###############################################################################
-# File: generateSpreadSheetGranules-CH-T-D.py
+# File: generateSpreadSheet2CTs.py
 # Author: Carlos Bobed
-# Date: March 2019
+# Date: March 2018
 # Comment: script to build the spreadsheets with the data grouped in
 #       different ways
 # Modifications:
 ###############################################################################
 
 import sys
-from utils.CSVHeaders import BasicHeaders
+from utils.CSVHeaders import BasicHeaders as BH
 import sqlite3 as lite
 from xlwt import Workbook, easyxf
 import math
 
-def obtainExecutionParameters (databaseName, tableName):
-    con = lite.connect(databaseName)
-    with con:
-        con.row_factory = lite.Row
-        cur = con.cursor()
-        statement = "SELECT DISTINCT "+BasicHeaders.CTTable+" FROM "+tableName
-        print statement
-        cur.execute(statement)
-        parameters = cur.fetchall()
-    return parameters
-
-# def obtainAlphas (databaseName, tableName):
-#     con = lite.connect(databaseName)
-#     with con:
-#         con.row_factory = lite.Row
-#         cur = con.cursor()
-#         statement = "SELECT DISTINCT "+\
-#                     BasicHeaders.alphaTable +" FROM "+tableName
-#         print statement
-#         cur.execute(statement)
-#         parameters = cur.fetchall()
-#     return parameters
-#
-#
-# def groupExecutionStatistics (databaseName, tableName, executionParams):
-#     con = lite.connect(databaseName)
-#     with con:
-#         con.row_factory = lite.Row
-#         cur = con.cursor()
-#         statement = "SELECT "+rangeSentence+", count(*), sum("+ BasicHeaders.FCoverTable+") / count(*), "+\
-#                     "sum("+BasicHeaders.execTimeTable+") / count(*) FROM "+tableName+" WHERE "+ \
-#             BasicHeaders.occupiedRangeTable +" = ? AND "+\
-#             BasicHeaders.numObjectsTable+ " = ? AND "+ \
-#             BasicHeaders.alphaTable+ " >= ? AND "+ \
-#             BasicHeaders.alphaTable+ " <= ? "
-#
-#         cur.execute(statement, (executionParams[BasicHeaders.occupiedRangeTable],
-#                                 executionParams[BasicHeaders.numObjectsTable],
-#                                 executionParams[BasicHeaders.alphaTable]-0.01,
-#                                 executionParams[BasicHeaders.alphaTable]+0.01))
-#         executionRow = cur.fetchone()
-#         return executionRow
 
 def loadData (databaseName, tablename, block, executionData):
     con = lite.connect(databaseName)
@@ -63,154 +21,131 @@ def loadData (databaseName, tablename, block, executionData):
     with con:
         con.row_factory = lite.Row
         cur = con.cursor()
-        statement = "SELECT * FROM "+tablename+" WHERE "+BasicHeaders.CTTable+" LIKE '"+\
+        statement = "SELECT * FROM "+tablename+" WHERE "+BH.CTTable+" LIKE '"+\
             executionData+"'"
         print statement
         cur.execute(statement)
         rows = cur.fetchall()
         for row in rows:
-            block[executionData][row[BasicHeaders.updateIDTable]] = row
-
-def writeDataGraphGroupedAlpha(sheet, data, alpha):
-
-    rowPos = 0
-    colPos = 0
-    sheet.write(rowPos, 0, BasicHeaders.FCoverTable)
-    rowPos +=1
-    #escribo la cabecera de la grafica
-    numObjectsList = sorted(data.itervalues().next().keys())
-    colPos = 1
-    for aux in numObjectsList:
-        sheet.write(rowPos, colPos, aux, easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-        colPos +=1
-    rowPos += 1
-    for range in sorted(data):
-        colPos = 0
-        sheet.write(rowPos, colPos, range, easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-        colPos +=1
-        for numObjects in sorted(data[range]):
-
-            sheet.write(rowPos,colPos,data[range][numObjects][alpha][BasicHeaders.FCoverTable],easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-            colPos +=1
-        rowPos+=1
-
-    rowPos +=1
-    sheet.write(rowPos, 0, BasicHeaders.execTimeTable)
-    rowPos +=1
-    #escribo la cabecera de la grafica
-    numObjectsList = sorted(data.itervalues().next().keys())
-    colPos = 1
-    for aux in numObjectsList:
-        sheet.write(rowPos, colPos, aux, easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-        colPos +=1
-    rowPos += 1
-    for range in sorted(data):
-        colPos = 0
-        sheet.write(rowPos, colPos, range, easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-        colPos +=1
-        for numObjects in sorted(data[range]):
-            sheet.write(rowPos,colPos,data[range][numObjects][alpha][BasicHeaders.execTimeTable],easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-            colPos +=1
-        rowPos+=1
+            block[executionData][row[BH.updateIDTable]] = row
 
 
-def writeHeaders(sheet):
+def write3x3MatrixData(sheet, compResults, rowPos, rowHeaders, colHeaders):
 
-    sheet.write(0, 0, "occupiedRange", easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(0, 1, "numObjects", easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(0, 2, "alpha", easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(0, 3, "numExecutions", easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(0, 4, "F", easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(0, 5, "execTime", easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-
-def writeData(sheet, executionParams, executionData, rowPos):
-    sheet.write(rowPos, 0, executionParams[BasicHeaders.occupiedRangeTable] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 1, executionParams[BasicHeaders.numObjectsTable] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 2, executionParams[BasicHeaders.alphaTable] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 3, executionData[1], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 4, executionData[2] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 5, executionData[3] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-
-def writeMatrixData(sheet, compResults, rowPos):
-
-    sheet.write(rowPos, 1, 'Post 2015',
+    sheet.write(rowPos, 1, colHeaders[0],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 2, 'Post Both',
+    sheet.write(rowPos, 2, colHeaders[1],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 3, 'Post 2016',
+    sheet.write(rowPos, 3, colHeaders[2],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
     rowPos += 1
-    sheet.write(rowPos, 0, 'Prev 2015',
+    sheet.write(rowPos, 0, rowHeaders[0],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 1, compResults[BasicHeaders.prev2015Post2015Header], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 2, compResults[BasicHeaders.prev2015PostBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 3, compResults[BasicHeaders.prev2015Post2016Header] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 1, compResults[BH.prevCT1Header][BH.postCT1Header], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 2, compResults[BH.prevCT1Header][BH.postBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 3, compResults[BH.prevCT1Header][BH.postCT2Header] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
 
     rowPos += 1
-    sheet.write(rowPos, 0, 'Prev Both',
+    sheet.write(rowPos, 0, rowHeaders[1],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 1, compResults[BasicHeaders.prevBothPost2015Header],
+    sheet.write(rowPos, 1, compResults[BH.prevBothHeader][BH.postCT1Header],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 2, compResults[BasicHeaders.prevBothPostBothHeader],
+    sheet.write(rowPos, 2, compResults[BH.prevBothHeader][BH.postBothHeader],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 3, compResults[BasicHeaders.prevBothPost2016Header],
+    sheet.write(rowPos, 3, compResults[BH.prevBothHeader][BH.postCT2Header],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
 
     rowPos += 1
-    sheet.write(rowPos, 0, 'Prev 2016',
+    sheet.write(rowPos, 0, rowHeaders[2],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 1, compResults[BasicHeaders.prev2016Post2015Header], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 2, compResults[BasicHeaders.prev2016PostBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 3, compResults[BasicHeaders.prev2016Post2016Header] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 1, compResults[BH.prevCT2Header][BH.postCT1Header], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 2, compResults[BH.prevCT2Header][BH.postBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 3, compResults[BH.prevCT2Header][BH.postCT2Header] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
 
-def writeMatrixDataCross(sheet, compResults, rowPos):
+    return rowPos + 2
 
-    sheet.write(rowPos, 1, BasicHeaders.beforeHeader,
+def write2x2MatrixData(sheet, compResults, rowPos, rowHeaders, colHeaders):
+
+    sheet.write(rowPos, 1, colHeaders[0],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 2, BasicHeaders.equalHeader,
-                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 3, BasicHeaders.afterHeader,
+    sheet.write(rowPos, 2, colHeaders[1],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
     rowPos += 1
-    sheet.write(rowPos, 0, BasicHeaders.beforeHeader,
+    sheet.write(rowPos, 0, rowHeaders[0],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 1, compResults[BasicHeaders.prevBeforePostBeforeHeader], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 2, compResults[BasicHeaders.prevBeforePostBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 3, compResults[BasicHeaders.prevBeforePostAfterHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 1, compResults[BH.prevCT1Header][BH.postCT1Header], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 2, compResults[BH.prevCT1Header][BH.postCT2Header], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
 
     rowPos += 1
-    sheet.write(rowPos, 0, BasicHeaders.equalHeader,
+    sheet.write(rowPos, 0, rowHeaders[1],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 1, compResults[BasicHeaders.prevBothPostBeforeHeader],
+    sheet.write(rowPos, 1, compResults[BH.prevCT2Header][BH.postCT1Header],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 2, compResults[BasicHeaders.prevBothPostBothHeader],
-                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 3, compResults[BasicHeaders.prevBothPostAfterHeader],
+    sheet.write(rowPos, 2, compResults[BH.prevCT2Header][BH.postCT2Header],
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
 
-    rowPos += 1
-    sheet.write(rowPos, 0, BasicHeaders.afterHeader,
-                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 1, compResults[BasicHeaders.prevAfterPostBeforeHeader], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 2, compResults[BasicHeaders.prevAfterPostBothHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 3, compResults[BasicHeaders.prevAfterPostAfterHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    return rowPos + 2
 
 
 def writeRowData(sheet, compResults, rowPos, rowName):
 
-    sheet.write(rowPos, 1, BasicHeaders.beforeHeader,
+    sheet.write(rowPos, 1, BH.beforeHeader,
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 2, BasicHeaders.equalHeader,
+    sheet.write(rowPos, 2, BH.equalHeader,
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 3, BasicHeaders.afterHeader,
+    sheet.write(rowPos, 3, BH.afterHeader,
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
     rowPos += 1
     sheet.write(rowPos, 0, rowName,
                 easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
-    sheet.write(rowPos, 1, compResults[BasicHeaders.beforeHeader], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 2, compResults[BasicHeaders.equalHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
-    sheet.write(rowPos, 3, compResults[BasicHeaders.afterHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 1, compResults[BH.beforeHeader], easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 2, compResults[BH.equalHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    sheet.write(rowPos, 3, compResults[BH.afterHeader] , easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
 
+    return rowPos + 2
+
+def writeDescription (sheet, CT1Name, CT2Name, rowPos):
+
+    sheet.write_merge(rowPos, rowPos, 0, 3, 'CT1:'+CT1Name,
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    rowPos += 1
+    sheet.write_merge(rowPos, rowPos, 0, 3, 'CT2:'+CT2Name,
+                easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray40'))
+    return rowPos + 2
+
+def writeLine(sheet, message, colIni, colEnd, rowPos):
+    sheet.write_merge(rowPos, rowPos, colIni, colEnd, message,
+        easyxf('borders: bottom medium, right medium; pattern: pattern solid, fore_colour gray25'))
+    return rowPos + 1
+
+def calculateComparisonUnified (dataCT1, dataCT2, id, fieldPrev, fieldPost, results):
+    if dataCT1[id][fieldPrev] <= dataCT2[id][fieldPrev]:
+        if dataCT1[id][fieldPost] <= dataCT2[id][fieldPost]:
+            results[BH.prevCT1Header][BH.postCT1Header] += 1
+        else:
+            results[BH.prevCT1Header][BH.postCT2Header] += 1
+    elif dataCT1[id][fieldPrev] == dataCT2[id][fieldPrev]:
+        if dataCT1[id][fieldPost] <= dataCT2[id][fieldPost]:
+            results[BH.prevBothHeader][BH.postCT1Header] += 1
+        else:
+            results[BH.prevBothHeader][BH.postCT2Header] += 1
+    else:
+        if dataCT1[id][fieldPost] <= dataCT2[id][fieldPost]:
+            results[BH.prevCT2Header][BH.postCT1Header] += 1
+        else:
+            results[BH.prevCT2Header][BH.postCT2Header] += 1
+
+def calculateCrossComparisonUnified (dataCT1, dataCT2, id, fieldPrev, fieldPost, results):
+    if dataCT1[id][fieldPrev] <= dataCT1[id][fieldPost]:
+        if dataCT2[id][fieldPrev] <= dataCT2[id][fieldPost]:
+            results[BH.prevCT1Header][BH.postCT1Header] += 1
+        else:
+            results[BH.prevCT1Header][BH.postCT2Header] += 1
+    else:
+        if dataCT2[id][fieldPrev] <= dataCT2[id][fieldPost]:
+            results[BH.prevCT2Header][BH.postCT1Header] += 1
+        else:
+            results[BH.prevCT2Header][BH.postCT2Header] += 1
 
 ####### MAIN #######
 if __name__ == "__main__":
@@ -226,7 +161,6 @@ if __name__ == "__main__":
     book = Workbook(style_compression=2)
     print "processing data table ... "
     dataSheet = book.add_sheet("data")
-    parameters = obtainExecutionParameters(databaseFilename, "updates")
 
     parameters = (sys.argv[3], sys.argv[4])
     print parameters
@@ -242,166 +176,187 @@ if __name__ == "__main__":
     print anyParam
 
     compResults = {}
-    compResults[BasicHeaders.prev2015Post2015Header] = 0
-    compResults[BasicHeaders.prev2015PostBothHeader] = 0
-    compResults[BasicHeaders.prev2015Post2016Header] = 0
-
-    compResults[BasicHeaders.prevBothPost2015Header] = 0
-    compResults[BasicHeaders.prevBothPostBothHeader] = 0
-    compResults[BasicHeaders.prevBothPost2016Header] = 0
-
-    compResults[BasicHeaders.prev2016Post2015Header] = 0
-    compResults[BasicHeaders.prev2016PostBothHeader] = 0
-    compResults[BasicHeaders.prev2016Post2016Header] = 0
+    for i in (BH.prevCT1Header, BH.prevBothHeader, BH.prevCT2Header):
+        compResults[i] = {}
+        for j in (BH.postCT1Header, BH.postBothHeader, BH.postCT2Header):
+            compResults[i][j] = 0
 
     compResultsRatio = {}
-    compResultsRatio[BasicHeaders.prev2015Post2015Header] = 0
-    compResultsRatio[BasicHeaders.prev2015PostBothHeader] = 0
-    compResultsRatio[BasicHeaders.prev2015Post2016Header] = 0
+    for i in (BH.prevCT1Header, BH.prevBothHeader, BH.prevCT2Header):
+        compResultsRatio[i] = {}
+        for j in (BH.postCT1Header, BH.postBothHeader, BH.postCT2Header):
+            compResultsRatio[i][j] = 0
 
-    compResultsRatio[BasicHeaders.prevBothPost2015Header] = 0
-    compResultsRatio[BasicHeaders.prevBothPostBothHeader] = 0
-    compResultsRatio[BasicHeaders.prevBothPost2016Header] = 0
+    compResultsUnifiedCT1 = {}
+    for i in (BH.prevCT1Header, BH.prevCT2Header):
+        compResultsUnifiedCT1[i] = {}
+        for j in (BH.postCT1Header, BH.postCT2Header):
+            compResultsUnifiedCT1[i][j] = 0
 
-    compResultsRatio[BasicHeaders.prev2016Post2015Header] = 0
-    compResultsRatio[BasicHeaders.prev2016PostBothHeader] = 0
-    compResultsRatio[BasicHeaders.prev2016Post2016Header] = 0
+    compResultsUnifiedCT2 = {}
+    for i in (BH.prevCT1Header, BH.prevCT2Header):
+        compResultsUnifiedCT2[i] = {}
+        for j in (BH.postCT1Header, BH.postCT2Header):
+            compResultsUnifiedCT2[i][j] = 0
 
-    print data.keys()
-    print len(data[anyParam[0]])
-    print len(data[anyParam[1]])
+    compResultsEvolCT1 = {BH.beforeHeader: 0, BH.equalHeader: 0, BH.afterHeader: 0}
 
-    compResultsEvol2015 = {}
-    compResultsEvol2015[BasicHeaders.beforeHeader] = 0
-    compResultsEvol2015[BasicHeaders.equalHeader] = 0
-    compResultsEvol2015[BasicHeaders.afterHeader] = 0
+    compResultsEvolCT2 = {BH.beforeHeader: 0, BH.equalHeader: 0, BH.afterHeader: 0}
 
-    compResultsEvol2016 = {}
-    compResultsEvol2016[BasicHeaders.beforeHeader] = 0
-    compResultsEvol2016[BasicHeaders.equalHeader] = 0
-    compResultsEvol2016[BasicHeaders.afterHeader] = 0
+    compResultsCross = {}
+    for i in (BH.prevCT1Header, BH.prevBothHeader, BH.prevCT2Header):
+        compResultsCross[i] = {}
+        for j in (BH.postCT1Header, BH.postBothHeader, BH.postCT2Header):
+            compResultsCross[i][j] = 0
 
-    compResultsCross= {}
-    compResultsCross[BasicHeaders.prevBeforePostBeforeHeader] = 0
-    compResultsCross[BasicHeaders.prevBeforePostBothHeader] = 0
-    compResultsCross[BasicHeaders.prevBeforePostAfterHeader] = 0
+    compResultsCrossUnifiedCT1 = {}
+    for i in (BH.prevCT1Header, BH.prevCT2Header):
+        compResultsCrossUnifiedCT1[i] = {}
+        for j in (BH.postCT1Header, BH.postCT2Header):
+            compResultsCrossUnifiedCT1[i][j] = 0
 
-    compResultsCross[BasicHeaders.prevBothPostBeforeHeader] = 0
-    compResultsCross[BasicHeaders.prevBothPostBothHeader] = 0
-    compResultsCross[BasicHeaders.prevBothPostAfterHeader] = 0
+    compResultsCrossUnifiedCT2 = {}
+    for i in (BH.prevCT1Header, BH.prevCT2Header):
+        compResultsCrossUnifiedCT2[i] = {}
+        for j in (BH.postCT1Header, BH.postCT2Header):
+            compResultsCrossUnifiedCT2[i][j] = 0
 
-    compResultsCross[BasicHeaders.prevAfterPostBeforeHeader] = 0
-    compResultsCross[BasicHeaders.prevAfterPostBothHeader] = 0
-    compResultsCross[BasicHeaders.prevAfterPostAfterHeader] = 0
+    listIds = data[anyParam[0]].keys()
 
+    dataCT1 = data[anyParam[0]]
+    dataCT2 = data[anyParam[1]]
 
-    for id in data[anyParam[0]]:
-
-        if data[anyParam[0]][id][BasicHeaders.prevCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.prevCodSizeHeader]:
-            if data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
-                compResults[BasicHeaders.prev2015Post2015Header] += 1
-            elif data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] == data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
-                compResults[BasicHeaders.prev2015PostBothHeader] += 1
+    for id in listIds:
+        if dataCT1[id][BH.prevCodSizeHeader] < dataCT2[id][BH.prevCodSizeHeader]:
+            if dataCT1[id][BH.postCodSizeHeader] < dataCT2[id][BH.postCodSizeHeader]:
+                compResults[BH.prevCT1Header][BH.postCT1Header] += 1
+            elif dataCT1[id][BH.postCodSizeHeader] == dataCT2[id][BH.postCodSizeHeader]:
+                compResults[BH.prevCT1Header][BH.postBothHeader] += 1
             else:
-                compResults[BasicHeaders.prev2015Post2016Header] += 1
-        elif data[anyParam[0]][id][BasicHeaders.prevCodSizeHeader] == data[anyParam[1]][id][BasicHeaders.prevCodSizeHeader]:
-            if data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
-                compResults[BasicHeaders.prevBothPost2015Header] += 1
-            elif data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] == data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
-                compResults[BasicHeaders.prevBothPostBothHeader] += 1
+                compResults[BH.prevCT1Header][BH.postCT2Header] += 1
+        elif dataCT1[id][BH.prevCodSizeHeader] == dataCT2[id][BH.prevCodSizeHeader]:
+            if dataCT1[id][BH.postCodSizeHeader] < dataCT2[id][BH.postCodSizeHeader]:
+                compResults[BH.prevBothHeader][BH.postCT1Header] += 1
+            elif dataCT1[id][BH.postCodSizeHeader] == dataCT2[id][BH.postCodSizeHeader]:
+                compResults[BH.prevBothHeader][BH.postBothHeader] += 1
             else:
-                compResults[BasicHeaders.prevBothPost2016Header] += 1
+                compResults[BH.prevBothHeader][BH.postCT2Header] += 1
         else:
-            if data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] < data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
-                compResults[BasicHeaders.prev2016Post2015Header] += 1
-            elif data[anyParam[0]][id][BasicHeaders.postCodSizeHeader] == data[anyParam[1]][id][BasicHeaders.postCodSizeHeader]:
-                compResults[BasicHeaders.prev2016PostBothHeader] += 1
+            if dataCT1[id][BH.postCodSizeHeader] < dataCT2[id][BH.postCodSizeHeader]:
+                compResults[BH.prevCT2Header][BH.postCT1Header] += 1
+            elif dataCT1[id][BH.postCodSizeHeader] == dataCT2[id][BH.postCodSizeHeader]:
+                compResults[BH.prevCT2Header][BH.postBothHeader] += 1
             else:
-                compResults[BasicHeaders.prev2016Post2016Header] += 1
+                compResults[BH.prevCT2Header][BH.postCT2Header] += 1
 
-        if data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable]:
-            if data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsRatio[BasicHeaders.prev2015Post2015Header] += 1
-            elif data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsRatio[BasicHeaders.prev2015PostBothHeader] += 1
+        if dataCT1[id][BH.compressionRatioPrevTable] < dataCT2[id][BH.compressionRatioPrevTable]:
+            if dataCT1[id][BH.compressionRatioPostTable] < dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsRatio[BH.prevCT1Header][BH.postCT1Header] += 1
+            elif dataCT1[id][BH.compressionRatioPostTable] == dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsRatio[BH.prevCT1Header][BH.postBothHeader] += 1
             else:
-                compResultsRatio[BasicHeaders.prev2015Post2016Header] += 1
-        elif data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable]:
-            if data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsRatio[BasicHeaders.prevBothPost2015Header] += 1
-            elif data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsRatio[BasicHeaders.prevBothPostBothHeader] += 1
+                compResultsRatio[BH.prevCT1Header][BH.postCT2Header] += 1
+        elif dataCT1[id][BH.compressionRatioPrevTable] == dataCT2[id][BH.compressionRatioPrevTable]:
+            if dataCT1[id][BH.compressionRatioPostTable] < dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsRatio[BH.prevBothHeader][BH.postCT1Header] += 1
+            elif dataCT1[id][BH.compressionRatioPostTable] == dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsRatio[BH.prevBothHeader][BH.postBothHeader] += 1
             else:
-                compResultsRatio[BasicHeaders.prevBothPost2016Header] += 1
+                compResultsRatio[BH.prevBothHeader][BH.postCT2Header] += 1
         else:
-            if data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsRatio[BasicHeaders.prev2016Post2015Header] += 1
-            elif data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsRatio[BasicHeaders.prev2016PostBothHeader] += 1
+            if dataCT1[id][BH.compressionRatioPostTable] < dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsRatio[BH.prevCT2Header][BH.postCT1Header] += 1
+            elif dataCT1[id][BH.compressionRatioPostTable] == dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsRatio[BH.prevCT2Header][BH.postBothHeader] += 1
             else:
-                compResultsRatio[BasicHeaders.prev2016Post2016Header] += 1
+                compResultsRatio[BH.prevCT2Header][BH.postCT2Header] += 1
 
-        if data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable]:
-            compResultsEvol2015[BasicHeaders.beforeHeader] += 1
-        elif data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable]:
-            compResultsEvol2015[BasicHeaders.equalHeader] += 1
+        if dataCT1[id][BH.compressionRatioPrevTable] < dataCT1[id][BH.compressionRatioPostTable]:
+            compResultsEvolCT1[BH.beforeHeader] += 1
+        elif dataCT1[id][BH.compressionRatioPrevTable] == dataCT1[id][BH.compressionRatioPostTable]:
+            compResultsEvolCT1[BH.equalHeader] += 1
         else:
-            compResultsEvol2015[BasicHeaders.afterHeader] += 1
+            compResultsEvolCT1[BH.afterHeader] += 1
 
-        if data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-            compResultsEvol2016[BasicHeaders.beforeHeader] += 1
-        elif data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-            compResultsEvol2016[BasicHeaders.equalHeader] += 1
+        if dataCT2[id][BH.compressionRatioPrevTable] < dataCT2[id][BH.compressionRatioPostTable]:
+            compResultsEvolCT2[BH.beforeHeader] += 1
+        elif dataCT2[id][BH.compressionRatioPrevTable] == dataCT2[id][BH.compressionRatioPostTable]:
+            compResultsEvolCT2[BH.equalHeader] += 1
         else:
-            compResultsEvol2016[BasicHeaders.afterHeader] += 1
+            compResultsEvolCT2[BH.afterHeader] += 1
 
         # cross comparison
-        if data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable]:
-            if data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsCross[BasicHeaders.prevBeforePostBeforeHeader] += 1
-            elif data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsCross[BasicHeaders.prevBeforePostBothHeader] += 1
+        if dataCT1[id][BH.compressionRatioPrevTable] < dataCT1[id][BH.compressionRatioPostTable]:
+            if dataCT2[id][BH.compressionRatioPrevTable] < dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsCross[BH.prevCT1Header][BH.postCT1Header] += 1
+            elif dataCT2[id][BH.compressionRatioPrevTable] == dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsCross[BH.prevCT1Header][BH.postBothHeader] += 1
             else:
-                compResultsCross[BasicHeaders.prevBeforePostAfterHeader] += 1
-        elif data[anyParam[0]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[0]][id][BasicHeaders.compressionRatioPostTable]:
-            if data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsCross[BasicHeaders.prevBothPostBeforeHeader] += 1
-            elif data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsCross[BasicHeaders.prevBothPostBothHeader] += 1
+                compResultsCross[BH.prevCT1Header][BH.postCT2Header] += 1
+        elif dataCT1[id][BH.compressionRatioPrevTable] == dataCT1[id][BH.compressionRatioPostTable]:
+            if dataCT2[id][BH.compressionRatioPrevTable] < dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsCross[BH.prevBothHeader][BH.postCT1Header] += 1
+            elif dataCT2[id][BH.compressionRatioPrevTable] == dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsCross[BH.prevBothHeader][BH.postBothHeader] += 1
             else:
-                compResultsCross[BasicHeaders.prevBothPostAfterHeader] += 1
+                compResultsCross[BH.prevBothHeader][BH.postCT2Header] += 1
         else:
-            if data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] < data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsCross[BasicHeaders.prevAfterPostBeforeHeader] += 1
-            elif data[anyParam[1]][id][BasicHeaders.compressionRatioPrevTable] == data[anyParam[1]][id][BasicHeaders.compressionRatioPostTable]:
-                compResultsCross[BasicHeaders.prevAfterPostBothHeader] += 1
+            if dataCT2[id][BH.compressionRatioPrevTable] < dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsCross[BH.prevCT2Header][BH.postCT1Header] += 1
+            elif dataCT2[id][BH.compressionRatioPrevTable] == dataCT2[id][BH.compressionRatioPostTable]:
+                compResultsCross[BH.prevCT2Header][BH.postBothHeader] += 1
             else:
-                compResultsCross[BasicHeaders.prevAfterPostAfterHeader] += 1
+                compResultsCross[BH.prevCT2Header][BH.postCT2Header] += 1
 
-    writeMatrixData(dataSheet, compResults, rowPos)
-    rowPos += 5
+        calculateComparisonUnified(dataCT1, dataCT2, id, BH.prevCodSizeHeader, BH.postCodSizeHeader, compResultsUnifiedCT1)
+        calculateComparisonUnified(dataCT2, dataCT1, id, BH.prevCodSizeHeader, BH.postCodSizeHeader, compResultsUnifiedCT2)
 
-    writeMatrixData(dataSheet, compResultsRatio, rowPos)
+        calculateCrossComparisonUnified(dataCT1, dataCT2, id,
+                                        BH.compressionRatioPrevTable, BH.compressionRatioPostTable,
+                                        compResultsCrossUnifiedCT1)
+        calculateCrossComparisonUnified(dataCT2, dataCT1, id,
+                                    BH.compressionRatioPrevTable, BH.compressionRatioPostTable,
+                                    compResultsCrossUnifiedCT2)
 
-    rowPos += 5
+    headersComp = [(BH.prevCT1Header, BH.prevBothHeader, BH.prevCT2Header),
+                   (BH.postCT1Header, BH.postBothHeader, BH.postCT2Header)]
+    headersCross = [(BH.beforeHeader, BH.equalHeader, BH.afterHeader),
+                    (BH.beforeHeader, BH.equalHeader, BH.afterHeader)]
 
-    writeRowData(dataSheet, compResultsEvol2015, rowPos, "201510-CT")
+    headersUnified = [(BH.prevCT1Header, BH.prevCT2Header),
+                      (BH.postCT1Header, BH.postCT2Header)]
 
-    rowPos += 3
+    rowPos = writeDescription(dataSheet, anyParam[0], anyParam[1], rowPos)
 
-    writeRowData(dataSheet, compResultsEvol2016, rowPos, "201610-CT")
+    rowPos = write3x3MatrixData(dataSheet, compResults, rowPos, headersComp[0], headersComp[1])
 
-    rowPos +=5
+    rowPos = writeLine(dataSheet, 'CT1 is '+anyParam[0], 0, 3, rowPos)
+    rowPos = write2x2MatrixData(dataSheet, compResultsUnifiedCT1, rowPos, headersUnified[0], headersUnified[1])
 
-    writeMatrixDataCross(dataSheet, compResultsCross, rowPos)
+    rowPos = writeLine(dataSheet, 'CT1 is ' + anyParam[1], 0, 3, rowPos)
+    rowPos = write2x2MatrixData(dataSheet, compResultsUnifiedCT2, rowPos, headersUnified[0], headersUnified[1])
+
+    rowPos = write3x3MatrixData(dataSheet, compResultsRatio, rowPos, headersComp[0], headersComp[1])
+
+    rowPos = writeRowData(dataSheet, compResultsEvolCT1, rowPos, anyParam[0])
+
+    rowPos = writeRowData(dataSheet, compResultsEvolCT2, rowPos, anyParam[1])
+
+    rowPos = write3x3MatrixData(dataSheet, compResultsCross, rowPos, headersCross[0], headersCross[1])
+
+    rowPos = writeLine(dataSheet, 'CT1 is ' + anyParam[0], 0, 3, rowPos)
+    rowPos = write2x2MatrixData(dataSheet, compResultsCrossUnifiedCT1, rowPos, headersUnified[0], headersUnified[1])
+
+    rowPos = writeLine(dataSheet, 'CT1 is ' + anyParam[1], 0, 3, rowPos)
+    rowPos = write2x2MatrixData(dataSheet, compResultsCrossUnifiedCT2, rowPos, headersUnified[0], headersUnified[1])
 
     book.save(spreadSheetFilename)
 
 
     # dataSheet = book.add_sheet("data-FGraph-graph")
-    # writeDataGraph(dataSheet,data, BasicHeaders.FCoverTable)
+    # writeDataGraph(dataSheet,data, BH.FCoverTable)
     # book.save(spreadSheetFilename)
     #
     # dataSheet = book.add_sheet("data-ExecTime-graph")
-    # writeDataGraph(dataSheet,data,BasicHeaders.execTimeTable)
+    # writeDataGraph(dataSheet,data,BH.execTimeTable)
     # book.save(spreadSheetFilename)
