@@ -9,6 +9,8 @@
 
 package com.irisa.swpatterns.measures;
 
+import java.util.ArrayList;
+
 import org.apache.log4j.Logger;
 
 import com.irisa.krimp.CodeTable;
@@ -297,6 +299,29 @@ public class Measures {
 		
 		// second we get the size of the database D1 codified with the
 		return new Couple<>	(new Couple<>(resultQCT, resultQSCT), new Couple<>(resultQPrimaCT, resultQPrimaSCT)) ;  		
+	}
+	
+	public static Couple<ArrayList<Couple<KItemset, ItemsetSet>>, 
+						ArrayList<Couple<KItemset, ItemsetSet>>> codificationUpdateStatesApplyingLaplaceSmoothingIncludingSCT 
+						(ItemsetSet q, ItemsetSet qPrima, CodeTable CT1) {
+		
+		ItemsetSet union = new ItemsetSet(); 
+		union.addAll(q); 
+		union.addAll(qPrima); 
+		// we have to clone and smooth the codeTable 
+		CodificationMeasure measure = new CodificationMeasure(union, CT1);
+		// we change the database without updating anything but the dataIndex
+		// we applyLaplaceSmoothing for perplexity purposes
+		measure.applyLaplaceSmoothingToUsages();
+		
+		// now, with the same codeTable, already containing the union
+		// we codify the transactions separatedly
+		
+		ArrayList<Couple<KItemset, ItemsetSet>> qCod = measure.codificationsExternal(q); 
+		ArrayList<Couple<KItemset, ItemsetSet>> qPrimaCod = measure.codificationsExternal(qPrima); 
+		
+		// second we get the size of the database D1 codified with the
+		return new Couple<>	(qCod, qPrimaCod) ;  		
 	}
 	
 }

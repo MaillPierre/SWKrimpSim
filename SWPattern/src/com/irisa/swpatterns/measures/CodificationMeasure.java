@@ -574,10 +574,10 @@ public class CodificationMeasure {
 		return r.toString();
 	}
 	
-	public ArrayList<Couple<KItemset, ItemsetSet>> codifications () {
+	public ArrayList<Couple<KItemset, ItemsetSet>> codificationsExternal (ItemsetSet toCodify) {
 		ArrayList<Couple<KItemset, ItemsetSet>> result = new ArrayList<>(); 
-		for (KItemset trans: this._transactions) {
-			result.add(new Couple(trans, this.codify(trans))); 
+		for (KItemset trans: toCodify) {
+			result.add(new Couple<>(trans, this.codify(trans))); 
 		}
 		return result;
 	}

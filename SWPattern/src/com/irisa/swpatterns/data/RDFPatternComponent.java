@@ -54,7 +54,7 @@ public abstract class RDFPatternComponent {
 		this._elementHashcode = this._element.hashCode(); 
 	}
 	
-	protected RDFPatternElement getElement() {
+	public RDFPatternElement getElement() {
 		return this._element;
 	}
 	
@@ -222,5 +222,5 @@ public abstract class RDFPatternComponent {
 			}
 		};
 	}
-	
+
 }
