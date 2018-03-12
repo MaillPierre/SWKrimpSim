@@ -550,8 +550,6 @@ public class CodificationMeasure {
 		return codeLengthOfcode(_codetable, code);
 	}
 	
-	
-
 	public String toString() {
 		
 		// StringBuilder copied from smpf code, just to see ...
@@ -574,6 +572,14 @@ public class CodificationMeasure {
 			r.append('\n');
 		}
 		return r.toString();
+	}
+	
+	public ArrayList<Couple<KItemset, ItemsetSet>> codifications () {
+		ArrayList<Couple<KItemset, ItemsetSet>> result = new ArrayList<>(); 
+		for (KItemset trans: this._transactions) {
+			result.add(new Couple(trans, this.codify(trans))); 
+		}
+		return result;
 	}
 	
 }
