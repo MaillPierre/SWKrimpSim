@@ -2,15 +2,13 @@
 // File: UpdateExplainer.java 
 // Author: Carlos Bobed
 // Date: February 2018
-// Comments: Program that calculates which version of a code table classifies 
-// 			better a set 
+// Comments:
 // Modifications: 
 ///////////////////////////////////////////////////////////////////////////////
 
 package com.irisa.swpatterns.measures.experiments;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -259,7 +257,7 @@ public class UpdateExplainer {
 				currentPattern = index.getComponent(singleton); 
 				switch(currentPattern.getType()) { 
 					case TYPE: 
-						out.println("<"+resourceID + "> a <"+ currentPattern.getElement().getResource().toString()+"> . "); 
+						out.println("<"+resourceID + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <"+ currentPattern.getElement().getResource().toString()+"> . "); 
 						break;
 					case IN_PROPERTY: 
 						out.println("<"+baseExistentials+idExistential+ "> <"+ currentPattern.getElement().getResource().toString()+"> "+
@@ -272,14 +270,14 @@ public class UpdateExplainer {
 						idExistential++; 
 						break; 
 					case IN_NEIGHBOUR_TYPE: 
-						out.println("<"+baseExistentials+idExistential + "> a <"+ currentPattern.getElement().getCouple().getFirst().toString()+"> . "); 
-						out.println("<"+baseExistentials+idExistential+ "> <"+ currentPattern.getElement().getCouple().getSecond().toString()+"> "+
+						out.println("<"+baseExistentials+idExistential + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <"+ currentPattern.getElement().getCouple().getSecond().toString()+"> . "); 
+						out.println("<"+baseExistentials+idExistential+ "> <"+ currentPattern.getElement().getCouple().getFirst().toString()+"> "+
 								"<"+resourceID + "> ."); 
 						idExistential++; 
 						break; 
 					case OUT_NEIGHBOUR_TYPE: 
-						out.println("<"+baseExistentials+idExistential + "> a <"+ currentPattern.getElement().getCouple().getFirst().toString()+"> . "); 
-						out.println("<"+resourceID + "> <"+ currentPattern.getElement().getCouple().getSecond().toString()+"> "+
+						out.println("<"+baseExistentials+idExistential + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <"+ currentPattern.getElement().getCouple().getSecond().toString()+"> . "); 
+						out.println("<"+resourceID + "> <"+ currentPattern.getElement().getCouple().getFirst().toString()+"> "+
 								 "<"+baseExistentials+idExistential+ "> . ");
 						idExistential++; 
 						break; 
@@ -300,7 +298,7 @@ public class UpdateExplainer {
 				currentPattern = index.getComponent(singleton); 
 				switch(currentPattern.getType()) { 
 					case TYPE: 
-						out.println("<"+resourceID + "> a <"+ currentPattern.getElement().getResource().toString()+"> . "); 
+						out.println("<"+resourceID + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <"+ currentPattern.getElement().getResource().toString()+"> . "); 
 						break;
 					case IN_PROPERTY: 
 						out.println("<"+baseExistentials+idExistential+ "> <"+ currentPattern.getElement().getResource().toString()+"> "+
@@ -313,14 +311,14 @@ public class UpdateExplainer {
 						idExistential++; 
 						break; 
 					case IN_NEIGHBOUR_TYPE: 
-						out.println("<"+baseExistentials+idExistential + "> a <"+ currentPattern.getElement().getCouple().getFirst().toString()+"> . "); 
-						out.println("<"+baseExistentials+idExistential+ "> <"+ currentPattern.getElement().getCouple().getSecond().toString()+"> "+
+						out.println("<"+baseExistentials+idExistential + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <"+ currentPattern.getElement().getCouple().getSecond().toString()+"> . "); 
+						out.println("<"+baseExistentials+idExistential+ "> <"+ currentPattern.getElement().getCouple().getFirst().toString()+"> "+
 								"<"+resourceID + "> ."); 
 						idExistential++; 
 						break; 
 					case OUT_NEIGHBOUR_TYPE: 
-						out.println("<"+baseExistentials+idExistential + "> a <"+ currentPattern.getElement().getCouple().getFirst().toString()+"> . "); 
-						out.println("<"+resourceID + "> <"+ currentPattern.getElement().getCouple().getSecond().toString()+"> "+
+						out.println("<"+baseExistentials+idExistential + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <"+ currentPattern.getElement().getCouple().getSecond().toString()+"> . "); 
+						out.println("<"+resourceID + "> <"+ currentPattern.getElement().getCouple().getFirst().toString()+"> "+
 								 "<"+baseExistentials+idExistential+ "> . ");
 						idExistential++; 
 						break; 
