@@ -119,7 +119,13 @@ public class CodificationMeasure {
 	 * @return
 	 */
 	private static double codeLengthOfcode(CodeTable ct, KItemset code) {
-		return - Math.log(probabilisticDistrib(ct, code));
+		double value = probabilisticDistrib(ct, code);
+		if (value!= 0) { 
+			return - Math.log(value);
+		} 
+		else { 
+			return 0; 
+		}
 	}
 	
 	/**
@@ -149,7 +155,15 @@ public class CodificationMeasure {
 		}
 		return result;
 	}
-
+	
+	
+	public double getCodetableCodesLength() { 
+		double result = 0.0;
+		for (KItemset code: this._codetable.getCodes()) {
+			result += codeLengthOfCode(code); 
+		}
+		return result; 
+	}
 	
 	/** 
 	 * L(code_ST(X)).
@@ -545,6 +559,7 @@ public class CodificationMeasure {
 	public double codetableCodeLength() {
 		return codeTableCodeLength(_codetable);
 	}
+	
 	
 	public double codeLengthOfCode(KItemset code) {
 		return codeLengthOfcode(_codetable, code);

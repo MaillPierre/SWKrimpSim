@@ -332,14 +332,15 @@ public class Measures {
 		
 		// we need to apply laplace smoothing to include the codes that are not used
 		// in the game (another option in this case would be to make the assumption of 0*log(0) == 0) 
-		CodificationMeasure measure1 = new CodificationMeasure(CT1);
+		CodificationMeasure measure1 = new CodificationMeasure( CT1);
 		
 		CodificationMeasure measure2 = new CodificationMeasure(CT1.getCodes(), CT2);
 		measure2.applyLaplaceSmoothingToUsages();
 		
-		double evalKrimpSize = measure1.codetableCodeLength(); 
+		double evalKrimpSize = measure1.getCodetableCodesLength(); 
+		System.out.println("evalKrimpSize: "+ evalKrimpSize);
 		double refKrimpSize = measure2.codificationLength(); 
-		
+		System.out.println("refKrimpSize: "+refKrimpSize); 
 		return refKrimpSize/evalKrimpSize; 
 		
 	}

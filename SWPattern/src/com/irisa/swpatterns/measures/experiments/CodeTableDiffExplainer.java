@@ -51,6 +51,9 @@ public class CodeTableDiffExplainer {
 	public static String VREEKEN_COMPARED_OPTION = "vreekenFormatCompared";
 	public static String HELP_OPTION = "help"; 
 	
+	public static String CALCULATE_EXPLANATION_OPTION = "withExplanation";
+	
+	
 	public static String RESULTS_HEADERS = "CTBase;CTCompared;dist";  
 			
 	public static void main(String[] args) {
@@ -124,39 +127,38 @@ public class CodeTableDiffExplainer {
 			out.close();
 			
 			
-			
-			if (!itemCTCompared.isEmpty()) { 
-			
-				out = new PrintWriter(new File(cmd.getOptionValue(EXPLANATIONS_FILE_OPTION))); 
+			if (cmd.hasOption(CALCULATE_EXPLANATION_OPTION)) { 
+				if (!itemCTCompared.isEmpty()) { 
 				
-				ArrayList<Couple<KItemset, ItemsetSet>>codification = null; 
-				codification = Measures.codificationExternalApplyingLaplaceSmoothingIncludingSCT(itemCTCompared, new CodeTable(itemCTBase)); 
-				
-				
-				out.println("-------------------------------------"); 
-				out.println("Codification transactions: ");
-				out.println("-------------------------------------"); 
-				int count = 1; 
-				for (Couple<KItemset, ItemsetSet> transaction: codification){
-					out.print("("+count+") :: "); 
-					out.println(transaction.getFirst()); 
-					out.println("Codes: "); 
-					for (KItemset code: transaction.getSecond()) {
-						out.println("\t"+code); 
+					out = new PrintWriter(new FileOutputStream(new File(cmd.getOptionValue(EXPLANATIONS_FILE_OPTION)))); 
+					
+					ArrayList<Couple<KItemset, ItemsetSet>>codification = null; 
+					codification = Measures.codificationExternalApplyingLaplaceSmoothingIncludingSCT(itemCTCompared, new CodeTable(itemCTBase)); 
+					
+					
+					out.println("-------------------------------------"); 
+					out.println("Codification transactions: ");
+					out.println("-------------------------------------"); 
+					int count = 1; 
+					for (Couple<KItemset, ItemsetSet> transaction: codification){
+						out.print("("+count+") :: "); 
+						out.println(transaction.getFirst()); 
+						out.println("Codes: "); 
+						for (KItemset code: transaction.getSecond()) {
+							out.println("\t"+code); 
+						}
+						count++; 
 					}
-					count++; 
+					
+					out.println("--------------------------------------"); 
+					out.println("TTL translation "); 
+					out.println("--------------------------------------"); 
+					printTTL(out, codification, "Q");
+					out.flush();
+					out.close();
+					
 				}
-				
-				out.println("--------------------------------------"); 
-				out.println("TTL translation "); 
-				out.println("--------------------------------------"); 
-				printTTL(out, codification, "Q");
-				out.flush();
-				out.close();
-				
-			}
-			
-			
+			} 
 		}
 		catch (Exception e) {
 			e.printStackTrace();
