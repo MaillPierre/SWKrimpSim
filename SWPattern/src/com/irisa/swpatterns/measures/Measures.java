@@ -189,54 +189,29 @@ public class Measures {
 		
 	}
 	
-	/** 
-	 * 
-	 * Comparison of the length of CT1 with the length of CT1 when codified using CT2
-	 * Here, in principle, it does not make sense to change the distribution of the data
-	 * 
-	 * @param CT1
-	 * @param CT2
-	 * @return
-	 */
-	
-	public static double CTStructuralComparison (CodeTable CT1, CodeTable CT2) {
-		
-		// we need to apply laplace smoothing to include the codes that are not used
-		// in the game (another option in this case would be to make the assumption of 0*log(0) == 0) 
-		CodificationMeasure measure1 = new CodificationMeasure(CT1);
-		measure1.applyLaplaceSmoothingToUsages();
-		
-		CodificationMeasure measure2 = new CodificationMeasure(CT1.getCodes(), CT2);
-		measure2.applyLaplaceSmoothingToUsages();
-		
-		double evalKrimpSize = measure1.codificationLength(); 
-		double refKrimpSize = measure2.codificationLength(); 
-		
-		return refKrimpSize/evalKrimpSize; 
-		
-	}
+
 	
 	
-	/** 
-	 * Codify a set of transactions using a CT that might not include all the items
-	 * To avoid potential problems with previously non-used singletons and new singletons 
-	 * introduced by new items, this method assumes to the new items
-	 * by giving them the longest codes (result of the laplace Smoothing). 
-	 *
-	 * @param D1
-	 * @param CT1 
-	 * @return 
-	 */
-	
-	public static double codificationLengthApplyingLaplaceSmoothing (ItemsetSet D1, CodeTable CT1) {
-		// we have to clone and smooth the codeTable 
-		CodificationMeasure measure = new CodificationMeasure(D1, CT1);
-		// we change the database without updating anything but the dataIndex
-		// we applyLaplaceSmoothing for perplexity purposes
-		measure.applyLaplaceSmoothingToUsages();
-		// second we get the size of the database D1 codified with the
-		return measure.codificationLength();  		
-	}
+//	/** 
+//	 * Codify a set of transactions using a CT that might not include all the items
+//	 * To avoid potential problems with previously non-used singletons and new singletons 
+//	 * introduced by new items, this method assumes to the new items
+//	 * by giving them the longest codes (result of the laplace Smoothing). 
+//	 *
+//	 * @param D1
+//	 * @param CT1 
+//	 * @return 
+//	 */
+//	
+//	public static double codificationLengthApplyingLaplaceSmoothing (ItemsetSet D1, CodeTable CT1) {
+//		// we have to clone and smooth the codeTable 
+//		CodificationMeasure measure = new CodificationMeasure(D1, CT1);
+//		// we change the database without updating anything but the dataIndex
+//		// we applyLaplaceSmoothing for perplexity purposes
+//		measure.applyLaplaceSmoothingToUsages();
+//		// second we get the size of the database D1 codified with the
+//		return measure.codificationLength();  		
+//	}
 	
 	/** 
 	 * Codify a set of transactions using a CT that might not include all the items
@@ -323,5 +298,51 @@ public class Measures {
 		// second we get the size of the database D1 codified with the
 		return new Couple<>	(qCod, qPrimaCod) ;  		
 	}
+	
+	
+	public static ArrayList<Couple<KItemset, ItemsetSet>>codificationExternalApplyingLaplaceSmoothingIncludingSCT 
+				(ItemsetSet trans, CodeTable CT1) {
+			
+			CodificationMeasure measure = new CodificationMeasure(trans, CT1);
+			// we change the database without updating anything but the dataIndex
+			// we applyLaplaceSmoothing for perplexity purposes
+			measure.applyLaplaceSmoothingToUsages();
+			
+			// now, with the same codeTable, already containing the union
+			// we codify the transactions separatedly
+			
+			ArrayList<Couple<KItemset, ItemsetSet>> transCod = measure.codificationsExternal(trans); 
+			
+			// second we get the size of the database D1 codified with the
+			return transCod ;  		
+			}
+	
+	/** 
+	 * 
+	 * Comparison of the length of CT1 with the length of CT1 when codified using CT2
+	 * Here, in principle, it does not make sense to change the distribution of the data
+	 *	CT1 gets coded by CT2
+	 *
+	 * @param CT1
+	 * @param CT2
+	 * @return
+	 */
+	
+	public static double CTStructuralComparison (CodeTable CT1, CodeTable CT2) {
+		
+		// we need to apply laplace smoothing to include the codes that are not used
+		// in the game (another option in this case would be to make the assumption of 0*log(0) == 0) 
+		CodificationMeasure measure1 = new CodificationMeasure(CT1);
+		
+		CodificationMeasure measure2 = new CodificationMeasure(CT1.getCodes(), CT2);
+		measure2.applyLaplaceSmoothingToUsages();
+		
+		double evalKrimpSize = measure1.codetableCodeLength(); 
+		double refKrimpSize = measure2.codificationLength(); 
+		
+		return refKrimpSize/evalKrimpSize; 
+		
+	}
+	
 	
 }
