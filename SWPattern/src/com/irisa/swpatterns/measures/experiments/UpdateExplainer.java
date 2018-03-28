@@ -244,8 +244,8 @@ public class UpdateExplainer {
 		int idExistential = 1; 
 		int idCode = 1; 
 		AttributeIndex index = AttributeIndex.getInstance(); 
-		String baseInstances = "http://experiments/"+miniNamespace+"/";
-		String baseExistentials = baseInstances + "exist/"; 
+		String baseInstances = "http://experiments/"+miniNamespace+"-";
+		String baseExistentials = baseInstances + "exist-"; 
 		HashSet<KItemset> codesUsed = new HashSet<>(); 
 		String resourceID = null;
 		RDFPatternComponent currentPattern = null; 
@@ -291,7 +291,7 @@ public class UpdateExplainer {
 		}
 		out.println("-----------------------------"); 
 		for (KItemset code: codesUsed){
-			resourceID = baseInstances+"code/" + idCode; 
+			resourceID = baseInstances+"code-" + idCode; 
 			out.println("# code: "+code); 
 			out.println("# codeID: "+resourceID); 
 			for (Integer singleton: code) {
