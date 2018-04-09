@@ -1,4 +1,5 @@
-# SWKrimpSIm: Structural similarity of RDF graphs using frequent pattern maining
+
+# SWKrimpSim: Structural similarity of RDF graphs using frequent pattern mining #
 
 ## Content of the repository
 
