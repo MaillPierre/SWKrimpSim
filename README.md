@@ -3,9 +3,9 @@
 
 ## Content of the repository
 
-Source code of the approach for a structural similarity of RDF graphs based on frequent patterns, and its related experiments.
+Source code of the approach for a structural similarity of RDF graphs based on frequent patterns, and its related experiments. In this project, it is included the code for the proposal to evaluate the evolution of a dataset currently submitted to ISWC'18.   
 
-+ The [SWPattern folder](https://github.com/MaillPierre/SWKrimpSim/tree/master/SWPattern) contains the source code for the conversion of RDF datasets and updates to transaction, and their comparison using codetables.
++ The [SWPattern folder](https://github.com/MaillPierre/SWKrimpSim/tree/master/SWPattern) contains the source code for the conversion of RDF datasets and updates to transaction, and their comparison and evaluation using codetables. 
 
 + The [Scripts folder](https://github.com/MaillPierre/SWKrimpSim/tree/master/scripts) contains the scripts used to retrieve code tables from Vreeken's implementations of KRIMP and SLIM.
 
@@ -15,7 +15,7 @@ Source code of the approach for a structural similarity of RDF graphs based on f
 
 ## Citation
 
-To cite the first publication related to this approach:
+To cite the structural similiarity related to this approach:
 ```
 @inproceedings{Maillot2018, 
     author = {Pierre Maillot and Carlos Bobed}, 
@@ -25,3 +25,5 @@ To cite the first publication related to this approach:
     year = {2018}, 
 }
 ```
+
+The proposal to evaluate the evolution of RDF datasets has been submitted to ISWC'18 and is currently under review. 
