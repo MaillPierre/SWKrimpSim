@@ -20,10 +20,11 @@ To cite the structural similiarity related to this approach:
 @inproceedings{Maillot2018, 
     author = {Pierre Maillot and Carlos Bobed}, 
     title = {Measuring Structural Similarity Between RDF Graphs}, 
-    booktitle = {Proc. of SIGAPP Symposium On Applied Computing (SAC), SWA track}, 
+    booktitle = {Proc. of 33rd ACM/SIGAPP Symposium On Applied Computing (SAC), SWA track}, 
     publisher={ACM}, 
+    pages = {1960--1967}, 
+    month = {April}, 
     year = {2018}, 
 }
 ```
 
-The proposal to evaluate the evolution of RDF datasets has been submitted to ISWC'18 and is currently under review. 
