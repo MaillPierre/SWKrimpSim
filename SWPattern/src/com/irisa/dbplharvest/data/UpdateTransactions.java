@@ -202,7 +202,7 @@ public class UpdateTransactions implements AbstractChangeset {
 		return _updateTransactions;
 	}
 	
-	public String getID() { 
+	public String getDBpediaLiveID() { 
 		StringBuilder strBldr = new StringBuilder(); 
 		strBldr.append(this._year); 
 		strBldr.append("-");

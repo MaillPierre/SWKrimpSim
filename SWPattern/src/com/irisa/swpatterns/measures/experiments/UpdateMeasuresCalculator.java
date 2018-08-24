@@ -181,7 +181,7 @@ public class UpdateMeasuresCalculator {
 							StringBuilder strBldr = new StringBuilder(); 
 							strBldr.append(CTFilename); 
 							strBldr.append(";");
-							strBldr.append(updates.getID());
+							strBldr.append(updates.getDBpediaLiveID());
 							strBldr.append("-"); 
 							strBldr.append(String.format("%010d", innerID)); 
 							strBldr.append(";");

@@ -44,8 +44,6 @@ import org.apache.log4j.PropertyConfigurator;
 import com.irisa.jenautils.BaseRDF;
 import com.irisa.jenautils.UtilOntology;
 
-import scala.Array;
-
 public class RDFDisrupter {
 
 	public enum MODIFICATION_TYPE {

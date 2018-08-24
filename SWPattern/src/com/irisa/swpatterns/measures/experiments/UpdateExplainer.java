@@ -153,7 +153,7 @@ public class UpdateExplainer {
 				StringBuilder strBldr = new StringBuilder(); 
 				strBldr.append(CTFilename); 
 				strBldr.append(";");
-				logger.debug(updates.getID()); 
+				logger.debug(updates.getDBpediaLiveID()); 
 				logger.debug(updFile.getBaseFilename());
 				logger.debug(updFile.getYear());
 				logger.debug(updFile.getMonth());
@@ -166,7 +166,7 @@ public class UpdateExplainer {
 				logger.debug(updates.getDay());
 				logger.debug(updates.getHour());
 				logger.debug(updates.getNumber());
-				strBldr.append(updates.getID());
+				strBldr.append(updates.getDBpediaLiveID());
 				strBldr.append("-"); 
 				strBldr.append(String.format("%010d", innerID));
 				strBldr.append(";");

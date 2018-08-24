@@ -227,6 +227,8 @@ if __name__ == "__main__":
     dataCT2 = data[anyParam[1]]
 
     for id in listIds:
+
+        #Disjoint classification of q and q' according codification length
         if dataCT1[id][BH.prevCodSizeHeader] < dataCT2[id][BH.prevCodSizeHeader]:
             if dataCT1[id][BH.postCodSizeHeader] < dataCT2[id][BH.postCodSizeHeader]:
                 compResults[BH.prevCT1Header][BH.postCT1Header] += 1
@@ -249,6 +251,7 @@ if __name__ == "__main__":
             else:
                 compResults[BH.prevCT2Header][BH.postCT2Header] += 1
 
+        # Disjoint classification of q and q' according compression Ratio
         if dataCT1[id][BH.compressionRatioPrevTable] < dataCT2[id][BH.compressionRatioPrevTable]:
             if dataCT1[id][BH.compressionRatioPostTable] < dataCT2[id][BH.compressionRatioPostTable]:
                 compResultsRatio[BH.prevCT1Header][BH.postCT1Header] += 1
@@ -271,6 +274,7 @@ if __name__ == "__main__":
             else:
                 compResultsRatio[BH.prevCT2Header][BH.postCT2Header] += 1
 
+        #Disjoint evolution according to compression ratio
         if dataCT1[id][BH.compressionRatioPrevTable] < dataCT1[id][BH.compressionRatioPostTable]:
             compResultsEvolCT1[BH.beforeHeader] += 1
         elif dataCT1[id][BH.compressionRatioPrevTable] == dataCT1[id][BH.compressionRatioPostTable]:
@@ -278,6 +282,7 @@ if __name__ == "__main__":
         else:
             compResultsEvolCT1[BH.afterHeader] += 1
 
+        # Disjoint evolution according to compression ratio
         if dataCT2[id][BH.compressionRatioPrevTable] < dataCT2[id][BH.compressionRatioPostTable]:
             compResultsEvolCT2[BH.beforeHeader] += 1
         elif dataCT2[id][BH.compressionRatioPrevTable] == dataCT2[id][BH.compressionRatioPostTable]:
@@ -285,7 +290,8 @@ if __name__ == "__main__":
         else:
             compResultsEvolCT2[BH.afterHeader] += 1
 
-        # cross comparison
+        # Disjoint cross comparison
+        # Those who were better before, equal or better after, how are according to the other table
         if dataCT1[id][BH.compressionRatioPrevTable] < dataCT1[id][BH.compressionRatioPostTable]:
             if dataCT2[id][BH.compressionRatioPrevTable] < dataCT2[id][BH.compressionRatioPostTable]:
                 compResultsCross[BH.prevCT1Header][BH.postCT1Header] += 1
@@ -308,7 +314,9 @@ if __name__ == "__main__":
             else:
                 compResultsCross[BH.prevCT2Header][BH.postCT2Header] += 1
 
+        # Disjoint classification giving the equals to CT1
         calculateComparisonUnified(dataCT1, dataCT2, id, BH.prevCodSizeHeader, BH.postCodSizeHeader, compResultsUnifiedCT1)
+        #Disjoint classification giving the equals to CT2
         calculateComparisonUnified(dataCT2, dataCT1, id, BH.prevCodSizeHeader, BH.postCodSizeHeader, compResultsUnifiedCT2)
 
         calculateCrossComparisonUnified(dataCT1, dataCT2, id,

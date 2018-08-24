@@ -24,6 +24,8 @@ public class UpdateTransactionsFile implements AbstractChangeset {
 	
 	protected String _baseFilename = "";
 	
+	
+	
 	public UpdateTransactionsFile(String year, String month, String day, String hour, String number) {
 		this._year = year;
 		this._month = month;
@@ -42,7 +44,7 @@ public class UpdateTransactionsFile implements AbstractChangeset {
 		
 		this._baseFilename = baseFilename; 
 	}
-
+	
 	public UpdateTransactionsFile(String baseFilename) {
 		this._baseFilename = baseFilename; 
 	}

@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 
-package com.irisa.swpatterns.utils.lubmHandling;
+package com.irisa.swpatterns.utils.LUBMHandling;
 
 import java.io.File;
 import java.io.FileFilter;

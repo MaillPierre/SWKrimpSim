@@ -35,6 +35,7 @@
 	<classpathentry kind="lib" path="SWPattern/lib/jsonld-java-0.10.0.jar"/>
 	<classpathentry kind="lib" path="SWPattern/lib/slf4j-api-1.7.25.jar"/>
 	<classpathentry kind="lib" path="SWPattern/lib/slf4j-log4j12-1.7.25.jar"/>
+	<classpathentry kind="lib" path="SWPattern/lib/owlapi-distribution-3.5.7.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
