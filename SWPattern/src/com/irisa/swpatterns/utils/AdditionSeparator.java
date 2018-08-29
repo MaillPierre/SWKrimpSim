@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// File: UpdateSeparator.java 
+// File: AdditionSeparator.java 
 // Author: Carlos Bobed
 // Date: August 2018
 // Comments: Utility to separate the triples in a model in different 

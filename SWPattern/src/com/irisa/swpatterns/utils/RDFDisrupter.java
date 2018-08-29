@@ -3,7 +3,7 @@
 // Author: Carlos Bobed
 // Date: July 2017
 // Comments: Utility to get an RDF model simulating different modeling 
-// 		differences 
+// 		differences - used for the experiments in SIGAPP'18
 // Modifications: 
 // 		July 2017: 
 // 			* the completely random version previously used lead to 
