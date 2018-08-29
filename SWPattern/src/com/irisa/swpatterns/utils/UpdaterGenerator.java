@@ -19,7 +19,9 @@ package com.irisa.swpatterns.utils;
 
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -48,7 +50,6 @@ import org.apache.log4j.PropertyConfigurator;
 import com.irisa.dbplharvest.data.ChangesetFile;
 import com.irisa.jenautils.BaseRDF;
 import com.irisa.jenautils.UtilOntology;
-import com.irisa.swpatterns.utils.RDFDisrupter.MODIFICATION_TYPE;
 
 public class UpdaterGenerator {
 
@@ -111,9 +112,9 @@ public class UpdaterGenerator {
 				// we get all the subject instances 
 				List<Resource> instances = new ArrayList<>(); 
 				RDFModel.listSubjects().forEachRemaining(instances::add);
+				List<Resource> properties = new ArrayList<> (); 
+				ontology.properties().forEach(properties::add);
 
-				List<Statement> incomingTriples = new ArrayList<Statement> ();
-				List<Statement> outgoingTriples = new ArrayList<Statement> (); 
 				int updateId=1;
 				Random rand = new Random(); 
 				double nextMod = 0.0; 
@@ -131,40 +132,80 @@ public class UpdaterGenerator {
 					
 					// we should check that the initial and final transactions are the same 
 					// in pairs 
-					HashSet<Statement> addFirstUpdate = new HashSet<>();
-					HashSet<Statement> delFirstUpdate = new HashSet<>();
-					HashSet<Statement> addSecondUpdate = new HashSet<>();
-					HashSet<Statement> delSecondUpdate = new HashSet<>();
+					ArrayList<Statement> addFirstUpdate = new ArrayList<>();
+					ArrayList<Statement> delFirstUpdate = new ArrayList<>();
+					ArrayList<Statement> addSecondUpdate = new ArrayList<>();
+					ArrayList<Statement> delSecondUpdate = new ArrayList<>();
 					int auxIdx = 0; 
+					int auxInstanceIdx = 0;
+					int auxPropertyIdx = 0; 
+					Statement selectedTriple = null; 
+					Statement addedStatement = null; 
 					
 					while (modifiedTriples < triplesToModify) {
 						nextMod = rand.nextDouble();
 						auxIdx = rand.nextInt(candidateTriples.size());
-
 						assert (0.0 <= nextMod && nextMod <= 1.0); 
+						selectedTriple = candidateTriples.get(auxIdx); 
 						if (nextMod <= deleteProbability) {
 							// we delete the triple in the first place
-							delFirstUpdate.add(candidateTriples.get(auxIdx)); 
+							delFirstUpdate.add(selectedTriple); 
 							// we restore the triple in the second update
-							addSecondUpdate.add(candidateTriples.get(auxIdx)); 
+							addSecondUpdate.add(selectedTriple); 
 						}
 						else if (nextMod <= modObjectProbability) {
+							// we make sure that we modify the object of the triple
+							auxInstanceIdx = rand.nextInt(instances.size()); 
+							while (candidateTriples.get(auxIdx).getObject().equals(instances.get(auxInstanceIdx))) {
+								auxInstanceIdx = rand.nextInt(instances.size()); 
+							}
+							addedStatement = RDFModel.createStatement(selectedTriple.getSubject(), selectedTriple.getPredicate(), 
+														instances.get(auxInstanceIdx));  
 							
+							addFirstUpdate.add(addedStatement); 
+							delFirstUpdate.add(selectedTriple); 
 							
-							
+							addSecondUpdate.add(selectedTriple);
+							delSecondUpdate.add(addedStatement); 							
 						}
 						else {
 							// we then modify the property
+							// we make sure that we modify the property of the triple
+							auxPropertyIdx = rand.nextInt(properties.size()); 
+							while (candidateTriples.get(auxIdx).getPredicate().equals(properties.get(auxPropertyIdx))) {
+								auxPropertyIdx = rand.nextInt(properties.size());						
+							}
+							
+							addedStatement = RDFModel.createStatement(selectedTriple.getSubject(), 
+												RDFModel.getProperty(properties.get(auxPropertyIdx).getURI()), 
+												selectedTriple.getObject());
+							addFirstUpdate.add(addedStatement); 
+							delFirstUpdate.add(selectedTriple); 
+							
+							addSecondUpdate.add(selectedTriple);
+							delSecondUpdate.add(addedStatement);
 						}
+						candidateTriples.remove(auxIdx); 
+						modifiedTriples++; 
 					}
 					
-					OutputStream out = new GZIPOutputStream(new FileOutputStream(new File(directoryName+File.separator
-																+"upd-"+String.format("%016d", updateId))+ChangesetFile.ADDED_EXTENSION)); 
-					RDFDataMgr.write(out, updateModel, RDFFormat.NTRIPLES_UTF8);
-					updateModel.close(); 
-					out.flush(); 
-					out.close();
+					// we have to write two pairs of files 
+					// we codify the order with the last integer in the name 
+					// 0 is a bad update
+					// 1 is a good one
 					
+					writeUpdate(addFirstUpdate,
+							directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"0"+ChangesetFile.ADDED_EXTENSION); 
+					
+					writeUpdate(delFirstUpdate,
+							directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"0"+ChangesetFile.DELETED_EXTENSION); 
+					
+					writeUpdate(addSecondUpdate,
+							directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"1"+ChangesetFile.ADDED_EXTENSION);
+					
+					writeUpdate(delSecondUpdate,
+							directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"1"+ChangesetFile.DELETED_EXTENSION);
+
 					updateId++; 
 				}
 				
@@ -174,6 +215,17 @@ public class UpdaterGenerator {
 			e.printStackTrace();
 			System.exit(-1); 
 		}
+	}
+	
+	public static void writeUpdate(ArrayList<Statement> triples, String filename) throws FileNotFoundException, IOException {
+		Model tmpModel = ModelFactory.createDefaultModel();
+		tmpModel.add(triples); 
+		OutputStream out = new GZIPOutputStream(new FileOutputStream(new File(filename))); 
+		RDFDataMgr.write(out, tmpModel, RDFFormat.NTRIPLES_UTF8);
+		tmpModel.close(); 
+		out.flush(); 
+		out.close();
+		
 	}
 	
 	public static Model getUpdateModelForInstance (Model baseModel, Resource inst, SeparationType sepType) {
