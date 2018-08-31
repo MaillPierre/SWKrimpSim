@@ -102,7 +102,7 @@ public class UpdaterGenerator {
 				Double modPropertyProbability = 1 - (deleteProbability + modObjectProbability); 
 				logger.debug("Reading the RDF file ...");
 				BaseRDF RDFWrapper = new BaseRDF(RDFFilename);
-				logger.debug("Done");
+				logger.debug("Done");	
 				Model RDFModel = RDFWrapper.getModel();
 				logger.debug("Initializing the ontological elements ...");
 				UtilOntology ontology = new UtilOntology();
