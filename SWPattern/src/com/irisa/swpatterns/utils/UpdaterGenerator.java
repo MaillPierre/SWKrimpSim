@@ -13,16 +13,24 @@
 // 		currently it is enough to modify the instance neighbourhood/context, as 
 // 		we want to keep the update scope more controlled
 // Modifications: 
+// 		- Sept 2018: after a discussion with Pierre, updated to limit the 
+// 		number of updates generated. Added the option to read the instances 
+// 		to be modified from file 
 ///////////////////////////////////////////////////////////////////////////////
 
 package com.irisa.swpatterns.utils;
 
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +42,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -63,9 +73,12 @@ public class UpdaterGenerator {
 	public static String INPUT_MODEL_OPTION = "inputModel";
 	public static String SEPARATION_TYPE_OPTION = "separationType";  
 	public static String OUTPUT_DIRECTORY_OPTION = "outputDirectory";
-	public static String MODIFYING_PERCENTAGE_OPTION = "percentage"; 
+	public static String MODIFYING_PERCENTAGE_OPTION = "percentage";
 	public static String DELETE_PROBABILITY_OPTION ="deletingProbability"; 
 	public static String MODIFY_OBJECT_OPTION = "modObjectProbability";
+	public static String INITIAL_SET_INSTANCES_OPTION = "inputInstancesSet";
+	public static String OUTPUT_SET_INSTANCES_OPTION = "outputInstancesSet"; 
+	public static String INSTANCES_NUMBER_OPTION = "instanceNumber"; 
 //	DELETE_PROBABILITY + MODIFY_OBJECT + MODIFY_PROPERTY == 1
 //	public static String MODIFY_PROPERTY_OPTION = "modPropertyProbability"; 
 	public static String HELP_OPTION = "help";
@@ -78,11 +91,20 @@ public class UpdaterGenerator {
 		CommandLineParser parser = new DefaultParser();
 		Options options = new Options();
 		options.addOption(INPUT_MODEL_OPTION, true, "filename with the model to be evolved");
-		options.addOption(SEPARATION_TYPE_OPTION, true, "filename with the model to be evolved");
+		options.addOption(SEPARATION_TYPE_OPTION, true, "separation type - plain vs context/xtended one");
 		options.addOption(OUTPUT_DIRECTORY_OPTION, true, "directory to store the update files"); 
 		options.addOption(MODIFYING_PERCENTAGE_OPTION, true, "percentage of the context to be modified"); 
 		options.addOption(DELETE_PROBABILITY_OPTION, true, "probability of deleting a triple");
 		options.addOption(MODIFY_OBJECT_OPTION, true, "probabilty of modifying the object of a triple"); 
+		
+		OptionGroup instanceSetOptions = new OptionGroup(); 
+		instanceSetOptions.addOption(new Option(INITIAL_SET_INSTANCES_OPTION, true, "filename with the initial set of instances")); 
+		instanceSetOptions.addOption(new Option(OUTPUT_SET_INSTANCES_OPTION, true, "filename to output the set of instances")); 
+		instanceSetOptions.setRequired(false);
+		
+		options.addOption(INSTANCES_NUMBER_OPTION, true, "number of instances to be modified - 0 to get all modified"); 
+		
+		options.addOptionGroup(instanceSetOptions); 
 		
 		options.addOption(HELP_OPTION, false, "display this help"); 
 		
@@ -99,7 +121,7 @@ public class UpdaterGenerator {
 				Double modPercentage = Double.valueOf(cmd.getOptionValue(MODIFYING_PERCENTAGE_OPTION)); 
 				Double deleteProbability = Double.valueOf(cmd.getOptionValue(DELETE_PROBABILITY_OPTION)); 
 				Double modObjectProbability = Double.valueOf(cmd.getOptionValue(MODIFY_OBJECT_OPTION)); 
-				Double modPropertyProbability = 1 - (deleteProbability + modObjectProbability); 
+				Double modPropertyProbability = 1 - (deleteProbability + modObjectProbability);
 				logger.debug("Reading the RDF file ...");
 				BaseRDF RDFWrapper = new BaseRDF(RDFFilename);
 				logger.debug("Done");	
@@ -109,19 +131,47 @@ public class UpdaterGenerator {
 				ontology.init(RDFWrapper);
 				logger.debug("Done");
 				
-				// we get all the subject instances 
-				List<Resource> instances = new ArrayList<>(); 
-				RDFModel.listSubjects().forEachRemaining(instances::add);
+				int numberInstancesToModify = Integer.valueOf(cmd.getOptionValue(INSTANCES_NUMBER_OPTION)); 
+				
+				List<Resource> completeInstances = new ArrayList<>();
+				RDFModel.listSubjects().forEachRemaining(completeInstances::add);
+				
+				List<Resource> modifiableInstances = new ArrayList<>(); 
+				if (cmd.hasOption(INITIAL_SET_INSTANCES_OPTION)) { 
+					BufferedReader in = new BufferedReader (new FileReader(new File(cmd.getOptionValue(INITIAL_SET_INSTANCES_OPTION)))); 
+					String line = ""; 
+					while ( (line = in.readLine())!= null) {
+						if (!"".equals(line)) {
+							modifiableInstances.add(RDFModel.getResource(line)); 
+						}
+					}
+					in.close(); 
+				}
+				else {
+					// we get all the subject instances 
+					RDFModel.listSubjects().forEachRemaining(modifiableInstances::add);
+				}
+				
 				List<Resource> properties = new ArrayList<> (); 
 				ontology.properties().forEach(properties::add);
 
+				// we now keep track of the modified ones 
+				List<Resource> modifiedInstances = new ArrayList<>(); 
+				int successfullyModified = 0; 
 				int updateId=1;
 				Random rand = new Random(); 
 				double nextMod = 0.0; 
 				
-				for (Resource instance: instances) {
+				while (!modifiableInstances.isEmpty() && (successfullyModified < numberInstancesToModify || numberInstancesToModify == 0) ) {
+						
+					int auxInstanceIdx = 0;
+					Resource currentInstance = null; 
+					auxInstanceIdx = rand.nextInt(modifiableInstances.size());
+					currentInstance = modifiableInstances.get(auxInstanceIdx); 
+					modifiableInstances.remove(auxInstanceIdx); 
+					
 					// it is exactly the same code used for the addition separator
-					Model updateModel = getUpdateModelForInstance(RDFModel, instance, sepType); 
+					Model updateModel = getUpdateModelForInstance(RDFModel, currentInstance, sepType); 
 					// we can now focus on messing up this instance (carefully ...) 
 					ArrayList<Statement> candidateTriples = new ArrayList<>(); 
 					updateModel.listStatements().forEachRemaining(candidateTriples::add);
@@ -129,86 +179,101 @@ public class UpdaterGenerator {
 					// triples to modify 
 					long triplesToModify = (long) Math.floor(modPercentage * candidateTriples.size());
 					long modifiedTriples = 0; 
-					
-					// we should check that the initial and final transactions are the same 
-					// in pairs 
-					ArrayList<Statement> addFirstUpdate = new ArrayList<>();
-					ArrayList<Statement> delFirstUpdate = new ArrayList<>();
-					ArrayList<Statement> addSecondUpdate = new ArrayList<>();
-					ArrayList<Statement> delSecondUpdate = new ArrayList<>();
-					int auxIdx = 0; 
-					int auxInstanceIdx = 0;
-					int auxPropertyIdx = 0; 
-					Statement selectedTriple = null; 
-					Statement addedStatement = null; 
-					
-					while (modifiedTriples < triplesToModify) {
-						nextMod = rand.nextDouble();
-						auxIdx = rand.nextInt(candidateTriples.size());
-						assert (0.0 <= nextMod && nextMod <= 1.0); 
-						selectedTriple = candidateTriples.get(auxIdx); 
-						if (nextMod <= deleteProbability) {
-							// we delete the triple in the first place
-							delFirstUpdate.add(selectedTriple); 
-							// we restore the triple in the second update
-							addSecondUpdate.add(selectedTriple); 
-						}
-						else if (nextMod <= modObjectProbability) {
-							// we make sure that we modify the object of the triple
-							auxInstanceIdx = rand.nextInt(instances.size()); 
-							while (candidateTriples.get(auxIdx).getObject().equals(instances.get(auxInstanceIdx))) {
-								auxInstanceIdx = rand.nextInt(instances.size()); 
+					if (triplesToModify > 0) { 
+						// we should check that the initial and final transactions are the same 
+						// in pairs 
+						ArrayList<Statement> addFirstUpdate = new ArrayList<>();
+						ArrayList<Statement> delFirstUpdate = new ArrayList<>();
+						ArrayList<Statement> addSecondUpdate = new ArrayList<>();
+						ArrayList<Statement> delSecondUpdate = new ArrayList<>();
+						
+						int auxIdx = 0; 
+						auxInstanceIdx = 0;
+						int auxPropertyIdx = 0; 
+						Statement selectedTriple = null; 
+						Statement addedStatement = null; 
+						
+						while (modifiedTriples < triplesToModify) {
+							nextMod = rand.nextDouble();
+							auxIdx = rand.nextInt(candidateTriples.size());
+							assert (0.0 <= nextMod && nextMod <= 1.0); 
+							selectedTriple = candidateTriples.get(auxIdx); 
+							if (nextMod <= deleteProbability) {
+								// we delete the triple in the first place
+								delFirstUpdate.add(selectedTriple); 
+								// we restore the triple in the second update
+								addSecondUpdate.add(selectedTriple); 
 							}
-							addedStatement = RDFModel.createStatement(selectedTriple.getSubject(), selectedTriple.getPredicate(), 
-														instances.get(auxInstanceIdx));  
-							
-							addFirstUpdate.add(addedStatement); 
-							delFirstUpdate.add(selectedTriple); 
-							
-							addSecondUpdate.add(selectedTriple);
-							delSecondUpdate.add(addedStatement); 							
-						}
-						else {
-							// we then modify the property
-							// we make sure that we modify the property of the triple
-							auxPropertyIdx = rand.nextInt(properties.size()); 
-							while (candidateTriples.get(auxIdx).getPredicate().equals(properties.get(auxPropertyIdx))) {
-								auxPropertyIdx = rand.nextInt(properties.size());						
+							else if (nextMod <= modObjectProbability) {
+								// we make sure that we modify the object of the triple
+								auxInstanceIdx = rand.nextInt(completeInstances.size()); 
+								while (candidateTriples.get(auxIdx).getObject().equals(completeInstances.size())) {
+									auxInstanceIdx = rand.nextInt(completeInstances.size()); 
+								}
+								addedStatement = RDFModel.createStatement(selectedTriple.getSubject(), selectedTriple.getPredicate(), 
+															completeInstances.get(auxInstanceIdx));  
+								
+								addFirstUpdate.add(addedStatement); 
+								delFirstUpdate.add(selectedTriple); 
+								
+								addSecondUpdate.add(selectedTriple);
+								delSecondUpdate.add(addedStatement); 							
 							}
-							
-							addedStatement = RDFModel.createStatement(selectedTriple.getSubject(), 
-												RDFModel.getProperty(properties.get(auxPropertyIdx).getURI()), 
-												selectedTriple.getObject());
-							addFirstUpdate.add(addedStatement); 
-							delFirstUpdate.add(selectedTriple); 
-							
-							addSecondUpdate.add(selectedTriple);
-							delSecondUpdate.add(addedStatement);
+							else {
+								// we then modify the property
+								// we make sure that we modify the property of the triple
+								auxPropertyIdx = rand.nextInt(properties.size()); 
+								while (candidateTriples.get(auxIdx).getPredicate().equals(properties.get(auxPropertyIdx))) {
+									auxPropertyIdx = rand.nextInt(properties.size());						
+								}
+								
+								addedStatement = RDFModel.createStatement(selectedTriple.getSubject(), 
+													RDFModel.getProperty(properties.get(auxPropertyIdx).getURI()), 
+													selectedTriple.getObject());
+								addFirstUpdate.add(addedStatement); 
+								delFirstUpdate.add(selectedTriple); 
+								
+								addSecondUpdate.add(selectedTriple);
+								delSecondUpdate.add(addedStatement);
+							}
+							candidateTriples.remove(auxIdx); 
+							modifiedTriples++; 
 						}
-						candidateTriples.remove(auxIdx); 
-						modifiedTriples++; 
+						
+						// we have to write two pairs of files 
+						// we codify the order with the last integer in the name 
+						// 0 is a bad update
+						// 1 is a good one
+						
+						writeUpdate(addFirstUpdate,
+								directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"0"+ChangesetFile.ADDED_EXTENSION); 
+						
+						writeUpdate(delFirstUpdate,
+								directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"0"+ChangesetFile.DELETED_EXTENSION); 
+						
+						writeUpdate(addSecondUpdate,
+								directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"1"+ChangesetFile.ADDED_EXTENSION);
+						
+						writeUpdate(delSecondUpdate,
+								directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"1"+ChangesetFile.DELETED_EXTENSION);
+						
+						modifiedInstances.add(currentInstance); 
+						successfullyModified++;
+						updateId++; 
 					}
-					
-					// we have to write two pairs of files 
-					// we codify the order with the last integer in the name 
-					// 0 is a bad update
-					// 1 is a good one
-					
-					writeUpdate(addFirstUpdate,
-							directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"0"+ChangesetFile.ADDED_EXTENSION); 
-					
-					writeUpdate(delFirstUpdate,
-							directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"0"+ChangesetFile.DELETED_EXTENSION); 
-					
-					writeUpdate(addSecondUpdate,
-							directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"1"+ChangesetFile.ADDED_EXTENSION);
-					
-					writeUpdate(delSecondUpdate,
-							directoryName+File.separator+"upd-"+String.format("%016d", updateId)+"1"+ChangesetFile.DELETED_EXTENSION);
-
-					updateId++; 
+					else { 
+						// there has been no possible update 
+					}
 				}
 				
+				if (cmd.hasOption(OUTPUT_SET_INSTANCES_OPTION)) { 
+					PrintWriter out = new PrintWriter(new FileWriter(new File(cmd.getOptionValue(OUTPUT_SET_INSTANCES_OPTION))));
+					for (Resource instance: modifiedInstances) {
+						out.println(instance.getURI()); 
+					}
+					out.flush(); 
+					out.close(); 
+				}
 			}
 		}
 		catch (Exception e) {
@@ -225,7 +290,6 @@ public class UpdaterGenerator {
 		tmpModel.close(); 
 		out.flush(); 
 		out.close();
-		
 	}
 	
 	public static Model getUpdateModelForInstance (Model baseModel, Resource inst, SeparationType sepType) {

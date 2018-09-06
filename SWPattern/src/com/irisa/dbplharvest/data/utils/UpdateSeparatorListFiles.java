@@ -40,10 +40,12 @@ public class UpdateSeparatorListFiles {
 	
 	// file ID is the the complete path, but for the .added.nt.gz or the .removed.nt.gz extension
 	public static String FILE_ID_OPTION = "fileList"; 
+	public static String ALREADY_CANONIZED_OPTION = "alreadyCanonized"; 
 	public static String HELP_OPTION = "help"; 
 	
 	public static String OUTPUT_EXTENSION = ".separated.nt"; 
-
+	
+	
 	public static void main(String[] args) {
 		
 		BasicConfigurator.configure();
@@ -53,18 +55,21 @@ public class UpdateSeparatorListFiles {
 		Options options = new Options();
 		options.addOption(FILE_ID_OPTION, true, "fileList is the file with the file IDs, i.d., their complete path, "
 				+ "but for the .added.nt.gz or the .removed.nt.gz extension");
+		options.addOption(ALREADY_CANONIZED_OPTION, false, "the files must not be canonized again - for those experiments not in the DBpedia Live "); 
 		options.addOption(HELP_OPTION, false, "display this help"); 
+		
 		try  {
 			CommandLine cmd = parser.parse( options, args);
 			
 			boolean helpAsked = cmd.hasOption(HELP_OPTION);
 			if(helpAsked) {
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp( "OrientedMeasuresCalculator", options );
+				formatter.printHelp( "UpdateSeparatorListFiles", options );
 				System.exit(0);
 			} 
 			
-			String fileListFilename = cmd.getOptionValue(FILE_ID_OPTION); 
+			String fileListFilename = cmd.getOptionValue(FILE_ID_OPTION);
+			boolean alreadyCanonized = cmd.hasOption(ALREADY_CANONIZED_OPTION); 
 			long start = System.nanoTime(); 
 			
 			// first, we read all the file names in memory to paralellize everything
@@ -102,11 +107,21 @@ public class UpdateSeparatorListFiles {
 						String month = auxStack.pop(); 
 						String year = auxStack.pop();
 						
-						ChangesetFile changeFile = new ChangesetFile(year, month, day, hour, number, 
-													fileID+ChangesetFile.ADDED_EXTENSION, fileID+ChangesetFile.DELETED_EXTENSION); 
 						
-						// we force the canonization
-						Changeset changeset = new Changeset(changeFile, true);  
+						
+						ChangesetFile changeFile = null; 
+						
+						if (!alreadyCanonized)  {
+							changeFile = new ChangesetFile(year, month, day, hour, number,
+									fileID+ChangesetFile.ADDED_EXTENSION, fileID+ChangesetFile.DELETED_EXTENSION); 
+						}
+						else {
+							changeFile = new ChangesetFile(year, month, day, hour, number,
+									fileID+ChangesetFile.ADDED_CANONIZED_EXTENSION, fileID+ChangesetFile.DELETED_CANONIZED_EXTENSION); 
+						}
+							
+						// we don't force the canonization anymore
+						Changeset changeset = new Changeset(changeFile, !alreadyCanonized);  
 						
 						HashSet<HashSet<Resource>> first = changeset.getAffectedResources(); 
 						changeset.writeAffectedResources(out);
