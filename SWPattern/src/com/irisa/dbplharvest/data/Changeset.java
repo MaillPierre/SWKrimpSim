@@ -357,7 +357,10 @@ public class Changeset implements AbstractChangeset {
 							if (invertedIndex.containsKey(obj)) { 
 								// it contains both we merge the sets if they are not the same
 								// otherwise we don't have to do anything
-								if ( !invertedIndex.get(sbj).equals(invertedIndex.get(obj)) )  { 
+								
+								if (! (invertedIndex.get(sbj).containsAll(invertedIndex.get(obj)) && 
+										invertedIndex.get(obj).containsAll(invertedIndex.get(sbj)) ) ) {
+								// if ( !invertedIndex.get(sbj).equals(invertedIndex.get(obj)) )  { 
 									HashSet<Resource> oldSet = invertedIndex.get(obj);
 									invertedIndex.get(sbj).addAll(oldSet); 
 									HashSet<Resource> newSet = invertedIndex.get(sbj); 
@@ -365,7 +368,9 @@ public class Changeset implements AbstractChangeset {
 									for (Resource res: oldSet) { 
 										invertedIndex.put(res, newSet); 
 									}
-									this._affectedResources.remove(oldSet);
+									System.err.println("Affected resources set before: "+this._affectedResources.size());
+									this._affectedResources.remove(invertedIndex.get(obj));
+									System.err.println("Affected resources set after: "+this._affectedResources.size());
 								}
 								// else 
 								// they are equal, we do not have to do anything
@@ -427,7 +432,10 @@ public class Changeset implements AbstractChangeset {
 							if (invertedIndex.containsKey(obj)) { 
 								// it contains both we merge the sets if they are not the same
 								// otherwise we don't have to do anything
-								if ( !invertedIndex.get(sbj).equals(invertedIndex.get(obj)) )  { 
+
+								if (! (invertedIndex.get(sbj).containsAll(invertedIndex.get(obj)) && 
+										invertedIndex.get(obj).containsAll(invertedIndex.get(sbj)) ) ) {
+//								if ( !invertedIndex.get(sbj).equals(invertedIndex.get(obj)) )  { 
 									HashSet<Resource> oldSet = invertedIndex.get(obj);
 									invertedIndex.get(sbj).addAll(oldSet); 
 									HashSet<Resource> newSet = invertedIndex.get(sbj); 
@@ -435,7 +443,9 @@ public class Changeset implements AbstractChangeset {
 									for (Resource res: oldSet) { 
 										invertedIndex.put(res, newSet); 
 									}
-									this._affectedResources.remove(oldSet);
+									System.err.println("Affected resources set before: "+this._affectedResources.size());
+									this._affectedResources.remove(invertedIndex.get(obj));
+									System.err.println("Affected resources set after: "+this._affectedResources.size());
 								}
 								// else 
 								// they are equal, we do not have to do anything
