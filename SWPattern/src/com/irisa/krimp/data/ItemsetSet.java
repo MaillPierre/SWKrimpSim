@@ -122,4 +122,25 @@ public class ItemsetSet extends LinkedList<KItemset> {
 			int value = c.stream().mapToInt(e-> (this.add(e)?1:0)).sum();
 			return (value == c.size());
 		}
+		
+	/* Inclusion test */ 
+		
+	public boolean checkInclusion(Collection <? extends KItemset> c) {
+		boolean result = true; 
+		Iterator<? extends KItemset> it = c.iterator();
+		KItemset value = null;
+		KItemset baseValue = null; 
+		Iterator<? extends KItemset> thisIt = null;
+		boolean found = false; 
+		while (result && it.hasNext()) {
+			value = it.next(); 
+			thisIt = this.iterator(); 
+			while (!found && thisIt.hasNext() ) {
+				baseValue = thisIt.next(); 
+				found = baseValue.compareContents(value); 
+			}
+			result = found; 
+		}
+		return result;
+	}
 }

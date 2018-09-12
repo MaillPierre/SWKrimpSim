@@ -161,4 +161,8 @@ public class KItemset extends HashSet<Integer> {
 		KItemset test2 = new KItemset(test.toString());
 		System.out.println("test2: "+test2);
 	}
+	
+	public boolean compareContents(KItemset other) {
+		return (this.containsAll(other) && other.containsAll(this)); 
+	}
 }

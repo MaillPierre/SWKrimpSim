@@ -42,7 +42,6 @@ public class UpdateSeparatorListFiles {
 	public static String FILE_ID_OPTION = "fileList"; 
 	public static String ALREADY_CANONIZED_OPTION = "alreadyCanonized"; 
 	public static String HELP_OPTION = "help"; 
-	
 	public static String OUTPUT_EXTENSION = ".separated.nt"; 
 	
 	
