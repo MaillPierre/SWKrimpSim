@@ -262,10 +262,19 @@ public class Measures {
 		CodificationMeasure measure = new CodificationMeasure(union, CT1);
 		// we change the database without updating anything but the dataIndex
 		// we applyLaplaceSmoothing for perplexity purposes
+		StringBuilder strBld = new StringBuilder(); 
+		long timestamp = System.nanoTime();
+//		strBld.append(timestamp); 
+//		strBld.append(" - Before applying smooth: \n");
+//		strBld.append(measure.getCodetable().toString()); 
 		measure.applyLaplaceSmoothingToUsages();
-		
+		strBld.append("\n"); 
+		strBld.append(timestamp); 
+		strBld.append(" - After applying smooth: \n"); 
+		strBld.append(measure.getCodetable().toString());
+		logger.debug(strBld.toString());
 		// now, with the same codeTable, already containing the union
-		// we codify the transactions separatedly
+		// we codify the transactions separatedly 	
 		
 		double resultQCT = measure.codificationLengthExternal(q); 
 		double resultQSCT = measure.codificationLengthAccordingSCTExternal(q);

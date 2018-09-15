@@ -425,6 +425,7 @@ public class CodificationMeasure {
 	public double codificationLengthExternal(ItemsetSet transactions) { 
 		double result = 0.0; 
 		result = transactions.parallelStream().mapToDouble(e -> transactionCodificationLength(e)).sum(); 
+		logger.debug("Total: "+result);
 		return result; 
 	}
 	
@@ -442,7 +443,7 @@ public class CodificationMeasure {
 	public double codificationLengthAccordingSCTExternal (ItemsetSet transactions) {
 		double result = 0.0;
 		result = transactions.parallelStream().mapToDouble(e ->transactionCodificationLengthAccordingSCT(e)).sum();
-		
+		logger.debug("Total: "+result);
 		// nonparallel for debugging purposes 
 //		result = this._transactions.stream().mapToDouble(e ->transactionCodificationLength(e)).sum();
 
@@ -455,7 +456,21 @@ public class CodificationMeasure {
 		ItemsetSet codes = null; 
 		double result = 0.0; 
 		codes = this.codify(it); 
-	
+		
+		StringBuilder strBld = new StringBuilder(); 
+		strBld.append(it.toString()); 
+		strBld.append("\n---\n"); 
+		for (KItemset debug: codes) {
+			strBld.append(debug.toString()); 
+			strBld.append(" s: "); 
+			strBld.append(debug.getSupport()); 
+			strBld.append(" u: "); 
+			strBld.append(debug.getUsage());
+			strBld.append(" - codeLength: "); 
+			strBld.append(codeLengthOfcode(this._codetable, debug)); 
+			strBld.append(" \n"); 
+		}
+		
 		for (KItemset code: codes) {
 			double codelength = codeLengthOfcode(this._codetable, code);
 //			logger.debug(code + " codelength: "+codelength);
@@ -469,16 +484,25 @@ public class CodificationMeasure {
 			}
 			result += codelength; 
 		}
+		strBld.append("Total CT-transaction: "); 
+		strBld.append(result); 
+		strBld.append("\n"); 
+		logger.debug(strBld.toString());
 		return result; 
 	}
 	
 	public double transactionCodificationLengthAccordingSCT  (KItemset it) { 
 		double result = 0.0; 
 		if (!this._codetable.isStandard()) {
+			StringBuilder debug = new StringBuilder(); 
 			for (Integer id: it.getItems()) { 
 				double codelength = codeLengthOfcode(this._codetable.getStandardCodeTable(), 
 											this._codetable.getStandardCodeTable().getOneLengthCodes().get(id));
-//				logger.debug(code + " codelength: "+codelength);
+				debug.append(id); 
+				debug.append(" - codelength: "); 
+				debug.append(codelength); 
+				debug.append("\n"); 
+				
 				try {
 					assert ! Double.isInfinite(codelength);
 				}
@@ -489,6 +513,12 @@ public class CodificationMeasure {
 				}
 				result += codelength; 				
 			}
+			debug.append("Total SCT-transaction: "); 
+			debug.append(result); 
+			debug.append("\n"); 
+			logger.debug(debug.toString()); 
+			
+			
 		}
 		return result; 
 	}
@@ -527,8 +557,16 @@ public class CodificationMeasure {
 	    	
 	    	// first of all, we add them 
 	    	// before it was done one by one ... with an ordering op for each of them
+//	    	StringBuilder strBld = new StringBuilder(); 
+//			long timestamp = System.nanoTime();
+//			strBld.append(timestamp); 
+//			strBld.append("before adding singletons");
+//			strBld.append(this._codetable.toString()); 
 	    	this._codetable.addSingletons(addedSingletons);
-	    	
+//	    	strBld.append(timestamp); 
+//			strBld.append("after adding singletons");
+//			strBld.append(this._codetable.toString()); 
+//	    	logger.debug(strBld.toString());
 	    	// we have to apply +1 to all the ones of not length 1 that were already in the code table
 		    for (KItemset key: this._codetable.getCodes()) {
 		    	if (key.size() > 1) { 
