@@ -109,7 +109,6 @@ public class ChangesetTransactionConverter {
 	 * Extract the transactions of the triples of the changeset from the current context source. Clear the converter indexes after the extraction.
 	 * 
 	 * @param source
-	 * @param exceptThose Model containing triples to be removed from the context
 	 * @return
 	 */
 	protected HashMap<Resource, KItemset> extractTransactionsFromAffectedResources(Changeset chg) {
@@ -127,9 +126,7 @@ public class ChangesetTransactionConverter {
 		Iterator<Resource> itIndiv = null; 
 		int nbtreatedIndiv = 1;
 		
-//		while (itSets.hasNext()) { 
 		itIndiv = chg.getFlattenedAffectedResources().iterator(); 
-//			itIndiv = itSets.next().iterator(); 
 		while(itIndiv.hasNext()) {
 			Resource indiv = itIndiv.next();
 			KItemset indivTrans = new KItemset();
@@ -152,7 +149,6 @@ public class ChangesetTransactionConverter {
 			}
 			nbtreatedIndiv++;
 		}
-//		} 
 		
 		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
 		clearIndexes();
@@ -327,8 +323,6 @@ public class ChangesetTransactionConverter {
 			}
 			logger.debug("Property-class based items built");
 		}
-
-		//System.gc(); 
 	}
 
 	/**
@@ -339,7 +333,6 @@ public class ChangesetTransactionConverter {
 	 */
 	public Model extractContextOfChangeset(Changeset chg) {
 		Model result = ModelFactory.createDefaultModel();
-		Iterator<HashSet<Resource>> itRes1 = chg.getAffectedResources().iterator();
 		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator(); 
 		// cannot be further paralelized as Model is not thread-safe
 		while (itRes.hasNext()) { 
@@ -355,34 +348,11 @@ public class ChangesetTransactionConverter {
 
 			}
 		}
-		
-//		while(itRes1.hasNext()) {
-//			HashSet<Resource> hashres = itRes1.next();
-//			Iterator<Resource> itRes2 = hashres.iterator();
-//			while(itRes2.hasNext()) {
-//				Resource affectedRes = itRes2.next();
-//				if(affectedRes != null 
-//						&& affectedRes.isResource() 
-//						&& ! affectedRes.isAnon()
-//						&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
-//						&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
-//	
-//					result.add(this._contextSource.listStatements(affectedRes, null, (RDFNode)null));
-//					result.add(this._contextSource.listStatements(null, null, affectedRes));
-//
-//				}
-//			}
-//		}
 		return result;
 	}
 
 
 	private void addComponentToIndexes(Resource res, RDFPatternComponent compo) {
-//		logger.trace("Adding component " + compo + " for resource " + res);
-			
-//		if(!this._individuals.contains(res)) {
-//			this._individuals.add(res);
-//		}
 		// CB: directly adding should not change the result
 		this._individuals.add(res); 
 		
@@ -409,28 +379,5 @@ public class ChangesetTransactionConverter {
 		this._buildingTransactionsPropertyItems.clear();
 		this._buildingTransactionsTypeItems.clear();
 	}
-
-	//	/**
-	//	 * Should only be used to add typing component for secondary resources
-	//	 * @param res
-	//	 * @param compo
-	//	 */
-	//	private void addComponentToSecondaryIndexes(Resource res, RDFPatternComponent compo) {
-	//		logger.trace("Adding component " + compo + " for secondary resource " + res);
-	//		switch(compo.getType()) {
-	//		case TYPE:
-	//			if(! this._buildingSecondaryResTypeItems.containsKey(res)) { 
-	//				this._buildingSecondaryResTypeItems.put(res, new LabeledTransaction(res));
-	//			}
-	//			this._buildingSecondaryResTypeItems.get(res).add(compo);
-	//			break;
-	//		case OUT_PROPERTY:
-	//		case IN_PROPERTY:
-	//		case OUT_NEIGHBOUR_TYPE: 
-	//		case IN_NEIGHBOUR_TYPE: 
-	//		default:
-	//			throw new LogicException("Unexpected element \""+ compo +"\" to add to the indexes for resource " + res );
-	//		}
-	//	}
 
 }
