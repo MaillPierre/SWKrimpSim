@@ -332,8 +332,10 @@ public class ChangesetTransactionConverter {
 	 * @return a Model containing both source and its context
 	 */
 	public Model extractContextOfChangeset(Changeset chg) {
+		logger.debug("Extracting - "+this.getNeighborLevel());
 		Model result = ModelFactory.createDefaultModel();
-		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator(); 
+		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator();
+		
 		// cannot be further paralelized as Model is not thread-safe
 		while (itRes.hasNext()) { 
 			Resource affectedRes = itRes.next();
@@ -345,8 +347,22 @@ public class ChangesetTransactionConverter {
 
 				result.add(this._contextSource.listStatements(affectedRes, null, (RDFNode)null));
 				result.add(this._contextSource.listStatements(null, null, affectedRes));
-
 			}
+		}
+		
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+			Model tempModel = ModelFactory.createDefaultModel();
+			result.listSubjects().forEachRemaining(sbj->
+					tempModel.add(result.listStatements(sbj, RDF.type, (RDFNode)null)));
+			
+			result.listObjects().forEachRemaining(obj->
+					{
+						if (obj.isResource()) {
+							tempModel.add(result.listStatements(obj.asResource(), RDF.type, (RDFNode)null)); 
+						}
+					});
+			logger.debug("Extending with "+tempModel.size()+" type triples");
+			result.add(tempModel.listStatements()); 
 		}
 		return result;
 	}
