@@ -148,7 +148,7 @@ public class ChangesetTransactionConverter {
 			}
 
 			if(nbtreatedIndiv % 100000 == 0) {
-				logger.debug("Individual n°" + nbtreatedIndiv);
+				logger.debug("Individual n:" + nbtreatedIndiv);
 			}
 			nbtreatedIndiv++;
 		}
@@ -331,7 +331,6 @@ public class ChangesetTransactionConverter {
 	 * @return a Model containing both source and its context
 	 */
 	public Model extractContextOfChangeset(Changeset chg) {
-		logger.debug("Extracting - "+this.getNeighborLevel());
 		Model result = ModelFactory.createDefaultModel();
 		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator();
 		
@@ -360,19 +359,7 @@ public class ChangesetTransactionConverter {
 							tempModel.add(this._contextSource.listStatements(obj.asResource(), RDF.type, (RDFNode)null)); 
 						}
 					});
-			logger.debug("Extending with "+tempModel.size()+" type triples");
-			logger.debug("Results size b4 extension: "+result.size());
 			result.add(tempModel.listStatements()); 
-			logger.debug("Results size after extension: "+result.size());
-			try {
-				FileOutputStream output = new FileOutputStream ("tmp---"+System.currentTimeMillis()); 
-				RDFDataMgr.write(output, result, RDFFormat.NT) ;
-				output.flush();
-				output.close();
-			}
-			catch (Exception e) {
-				e.printStackTrace();
-			}
 		}
 		
 		return result;

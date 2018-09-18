@@ -274,11 +274,9 @@ public class Changeset implements AbstractChangeset {
 									for (Resource res : oldSet) {
 										invertedIndex.put(res, newSet);
 									}
-									System.err.println(
-											"Affected resources set before: " + this._affectedResources.size());
+									// System.err.println("Affected resources set before: " + this._affectedResources.size());
 									this._affectedResources.remove(invertedIndex.get(obj));
-									System.err
-											.println("Affected resources set after: " + this._affectedResources.size());
+									// System.err.println("Affected resources set after: " + this._affectedResources.size());
 								}
 								// else
 								// they are equal, we do not have to do anything
@@ -346,11 +344,9 @@ public class Changeset implements AbstractChangeset {
 									for (Resource res : oldSet) {
 										invertedIndex.put(res, newSet);
 									}
-									System.err.println(
-											"Affected resources set before: " + this._affectedResources.size());
+									// System.err.println("Affected resources set before: " + this._affectedResources.size());
 									this._affectedResources.remove(invertedIndex.get(obj));
-									System.err
-											.println("Affected resources set after: " + this._affectedResources.size());
+									// System.err.println("Affected resources set after: " + this._affectedResources.size());
 								}
 								// else
 								// they are equal, we do not have to do anything

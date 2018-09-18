@@ -457,68 +457,35 @@ public class CodificationMeasure {
 		double result = 0.0; 
 		codes = this.codify(it); 
 		
-		StringBuilder strBld = new StringBuilder(); 
-		strBld.append(it.toString()); 
-		strBld.append("\n---\n"); 
-		for (KItemset debug: codes) {
-			strBld.append(debug.toString()); 
-			strBld.append(" s: "); 
-			strBld.append(debug.getSupport()); 
-			strBld.append(" u: "); 
-			strBld.append(debug.getUsage());
-			strBld.append(" - codeLength: "); 
-			strBld.append(codeLengthOfcode(this._codetable, debug)); 
-			strBld.append(" \n"); 
-		}
-		
 		for (KItemset code: codes) {
 			double codelength = codeLengthOfcode(this._codetable, code);
-//			logger.debug(code + " codelength: "+codelength);
 			try {
 				assert ! Double.isInfinite(codelength);
 			}
 			catch (AssertionError e) {
 				logger.debug(code + " codelength: "+codelength);
-
 				System.exit(-1);
 			}
 			result += codelength; 
 		}
-		strBld.append("Total CT-transaction: "); 
-		strBld.append(result); 
-		strBld.append("\n"); 
-		logger.debug(strBld.toString());
 		return result; 
 	}
 	
 	public double transactionCodificationLengthAccordingSCT  (KItemset it) { 
 		double result = 0.0; 
 		if (!this._codetable.isStandard()) {
-			StringBuilder debug = new StringBuilder(); 
 			for (Integer id: it.getItems()) { 
 				double codelength = codeLengthOfcode(this._codetable.getStandardCodeTable(), 
 											this._codetable.getStandardCodeTable().getOneLengthCodes().get(id));
-				debug.append(id); 
-				debug.append(" - codelength: "); 
-				debug.append(codelength); 
-				debug.append("\n"); 
-				
 				try {
 					assert ! Double.isInfinite(codelength);
 				}
 				catch (AssertionError e) {
 					logger.debug(id + " codelength: "+codelength);
-
 					System.exit(-1);
 				}
 				result += codelength; 				
-			}
-			debug.append("Total SCT-transaction: "); 
-			debug.append(result); 
-			debug.append("\n"); 
-			logger.debug(debug.toString()); 
-			
-			
+			}		
 		}
 		return result; 
 	}
