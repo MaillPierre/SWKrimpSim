@@ -201,7 +201,6 @@ public class ChangesetTransactionConverter {
 						&& (chg.isAffectedResource(subj) 
 								|| (obj.isURIResource() 
 										&& chg.isAffectedResource(obj.asResource()))) ) {
-	//								logger.trace("triple n° " + nbtriples + " read: " + subj + " " + prop + " " + obj);
 						if(prop.equals(RDF.type)) { // Instantiation triple
 							if(! (obj.isLiteral())) { // checking basic RDF rule respect
 								Resource objRes = obj.asResource();
@@ -353,16 +352,19 @@ public class ChangesetTransactionConverter {
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			Model tempModel = ModelFactory.createDefaultModel();
 			result.listSubjects().forEachRemaining(sbj->
-					tempModel.add(result.listStatements(sbj, RDF.type, (RDFNode)null)));
+					tempModel.add(this._contextSource.listStatements(sbj, RDF.type, (RDFNode)null)));
 			
 			result.listObjects().forEachRemaining(obj->
 					{
 						if (obj.isResource()) {
-							tempModel.add(result.listStatements(obj.asResource(), RDF.type, (RDFNode)null)); 
+							tempModel.add(this._contextSource.listStatements(obj.asResource(), RDF.type, (RDFNode)null)); 
 						}
 					});
 			logger.debug("Extending with "+tempModel.size()+" type triples");
+			logger.debug("Results size b4 extension: "+result.size());
 			result.add(tempModel.listStatements()); 
+			logger.debug("Results size after extension: "+result.size());
+			
 		}
 		return result;
 	}
