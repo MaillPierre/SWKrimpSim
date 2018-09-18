@@ -1,5 +1,6 @@
 package com.irisa.dbplharvest.data;
 
+import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -16,6 +17,8 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
@@ -194,13 +197,10 @@ public class ChangesetTransactionConverter {
 							obj = stat.getObject().asResource(); 
 						}
 					}
-	
+					
 					if(subj != null 
 						&& prop != null 
-						&& obj != null
-						&& (chg.isAffectedResource(subj) 
-								|| (obj.isURIResource() 
-										&& chg.isAffectedResource(obj.asResource()))) ) {
+						&& obj != null ) {
 						if(prop.equals(RDF.type)) { // Instantiation triple
 							if(! (obj.isLiteral())) { // checking basic RDF rule respect
 								Resource objRes = obj.asResource();
@@ -364,8 +364,17 @@ public class ChangesetTransactionConverter {
 			logger.debug("Results size b4 extension: "+result.size());
 			result.add(tempModel.listStatements()); 
 			logger.debug("Results size after extension: "+result.size());
-			
+			try {
+				FileOutputStream output = new FileOutputStream ("tmp---"+System.currentTimeMillis()); 
+				RDFDataMgr.write(output, result, RDFFormat.NT) ;
+				output.flush();
+				output.close();
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
+		
 		return result;
 	}
 
