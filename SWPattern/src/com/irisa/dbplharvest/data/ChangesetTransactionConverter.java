@@ -1,6 +1,7 @@
 package com.irisa.dbplharvest.data;
 
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -118,7 +119,7 @@ public class ChangesetTransactionConverter {
 		HashMap<Resource, KItemset> result = new HashMap<Resource, KItemset>();
 		Model context = extractContextOfChangeset(chg);
 		this.fillIndexesFromModel(context, chg);
-
+		
 		if(conversionFailed) {
 			return result;
 		}
@@ -155,6 +156,7 @@ public class ChangesetTransactionConverter {
 		
 		logger.debug("All transactions united, " + result.size() + " transactions for " + AttributeIndex.getInstance().size() + " attributes");
 		clearIndexes();
+		context.close(); 
 		return result;
 	}
 
@@ -333,7 +335,6 @@ public class ChangesetTransactionConverter {
 	public Model extractContextOfChangeset(Changeset chg) {
 		Model result = ModelFactory.createDefaultModel();
 		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator();
-		
 		// cannot be further paralelized as Model is not thread-safe
 		while (itRes.hasNext()) { 
 			Resource affectedRes = itRes.next();
@@ -349,19 +350,20 @@ public class ChangesetTransactionConverter {
 		}
 		
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
-			Model tempModel = ModelFactory.createDefaultModel();
+			ArrayList<Statement> extensions = new ArrayList<>(); 
 			result.listSubjects().forEachRemaining(sbj->
-					tempModel.add(this._contextSource.listStatements(sbj, RDF.type, (RDFNode)null)));
+					this._contextSource.listStatements(sbj, RDF.type, (RDFNode)null).forEachRemaining(
+							stmt->extensions.add(stmt)));
 			
 			result.listObjects().forEachRemaining(obj->
 					{
 						if (obj.isResource()) {
-							tempModel.add(this._contextSource.listStatements(obj.asResource(), RDF.type, (RDFNode)null)); 
+							this._contextSource.listStatements(obj.asResource(), RDF.type, (RDFNode)null).forEachRemaining(
+									stmt->extensions.add(stmt)); 
 						}
 					});
-			result.add(tempModel.listStatements()); 
+			result.add(extensions); 
 		}
-		
 		return result;
 	}
 
