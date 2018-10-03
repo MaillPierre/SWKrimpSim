@@ -11,6 +11,12 @@ import java.util.Spliterators;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.StreamSupport;
 
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -20,6 +26,7 @@ import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.shared.Lock;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
@@ -35,33 +42,37 @@ import com.irisa.swpatterns.data.RDFPatternResource;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 import com.irisa.utilities.Couple;
 
-public class ChangesetTransactionConverter {
+public class ChangesetTransactionConverterRepository {
 
-	private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.class);
+	private static Logger logger = Logger.getLogger(ChangesetTransactionConverterRepository.class);
 
 	private static boolean conversionFailed = false;
 
 	private HashSet<Resource> _individuals = new HashSet<Resource>();
 	private UtilOntology _onto = new UtilOntology();
-	private Model _contextSource = ModelFactory.createDefaultModel();
-
+	
+	private String connectionURL = "";
+	
 	private boolean _noTypeBool = false;
 	private boolean _noInBool = false;
 	private boolean _noOutBool = false;	
 
 	private Neighborhood _neighborLevel = Neighborhood.PropertyAndType;
 
-	// CB: change to ConcurrentHashMap 
-//	 private HashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
 	private ConcurrentHashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new ConcurrentHashMap<Resource, LabeledTransaction>(); // TYPE items per resource
 	
-	//	private HashMap<Resource, LabeledTransaction> _buildingSecondaryResTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
-	// CB: change to ConcurrentHashMap
-	// private HashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new HashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
 	private ConcurrentHashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new ConcurrentHashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
 	
 	public boolean isKnownIndividual(Resource indiv) {
 		return _individuals.contains(indiv);
+	}
+
+	public String getConnectionURL() {
+		return connectionURL;
+	}
+
+	public void setConnectionURL(String connectionURL) {
+		this.connectionURL = connectionURL;
 	}
 
 	public void addKnownIndividual(Resource indiv) {
@@ -99,15 +110,6 @@ public class ChangesetTransactionConverter {
 	public void setNoOutTriples(boolean noOutBool) {
 		this._noOutBool = noOutBool;
 	}
-
-	public void setContextSource(Model source) {
-		this._contextSource = source;
-	}
-
-	public Model getContextSource() {
-		return this._contextSource;
-	}
-
 
 	/**
 	 * Extract the transactions of the triples of the changeset from the current context source. Clear the converter indexes after the extraction.
@@ -332,41 +334,105 @@ public class ChangesetTransactionConverter {
 	 * @param source
 	 * @return a Model containing both source and its context
 	 */
-	public Model extractContextOfChangeset(Changeset chg) {
+	public Model extractContextOfChangeset	(Changeset chg) {
 		Model result = ModelFactory.createDefaultModel();
-		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator();
-		// cannot be further paralelized as Model is not thread-safe
-		System.out.println("--> resultSize: "+result.size());
-		while (itRes.hasNext()) { 
-			Resource affectedRes = itRes.next();
-			System.out.println(affectedRes);
-			if(affectedRes != null 
-					&& affectedRes.isResource() 
-					&& ! affectedRes.isAnon()
-					&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
-					&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
-
-				result.add(this._contextSource.listStatements(affectedRes, null, (RDFNode)null));
-				result.add(this._contextSource.listStatements(null, null, affectedRes));
-			}
-		}
-		System.out.println("--> 2nd resultSize: "+result.size());
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
-			ArrayList<Statement> extensions = new ArrayList<>(); 
-			result.listSubjects().forEachRemaining(sbj->
-					this._contextSource.listStatements(sbj, RDF.type, (RDFNode)null).forEachRemaining(
-							stmt->extensions.add(stmt)));
-			
-			result.listObjects().forEachRemaining(obj->
-					{
-						if (obj.isResource()) {
-							this._contextSource.listStatements(obj.asResource(), RDF.type, (RDFNode)null).forEachRemaining(
-									stmt->extensions.add(stmt)); 
+		
+		chg.getFlattenedAffectedResources().parallelStream().forEach(
+				affectedRes -> 
+				{
+					if(affectedRes != null 
+							&& affectedRes.isResource() 
+							&& ! affectedRes.isAnon()
+							&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
+							&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
+						
+//						Query query = QueryFactory.create("DESCRIBE <"+affectedRes.getURI()+">"); 
+//						Query query = QueryFactory.create(" CONSTRUCT { <"+affectedRes.getURI()+"> ?x ?y } WHERE { <"+affectedRes.getURI()+"> ?x ?y }");
+						Query query = QueryFactory.create(" SELECT ?x ?y WHERE { <"+affectedRes.getURI()+"> ?x ?y . }");
+						
+						// System.out.println("DESCRIBE <"+affectedRes.getURI()+">"); 
+						
+						QueryExecution queryExec = QueryExecutionFactory.createServiceRequest(connectionURL, query);
+						Model tmpModel = ModelFactory.createDefaultModel(); 
+						ResultSet tmpSelectResult = queryExec.execSelect(); 
+						ArrayList<Statement> tmpList = new ArrayList<Statement> ();
+						for ( ; tmpSelectResult.hasNext() ; )
+					    {
+					      QuerySolution res = tmpSelectResult.nextSolution() ;
+					      tmpList.add(tmpModel.createStatement(affectedRes, res.getResource("x").as(Property.class), res.get("y")));
+					    }
+//						query = QueryFactory.create(" CONSTRUCT { ?x ?y <"+affectedRes.getURI()+"> } WHERE { ?x ?y <"+affectedRes.getURI()+"> }");
+//						System.out.println("Trying");
+//						System.out.println(tmpList.size());
+						queryExec.close();
+						
+						query = QueryFactory.create(" SELECT ?x ?y WHERE { ?x ?y <"+affectedRes.getURI()+"> . }");
+						queryExec = QueryExecutionFactory.createServiceRequest(connectionURL, query); 
+						tmpSelectResult = queryExec.execSelect();
+//						System.out.println("Trying2");
+						for ( ; tmpSelectResult.hasNext() ; )
+					    {
+					      QuerySolution res = tmpSelectResult.nextSolution() ;
+					      tmpList.add(tmpModel.createStatement(res.getResource("x"), res.get("y").as(Property.class), affectedRes));
+					    }
+//						System.out.println(tmpList.size()+ " triples about" + affectedRes);
+						queryExec.close(); 
+						
+						result.enterCriticalSection(Lock.WRITE) ;  // or Lock.WRITE
+						try {
+							result.add(tmpList); 
+						    tmpModel.close(); 
+						} finally {
+						    result.leaveCriticalSection() ;
 						}
-					});
-			result.add(extensions); 
+//						System.out.println("Size-result: "+result.size());
+					}
+				}
+				
+				); 		
+		
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+			HashSet<Resource> individualsToExtend = new HashSet<>();
+			
+			result.listSubjects().forEachRemaining(individualsToExtend::add); 
+			result.listObjects().forEachRemaining(obj->
+										{
+											if (obj.isResource()) {
+												individualsToExtend.add(obj.asResource());  
+											}
+										});
+
+			individualsToExtend.parallelStream().forEach(
+					indToExtend ->
+					{
+						
+//						Query query = QueryFactory.create("CONSTRUCT { <"+indToExtend.getURI()+"> a ?x. } "
+//								+ " WHERE { <"+indToExtend.getURI()+"> a ?x. }");
+						Query query = QueryFactory.create("SELECT ?x WHERE { <"+indToExtend.getURI()+"> a ?x. } "); 
+						QueryExecution queryExec = QueryExecutionFactory.createServiceRequest(connectionURL, query);
+						
+//						Model tmpModel = queryExec.execConstruct(); 
+						Model tmpModel = ModelFactory.createDefaultModel();
+						ResultSet resSet = queryExec.execSelect(); 
+						for ( ; resSet.hasNext() ; ) {
+							QuerySolution sol = resSet.next(); 
+							tmpModel.add(tmpModel.createStatement(indToExtend, RDF.type, sol.get("x"))); 
+						}
+						
+						result.enterCriticalSection(Lock.WRITE) ;  // or Lock.WRITE
+						try {
+//							System.out.println("--> b4:"+result.size());
+							result.add(tmpModel); 
+//							System.out.println("--> after:"+result.size());
+						    tmpModel.close(); 
+						    queryExec.close(); 
+						} finally {
+						    result.leaveCriticalSection() ;
+						}
+//						System.out.println("Size-result:"+result.size());
+					}
+					); 
 		}
-		System.out.println("--> 3rd resultSize: "+result.size());
 		return result;
 	}
 

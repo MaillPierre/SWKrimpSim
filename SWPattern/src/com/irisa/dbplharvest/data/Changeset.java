@@ -586,4 +586,9 @@ public class Changeset implements AbstractChangeset {
 	public long getNumberFilteredTriples() {
 		return _numberFilteredTriples;
 	}
+	
+	public void closeResources() {
+		this._addedTriples.close();
+		this._deletedTriples.close(); 
+	}
 }

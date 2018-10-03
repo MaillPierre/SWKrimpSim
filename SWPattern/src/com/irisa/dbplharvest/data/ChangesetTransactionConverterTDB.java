@@ -11,6 +11,14 @@ import java.util.Spliterators;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.StreamSupport;
 
+import org.apache.jena.query.Dataset;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ReadWrite;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -20,6 +28,7 @@ import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.shared.Lock;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 
@@ -35,29 +44,25 @@ import com.irisa.swpatterns.data.RDFPatternResource;
 import com.irisa.swpatterns.data.RDFPatternComponent.Type;
 import com.irisa.utilities.Couple;
 
-public class ChangesetTransactionConverter {
+public class ChangesetTransactionConverterTDB {
 
-	private static Logger logger = Logger.getLogger(ChangesetTransactionConverter.class);
+	private static Logger logger = Logger.getLogger(ChangesetTransactionConverterTDB.class);
 
 	private static boolean conversionFailed = false;
 
 	private HashSet<Resource> _individuals = new HashSet<Resource>();
 	private UtilOntology _onto = new UtilOntology();
-	private Model _contextSource = ModelFactory.createDefaultModel();
-
+	
+	private Dataset dataset = null; 
+	
 	private boolean _noTypeBool = false;
 	private boolean _noInBool = false;
 	private boolean _noOutBool = false;	
 
 	private Neighborhood _neighborLevel = Neighborhood.PropertyAndType;
 
-	// CB: change to ConcurrentHashMap 
-//	 private HashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
 	private ConcurrentHashMap<Resource, LabeledTransaction> _buildingTransactionsTypeItems = new ConcurrentHashMap<Resource, LabeledTransaction>(); // TYPE items per resource
 	
-	//	private HashMap<Resource, LabeledTransaction> _buildingSecondaryResTypeItems = new HashMap<Resource, LabeledTransaction>(); // TYPE items per resource
-	// CB: change to ConcurrentHashMap
-	// private HashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new HashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
 	private ConcurrentHashMap<Resource, LabeledTransaction> _buildingTransactionsPropertyItems = new ConcurrentHashMap<Resource, LabeledTransaction>(); // PROPERTY items per resource
 	
 	public boolean isKnownIndividual(Resource indiv) {
@@ -99,15 +104,16 @@ public class ChangesetTransactionConverter {
 	public void setNoOutTriples(boolean noOutBool) {
 		this._noOutBool = noOutBool;
 	}
+	
+	
 
-	public void setContextSource(Model source) {
-		this._contextSource = source;
+	public Dataset getDataset() {
+		return dataset;
 	}
 
-	public Model getContextSource() {
-		return this._contextSource;
+	public void setDataset(Dataset dataset) {
+		this.dataset = dataset;
 	}
-
 
 	/**
 	 * Extract the transactions of the triples of the changeset from the current context source. Clear the converter indexes after the extraction.
@@ -332,41 +338,39 @@ public class ChangesetTransactionConverter {
 	 * @param source
 	 * @return a Model containing both source and its context
 	 */
-	public Model extractContextOfChangeset(Changeset chg) {
+	public Model extractContextOfChangeset	(Changeset chg) {
 		Model result = ModelFactory.createDefaultModel();
 		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator();
-		// cannot be further paralelized as Model is not thread-safe
-		System.out.println("--> resultSize: "+result.size());
+		
 		while (itRes.hasNext()) { 
 			Resource affectedRes = itRes.next();
-			System.out.println(affectedRes);
 			if(affectedRes != null 
 					&& affectedRes.isResource() 
 					&& ! affectedRes.isAnon()
 					&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
 					&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
-
-				result.add(this._contextSource.listStatements(affectedRes, null, (RDFNode)null));
-				result.add(this._contextSource.listStatements(null, null, affectedRes));
+				this.dataset.begin(ReadWrite.READ);
+				result.add(this.dataset.getDefaultModel().listStatements(affectedRes, null, (RDFNode)null));
+				result.add(this.dataset.getDefaultModel().listStatements(null, null, affectedRes));
+				this.dataset.end(); 
 			}
-		}
-		System.out.println("--> 2nd resultSize: "+result.size());
+		}	
 		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
 			ArrayList<Statement> extensions = new ArrayList<>(); 
+			this.dataset.begin(ReadWrite.READ);
 			result.listSubjects().forEachRemaining(sbj->
-					this._contextSource.listStatements(sbj, RDF.type, (RDFNode)null).forEachRemaining(
+					this.dataset.getDefaultModel().listStatements(sbj, RDF.type, (RDFNode)null).forEachRemaining(
 							stmt->extensions.add(stmt)));
-			
 			result.listObjects().forEachRemaining(obj->
 					{
 						if (obj.isResource()) {
-							this._contextSource.listStatements(obj.asResource(), RDF.type, (RDFNode)null).forEachRemaining(
+							this.dataset.getDefaultModel().listStatements(obj.asResource(), RDF.type, (RDFNode)null).forEachRemaining(
 									stmt->extensions.add(stmt)); 
 						}
 					});
+			this.dataset.end(); 
 			result.add(extensions); 
 		}
-		System.out.println("--> 3rd resultSize: "+result.size());
 		return result;
 	}
 

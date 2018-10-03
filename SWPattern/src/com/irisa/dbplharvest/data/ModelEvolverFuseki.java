@@ -1,10 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////
-//File: ModelEvolver.java 
+//File: ModelEvolverFuseki.java 
 //Author: Carlos Bobed
-//Date: February 2018
-//Comments: Class that loads a model, evolves it according to the change files
-// 			provided, calculates the transaction codification, 
-// 			and, optionaly, stores the result of the evolution
+//Date: September 2018
+//Comments: Modification of ModelEvolver which uses a model stored in a 
+// 		RDF repository
 //Modifications:
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -15,6 +14,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -36,6 +36,13 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.update.Update;
+import org.apache.jena.update.UpdateAction;
+import org.apache.jena.update.UpdateException;
+import org.apache.jena.update.UpdateExecutionFactory;
+import org.apache.jena.update.UpdateFactory;
+import org.apache.jena.update.UpdateProcessor;
+import org.apache.jena.update.UpdateRequest;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -43,24 +50,21 @@ import org.apache.log4j.PropertyConfigurator;
 import com.irisa.krimp.data.KItemset;
 import com.irisa.swpatterns.data.AttributeIndex;
 
-public class ModelEvolver {
+public class ModelEvolverFuseki {
 
-private static Logger logger = Logger.getLogger(ModelEvolver.class);
+private static Logger logger = Logger.getLogger(ModelEvolverFuseki.class);
 	
-	public static String INPUT_MODEL_OPTION = "inputModel"; 
-	public static String OUTPUT_MODEL_OPTION = "writeOutputModel"; 
 	public static String INPUT_INDEX = "inputIndex"; 
 	public static String OUTPUT_INDEX = "outputIndex"; 
 	public static String UPDATE_LIST_OPTION = "updateList"; 
 	public static String OUTPUT_STATS_OPTION = "outputStats"; 
-	public static String PREVIOUSLY_CANONIZED_OPTION = "alreadyCanonized"; 
+	public static String PREVIOUSLY_CANONIZED_OPTION = "alreadyCanonized";
+	public static String REPOSITORY_URL_OPTION ="repo"; 
 	public static String HELP_OPTION = "help";
 	
 	public static String TRANSACTIONS_EXTENSION = ".trans"; 
 	public static String NO_TRANSACTIONS_EXTENSION = ".noTrans";
 	public static String SEPARATED_RES_EXTENSION = ".separated.nt";
-	
-	
 	
 	public static String STATES_SEPARATOR="----";
 	
@@ -71,13 +75,12 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 		
 		CommandLineParser parser = new DefaultParser();
 		Options options = new Options();
-		options.addOption(INPUT_MODEL_OPTION, true, "filename with the model to be evolved");
-		options.addOption(OUTPUT_MODEL_OPTION, false, "write the output of the evolution"); 
 		options.addOption(INPUT_INDEX, true, "filename of the index used to translate the transactions");
 		options.addOption(OUTPUT_STATS_OPTION, true, "output file for the stats");
 		options.addOption(OUTPUT_INDEX, true, "filename of the resulting index, useful to check non-seen properties"); 
 		options.addOption(UPDATE_LIST_OPTION, true, "filename with the list of update files, ordered by date and hour");
 		options.addOption(PREVIOUSLY_CANONIZED_OPTION, false, "forces to work with the already canonized version of the updates");
+		options.addOption(REPOSITORY_URL_OPTION, true, "Connection URL to the repository"); 
 		options.addOption(HELP_OPTION, false, "display this help"); 
 		try  {
 			CommandLine cmd = parser.parse( options, args);
@@ -96,19 +99,26 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 				index.readAttributeIndex(cmd.getOptionValue(INPUT_INDEX));
 			}
 			
+			String repoConnectionURL = null; 
+			if (cmd.hasOption(REPOSITORY_URL_OPTION)) {
+				repoConnectionURL = cmd.getOptionValue(REPOSITORY_URL_OPTION);  
+			}
+			
 			long initialIndexSize = AttributeIndex.getInstance().size(); 
 			long finalIndexSize = 0; 
 			
 			long modelRelatedTimeStart = System.nanoTime(); 
 			long accumEvolvingTime = 0; 
-			Model originalModel =  ModelFactory.createDefaultModel();
-			RDFDataMgr.read(originalModel, cmd.getOptionValue(INPUT_MODEL_OPTION)); 
-//			originalModel.read(cmd.getOptionValue(INPUT_MODEL_OPTION)); 
-			long modelLoadingTime = System.nanoTime()-modelRelatedTimeStart; 
 			
-			System.err.println("Model loaded after "+((double)modelLoadingTime)/1000000000.0 + " s."); 
+			// now the model is already loaded in a repo
+			// Model originalModel =  ModelFactory.createDefaultModel();
+			// RDFDataMgr.read(originalModel, cmd.getOptionValue(INPUT_MODEL_OPTION)); 
+			// long modelLoadingTime = System.nanoTime()-modelRelatedTimeStart; 
+			
+			// System.err.println("Model loaded after "+((double)modelLoadingTime)/1000000000.0 + " s.");
+			
 			// we force a garbage collection
-			System.gc();
+			// System.gc();
 			
 			String fileListFilename = cmd.getOptionValue(UPDATE_LIST_OPTION); 
 			long start = System.nanoTime(); 
@@ -121,8 +131,8 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 			BufferedReader br = Files.newBufferedReader(Paths.get(fileListFilename)); 
 			String currentUpdateFilename = null; 
 			
-			ChangesetTransactionConverter converter = new ChangesetTransactionConverter(); 
-			converter.setContextSource(originalModel);
+			ChangesetTransactionConverterRepository converter = new ChangesetTransactionConverterRepository(); 
+			converter.setConnectionURL(repoConnectionURL);
 			
 			while ( (currentUpdateFilename = br.readLine()) != null) { 
 				progress++; 
@@ -196,16 +206,34 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 						
 						HashMap<Resource, KItemset> initialTransactions = converter.extractTransactionsFromAffectedResources(changeset); 
 						
-						modelRelatedTimeStart = System.nanoTime();			
-						System.out.println("--> initialSize: "+originalModel.size()); 
+						modelRelatedTimeStart = System.nanoTime();						
 						// we now apply the modification to the model
 						if (changeset.getDelTriples() != null) { 
-							originalModel.remove(changeset.getDelTriples().listStatements()); 
+							StringBuilder strBuilder = new StringBuilder();
+							strBuilder.append("DELETE DATA { ");
+							StringWriter out = new StringWriter(); 
+							RDFDataMgr.write(out, changeset.getDelTriples(), RDFFormat.TTL);
+							strBuilder.append(out.toString()); 
+							strBuilder.append(" }"); 
+
+							UpdateRequest updRequest = UpdateFactory.create(strBuilder.toString()); 
+							UpdateProcessor proc = UpdateExecutionFactory.createRemote(updRequest, repoConnectionURL); 
+							proc.execute();
+							out.close(); 
 						}
 						if (changeset.getAddTriples() != null) { 
-							originalModel.add(changeset.getAddTriples().listStatements()); 
+							StringBuilder strBuilder = new StringBuilder();
+							strBuilder.append("INSERT DATA { ");
+							StringWriter out = new StringWriter(); 
+							RDFDataMgr.write(out, changeset.getAddTriples(), RDFFormat.TTL);
+							strBuilder.append(out.toString());
+							strBuilder.append(" }"); 
+
+							UpdateRequest updRequest = UpdateFactory.create(strBuilder.toString()); 
+							UpdateProcessor proc = UpdateExecutionFactory.createRemote(updRequest, repoConnectionURL); 
+							proc.execute();
+							out.close(); 
 						}
-						System.out.println("--> finalSize: "+originalModel.size()); 
 						accumEvolvingTime += (System.nanoTime()-modelRelatedTimeStart); 
 						
 						HashMap<Resource, KItemset> finalTransactions = converter.extractTransactionsFromAffectedResources(changeset); 
@@ -261,9 +289,7 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 						resultsFile.createNewFile(); 
 						
 					}
-					
 					changeset.closeResources();
-					
 				} 
 				catch (IOException e) { 
 					logger.error(currentUpdateFilename+": couldn't be processed"); 
@@ -272,18 +298,18 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 			
 			finalIndexSize = AttributeIndex.getInstance().size(); 
 			
-			if (cmd.hasOption(OUTPUT_MODEL_OPTION)) { 
-				
-				File resultsFile = new File(cmd.getOptionValue(INPUT_MODEL_OPTION)+".evol.nt");
-				
-				if (resultsFile.exists()) {
-					resultsFile.delete(); 
-				}
-				FileOutputStream out = new FileOutputStream(resultsFile); 
-				RDFDataMgr.write(out, originalModel, RDFFormat.NTRIPLES_UTF8); 
-				out.flush();
-				out.close();
-			}
+//			if (cmd.hasOption(OUTPUT_MODEL_OPTION)) { 
+//				
+//				File resultsFile = new File(cmd.getOptionValue(INPUT_MODEL_OPTION)+".evol.nt");
+//				
+//				if (resultsFile.exists()) {
+//					resultsFile.delete(); 
+//				}
+//				FileOutputStream out = new FileOutputStream(resultsFile); 
+//				RDFDataMgr.write(out, originalModel, RDFFormat.NTRIPLES_UTF8); 
+//				out.flush();
+//				out.close();
+//			}
 			
 			if (cmd.hasOption(OUTPUT_STATS_OPTION)) { 
 				
@@ -294,7 +320,8 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 				}
 				PrintWriter out = new PrintWriter(statsFile); 
 
-				out.println("Input Model: "+cmd.getOptionValue(INPUT_MODEL_OPTION));
+//				out.println("Input Model: "+cmd.getOptionValue(INPUT_MODEL_OPTION));
+				out.println("Connection URL: "+repoConnectionURL); 
 				out.println();
 				out.println("UpdateList: "+cmd.getOptionValue(UPDATE_LIST_OPTION)); 
 				out.println("## Updates: "+progress); 
@@ -312,7 +339,7 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 				out.println("## Non-seen items in the conversion: "+ (finalIndexSize-initialIndexSize));
 				out.println(); 
 				out.println("Execution time: "+( ((double)(System.nanoTime()-start))/1000000000)+" s.");
-				out.println("Model loading time: "+((double)modelLoadingTime/1000000000.0)+ " s.");
+				// out.println("Model loading time: "+((double)modelLoadingTime/1000000000.0)+ " s.");
 				out.println("Model evolving time: "+((double)accumEvolvingTime/1000000000.0)+" s."); 
 				out.println("## Mean evolving step time: "+(((double)accumEvolvingTime/(double)(progress-emptyUpdates))/1000000000.0) + " s. "); 
 				out.flush();

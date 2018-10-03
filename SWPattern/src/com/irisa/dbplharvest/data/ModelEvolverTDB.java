@@ -1,10 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
-//File: ModelEvolver.java 
+//File: ModelEvolverTDB.java 
 //Author: Carlos Bobed
-//Date: February 2018
-//Comments: Class that loads a model, evolves it according to the change files
-// 			provided, calculates the transaction codification, 
-// 			and, optionaly, stores the result of the evolution
+//Date: September 2018
+//Comments: 
 //Modifications:
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -31,11 +29,14 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+import org.apache.jena.query.Dataset;
+import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.tdb.TDBFactory;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -43,16 +44,15 @@ import org.apache.log4j.PropertyConfigurator;
 import com.irisa.krimp.data.KItemset;
 import com.irisa.swpatterns.data.AttributeIndex;
 
-public class ModelEvolver {
+public class ModelEvolverTDB {
 
-private static Logger logger = Logger.getLogger(ModelEvolver.class);
+private static Logger logger = Logger.getLogger(ModelEvolverTDB.class);
 	
-	public static String INPUT_MODEL_OPTION = "inputModel"; 
-	public static String OUTPUT_MODEL_OPTION = "writeOutputModel"; 
 	public static String INPUT_INDEX = "inputIndex"; 
 	public static String OUTPUT_INDEX = "outputIndex"; 
 	public static String UPDATE_LIST_OPTION = "updateList"; 
-	public static String OUTPUT_STATS_OPTION = "outputStats"; 
+	public static String OUTPUT_STATS_OPTION = "outputStats";
+	public static String TDB_LOCATION_OPTION = "TDBPath"; 
 	public static String PREVIOUSLY_CANONIZED_OPTION = "alreadyCanonized"; 
 	public static String HELP_OPTION = "help";
 	
@@ -71,8 +71,7 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 		
 		CommandLineParser parser = new DefaultParser();
 		Options options = new Options();
-		options.addOption(INPUT_MODEL_OPTION, true, "filename with the model to be evolved");
-		options.addOption(OUTPUT_MODEL_OPTION, false, "write the output of the evolution"); 
+		options.addOption(TDB_LOCATION_OPTION, true, "tdb location path"); 
 		options.addOption(INPUT_INDEX, true, "filename of the index used to translate the transactions");
 		options.addOption(OUTPUT_STATS_OPTION, true, "output file for the stats");
 		options.addOption(OUTPUT_INDEX, true, "filename of the resulting index, useful to check non-seen properties"); 
@@ -96,14 +95,16 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 				index.readAttributeIndex(cmd.getOptionValue(INPUT_INDEX));
 			}
 			
+			String tdbPath = cmd.getOptionValue(TDB_LOCATION_OPTION); 
+			
 			long initialIndexSize = AttributeIndex.getInstance().size(); 
 			long finalIndexSize = 0; 
 			
 			long modelRelatedTimeStart = System.nanoTime(); 
 			long accumEvolvingTime = 0; 
-			Model originalModel =  ModelFactory.createDefaultModel();
-			RDFDataMgr.read(originalModel, cmd.getOptionValue(INPUT_MODEL_OPTION)); 
-//			originalModel.read(cmd.getOptionValue(INPUT_MODEL_OPTION)); 
+			
+			
+			Dataset originalDataset = TDBFactory.createDataset(tdbPath); 
 			long modelLoadingTime = System.nanoTime()-modelRelatedTimeStart; 
 			
 			System.err.println("Model loaded after "+((double)modelLoadingTime)/1000000000.0 + " s."); 
@@ -121,8 +122,8 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 			BufferedReader br = Files.newBufferedReader(Paths.get(fileListFilename)); 
 			String currentUpdateFilename = null; 
 			
-			ChangesetTransactionConverter converter = new ChangesetTransactionConverter(); 
-			converter.setContextSource(originalModel);
+			ChangesetTransactionConverterTDB converter = new ChangesetTransactionConverterTDB(); 
+			converter.setDataset(originalDataset);
 			
 			while ( (currentUpdateFilename = br.readLine()) != null) { 
 				progress++; 
@@ -196,16 +197,19 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 						
 						HashMap<Resource, KItemset> initialTransactions = converter.extractTransactionsFromAffectedResources(changeset); 
 						
-						modelRelatedTimeStart = System.nanoTime();			
-						System.out.println("--> initialSize: "+originalModel.size()); 
+						modelRelatedTimeStart = System.nanoTime();		
+						
+						originalDataset.begin(ReadWrite.WRITE);						
 						// we now apply the modification to the model
 						if (changeset.getDelTriples() != null) { 
-							originalModel.remove(changeset.getDelTriples().listStatements()); 
+							originalDataset.getDefaultModel().remove(changeset.getDelTriples().listStatements());
 						}
 						if (changeset.getAddTriples() != null) { 
-							originalModel.add(changeset.getAddTriples().listStatements()); 
+							originalDataset.getDefaultModel().add(changeset.getAddTriples().listStatements());
 						}
-						System.out.println("--> finalSize: "+originalModel.size()); 
+						originalDataset.commit();
+						originalDataset.end(); 
+						
 						accumEvolvingTime += (System.nanoTime()-modelRelatedTimeStart); 
 						
 						HashMap<Resource, KItemset> finalTransactions = converter.extractTransactionsFromAffectedResources(changeset); 
@@ -272,18 +276,7 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 			
 			finalIndexSize = AttributeIndex.getInstance().size(); 
 			
-			if (cmd.hasOption(OUTPUT_MODEL_OPTION)) { 
-				
-				File resultsFile = new File(cmd.getOptionValue(INPUT_MODEL_OPTION)+".evol.nt");
-				
-				if (resultsFile.exists()) {
-					resultsFile.delete(); 
-				}
-				FileOutputStream out = new FileOutputStream(resultsFile); 
-				RDFDataMgr.write(out, originalModel, RDFFormat.NTRIPLES_UTF8); 
-				out.flush();
-				out.close();
-			}
+			originalDataset.close(); 
 			
 			if (cmd.hasOption(OUTPUT_STATS_OPTION)) { 
 				
@@ -294,7 +287,7 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 				}
 				PrintWriter out = new PrintWriter(statsFile); 
 
-				out.println("Input Model: "+cmd.getOptionValue(INPUT_MODEL_OPTION));
+				out.println("TDB: "+cmd.getOptionValue(tdbPath));
 				out.println();
 				out.println("UpdateList: "+cmd.getOptionValue(UPDATE_LIST_OPTION)); 
 				out.println("## Updates: "+progress); 
