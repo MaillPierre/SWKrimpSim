@@ -340,36 +340,93 @@ public class ChangesetTransactionConverterTDB {
 	 */
 	public Model extractContextOfChangeset	(Changeset chg) {
 		Model result = ModelFactory.createDefaultModel();
-		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator();
-		
-		while (itRes.hasNext()) { 
-			Resource affectedRes = itRes.next();
-			if(affectedRes != null 
-					&& affectedRes.isResource() 
-					&& ! affectedRes.isAnon()
-					&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
-					&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
-				this.dataset.begin(ReadWrite.READ);
-				result.add(this.dataset.getDefaultModel().listStatements(affectedRes, null, (RDFNode)null));
-				result.add(this.dataset.getDefaultModel().listStatements(null, null, affectedRes));
-				this.dataset.end(); 
-			}
-		}	
-		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
-			ArrayList<Statement> extensions = new ArrayList<>(); 
-			this.dataset.begin(ReadWrite.READ);
-			result.listSubjects().forEachRemaining(sbj->
-					this.dataset.getDefaultModel().listStatements(sbj, RDF.type, (RDFNode)null).forEachRemaining(
-							stmt->extensions.add(stmt)));
-			result.listObjects().forEachRemaining(obj->
-					{
-						if (obj.isResource()) {
-							this.dataset.getDefaultModel().listStatements(obj.asResource(), RDF.type, (RDFNode)null).forEachRemaining(
-									stmt->extensions.add(stmt)); 
+
+//		CB: Iterative version 
+//		Iterator<Resource> itRes = chg.getFlattenedAffectedResources().iterator();
+//		
+// 		
+//		while (itRes.hasNext()) { 
+//			Resource affectedRes = itRes.next();
+//			if(affectedRes != null 
+//					&& affectedRes.isResource() 
+//					&& ! affectedRes.isAnon()
+//					&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
+//					&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
+//				this.dataset.begin(ReadWrite.READ);
+//				result.add(this.dataset.getDefaultModel().listStatements(affectedRes, null, (RDFNode)null));
+//				result.add(this.dataset.getDefaultModel().listStatements(null, null, affectedRes));
+//				this.dataset.end(); 
+//			}
+//		}	
+//		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+//			ArrayList<Statement> extensions = new ArrayList<>(); 
+//			this.dataset.begin(ReadWrite.READ);
+//			result.listSubjects().forEachRemaining(sbj->
+//					this.dataset.getDefaultModel().listStatements(sbj, RDF.type, (RDFNode)null).forEachRemaining(
+//							stmt->extensions.add(stmt)));
+//			result.listObjects().forEachRemaining(obj->
+//					{
+//						if (obj.isResource()) {
+//							this.dataset.getDefaultModel().listStatements(obj.asResource(), RDF.type, (RDFNode)null).forEachRemaining(
+//									stmt->extensions.add(stmt)); 
+//						}
+//					});
+//			this.dataset.end(); 
+//			result.add(extensions); 
+//		}
+
+		// Concurrent version
+		chg.getFlattenedAffectedResources().parallelStream().forEach(
+				affectedRes -> 
+				{
+					ArrayList<Statement> tmpList = new ArrayList<>(); 
+					if(affectedRes != null 
+							&& affectedRes.isResource() 
+							&& ! affectedRes.isAnon()
+							&& ! _onto.isOntologyPropertyVocabulary(affectedRes) 
+							&& ! _onto.isOntologyClassVocabulary(affectedRes)) {
+
+						this.dataset.begin(ReadWrite.READ);						
+						this.dataset.getDefaultModel().listStatements(affectedRes, null, (RDFNode)null).forEachRemaining(tmpList::add);
+						this.dataset.getDefaultModel().listStatements(null, null, affectedRes).forEachRemaining(tmpList::add);
+						this.dataset.end(); 
+						result.enterCriticalSection(Lock.WRITE) ;  // or Lock.WRITE
+						try {
+							result.add(tmpList); 
+						} finally {
+						    result.leaveCriticalSection() ;
 						}
-					});
-			this.dataset.end(); 
-			result.add(extensions); 
+					}
+				}
+				
+				); 		
+		
+		if(this.getNeighborLevel() == Neighborhood.PropertyAndType) {
+			HashSet<Resource> individualsToExtend = new HashSet<>();
+			
+			result.listSubjects().forEachRemaining(individualsToExtend::add); 
+			result.listObjects().forEachRemaining(obj->
+										{
+											if (obj.isResource()) {
+												individualsToExtend.add(obj.asResource());  
+											}
+										});
+
+			individualsToExtend.parallelStream().forEach(
+					indToExtend ->
+					{
+						ArrayList<Statement> tmpList = new ArrayList<>(); 
+						this.dataset.begin(ReadWrite.READ);	
+						this.dataset.getDefaultModel().listStatements(indToExtend, RDF.type, (RDFNode)null).forEachRemaining(tmpList::add);
+						this.dataset.end(); 						
+						result.enterCriticalSection(Lock.WRITE) ;  // or Lock.WRITE
+						try {
+							result.add(tmpList); 
+						} finally {
+						    result.leaveCriticalSection() ;
+						}
+					}
+			); 
 		}
 		return result;
 	}
