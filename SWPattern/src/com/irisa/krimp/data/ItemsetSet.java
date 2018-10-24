@@ -126,7 +126,10 @@ public class ItemsetSet extends LinkedList<KItemset> {
 	/* Inclusion test */ 
 		
 	public boolean checkInclusion(Collection <? extends KItemset> c) {
-		boolean result = true; 
+		// in the first version we didn't take into account duplicated 
+		// transactions which might act as sinks
+		boolean result = true;
+		ItemsetSet auxTest = new ItemsetSet(this); 
 		Iterator<? extends KItemset> it = c.iterator();
 		KItemset value = null;
 		KItemset baseValue = null; 
@@ -134,12 +137,17 @@ public class ItemsetSet extends LinkedList<KItemset> {
 		boolean found = false; 
 		while (result && it.hasNext()) {
 			value = it.next(); 
-			thisIt = this.iterator(); 
+			thisIt = auxTest.iterator();			
 			while (!found && thisIt.hasNext() ) {
 				baseValue = thisIt.next(); 
 				found = baseValue.compareContents(value); 
 			}
-			result = found; 
+			result = found;
+			if (found) {
+				System.out.println("--> checkInclusion: "+auxTest.size());
+				auxTest.remove(baseValue);
+				System.out.println("--> checkIncluion after: "+auxTest.size());
+			}
 		}
 		return result;
 	}
