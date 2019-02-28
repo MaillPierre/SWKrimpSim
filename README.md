@@ -15,7 +15,7 @@ Source code of the approach for a structural similarity of RDF graphs based on f
 
 ## Citation
 
-To cite the structural similiarity related to this approach:
+To cite the structural similiarity measure related to this approach:
 ```
 @inproceedings{Maillot2018, 
     author = {Pierre Maillot and Carlos Bobed}, 
