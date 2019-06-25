@@ -4,7 +4,7 @@
 //Date: February 2018
 //Comments: Class that loads a model, evolves it according to the change files
 // 			provided, calculates the transaction codification, 
-// 			and, optionaly, stores the result of the evolution
+// 			and, optionally, stores the result of the evolution
 //Modifications:
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -59,8 +59,6 @@ private static Logger logger = Logger.getLogger(ModelEvolver.class);
 	public static String TRANSACTIONS_EXTENSION = ".trans"; 
 	public static String NO_TRANSACTIONS_EXTENSION = ".noTrans";
 	public static String SEPARATED_RES_EXTENSION = ".separated.nt";
-	
-	
 	
 	public static String STATES_SEPARATOR="----";
 	
