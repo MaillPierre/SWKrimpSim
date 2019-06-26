@@ -121,7 +121,7 @@ public class ChangesetTransactionConverterTDB {
 	 * @param source
 	 * @return
 	 */
-	protected HashMap<Resource, KItemset> extractTransactionsFromAffectedResources(Changeset chg) {
+	public HashMap<Resource, KItemset> extractTransactionsFromAffectedResources(Changeset chg) {
 		HashMap<Resource, KItemset> result = new HashMap<Resource, KItemset>();
 		Model context = extractContextOfChangeset(chg);
 		this.fillIndexesFromModel(context, chg);

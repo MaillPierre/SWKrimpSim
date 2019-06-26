@@ -52,6 +52,9 @@ public class WalkGenerator {
 	public static final Logger log = LoggerFactory
 			.getLogger(WalkGenerator.class);
 
+	
+	public static String WALKS_EXTENSION = ".walks"; 
+	
 	public static String directPropsQuery = "SELECT ?p ?o WHERE {$ENTITY$ ?p ?o}";
 
 	/**
@@ -94,11 +97,11 @@ public class WalkGenerator {
 	public static Writer writer;
 
 	public void generateWalks(String repoLocation, String udpateFileID,
-			int nmWalks, int dpWalks, int nmThreads, int offset, int limit) {
+			int nmWalks, int dpWalks, int nmThreads, List<String> entities) {
 		// set the parameters
 		numberWalks = nmWalks;
 		depthWalk = dpWalks;
-		fileName = udpateFileID+"-walks.txt";
+		fileName = udpateFileID+WALKS_EXTENSION;
 
 		// int the writer
 		try {
@@ -117,14 +120,6 @@ public class WalkGenerator {
 		dataset = TDBFactory.createDataset(repoLocation);
 
 		model = dataset.getDefaultModel();
-		
-		// CBL: here it comes the magic :) 
-		
-		
-		
-		
-		System.out.println("SELECTING all entities from repo");
-		List<String> entities = selectAllEntities(offset, limit);
 
 		System.out.println("Total number of entities to process: "
 				+ entities.size());
@@ -135,11 +130,8 @@ public class WalkGenerator {
 
 		startTime = System.currentTimeMillis();
 		for (String entity : entities) {
-
 			EntityThread th = new EntityThread(entity);
-
 			pool.execute(th);
-
 		}
 
 		pool.shutdown();
@@ -158,14 +150,6 @@ public class WalkGenerator {
 		}
 
 	}
-
-	// Instead of selecting all the entities from the repo, 
-	// we just select the entities we are focused on 
-	// we must feed the beast with a List<String> 
-	public static List<String> affectedResources () {
-		return void; 
-	}
-	
 	
 	/**
 	 * Adds new walks to the list; If the list is filled it is written to the
@@ -203,7 +187,7 @@ public class WalkGenerator {
 				e.printStackTrace();
 			}
 			int tmpNM = (processedWalks / 3000000);
-			String tmpFilename = fileName.replace(".txt", tmpNM + ".txt");
+			String tmpFilename = fileName.replace(WALKS_EXTENSION, tmpNM + WALKS_EXTENSION);
 			try {
 				writer = new BufferedWriter(new OutputStreamWriter(
 						new FileOutputStream(tmpFilename, false), "utf-8"),
@@ -333,19 +317,19 @@ public class WalkGenerator {
 		}
 	}
 
-	public static void main(String[] args) {
-		
-		// * load the update pair
-		// * apply the update 
-		// * generate the paths for the final state
-		// 		NOTE: we don't need the original ones as we have already calculated the 
-		// 		embeddings in such state. 
-		
-		System.out
-				.println("USAGE:  repoLocation updateToEvaluate nmWalks dpWalks nmThreads ");
-		WalkGenerator generator = new WalkGenerator();
-		generator.generateWalks(args[0], args[1], Integer.parseInt(args[2]),
-				Integer.parseInt(args[3]), Integer.parseInt(args[4]),
-				Integer.parseInt(args[5]), Integer.parseInt(args[6]));
-	}
+//	public static void main(String[] args) {
+//		
+//		// * load the update pair
+//		// * apply the update 
+//		// * generate the paths for the final state
+//		// 		NOTE: we don't need the original ones as we have already calculated the 
+//		// 		embeddings in such state. 
+//		
+//		System.out
+//				.println("USAGE:  repoLocation updateToEvaluate nmWalks dpWalks nmThreads ");
+//		WalkGenerator generator = new WalkGenerator();
+//		generator.generateWalks(args[0], args[1], Integer.parseInt(args[2]),
+//				Integer.parseInt(args[3]), Integer.parseInt(args[4]),
+//				Integer.parseInt(args[5]), Integer.parseInt(args[6]));
+//	}
 }
