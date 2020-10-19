@@ -1,5 +1,5 @@
 
-# SWKrimpSim: Structural similarity of RDF graphs using frequent pattern mining #
+#SWKrimpSim: Structural similarity of RDF graphs using frequent pattern mining #
 
 ## Content of the repository
 
@@ -15,7 +15,7 @@ Source code of the approach for a structural similarity of RDF graphs based on f
 
 ## Citation
 
-To cite the structural similiarity measure related to this approach:
+To cite the structural similarity measure related to this approach:
 ```
 @inproceedings{Maillot2018, 
     author = {Pierre Maillot and Carlos Bobed}, 
@@ -27,4 +27,18 @@ To cite the structural similiarity measure related to this approach:
     year = {2018}, 
 }
 ```
+
+To cite the assessment of the structural evolution of RDF (Knowledge) graphs: 
+```
+@article{Bobed2019,
+    author={Carlos Bobed and Pierre Maillot and Peggy Cellier and S\'ebastien Ferr\'e},
+    journal={Semantic Web},
+    month={January},
+    number={1},
+    pages={831--853},
+    publisher={IOS Press, ISSN 1570-0844},
+    title={Data-driven Assessment of Structural Evolution of RDF Graphs},
+    year={2020}
+}
+``` 
 
