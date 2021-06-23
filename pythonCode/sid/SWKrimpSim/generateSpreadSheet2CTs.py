@@ -2,8 +2,10 @@
 # File: generateSpreadSheet2CTs.py
 # Author: Carlos Bobed
 # Date: March 2018
-# Comment: script to build the spreadsheets with the data grouped in
-#       different ways
+# Comment: script to build the spreadsheets for the dataset evoluation
+#       with the data grouped in different ways
+#       This script belongs to SWJ paper, calculates different aspects of q
+#       and q' states of the status given two CTs (stored previously in a database)
 # Modifications:
 ###############################################################################
 

@@ -1,5 +1,5 @@
 ###############################################################################
-# File: generateSpreadSheetGranules-CH-T-D.py
+# File: generateSpreadSheetComparison20152016.py
 # Author: Carlos Bobed
 # Date: March 2018
 # Comment: script to build the spreadsheets with the data grouped in
@@ -23,38 +23,6 @@ def obtainExecutionParameters (databaseName, tableName):
         cur.execute(statement)
         parameters = cur.fetchall()
     return parameters
-
-# def obtainAlphas (databaseName, tableName):
-#     con = lite.connect(databaseName)
-#     with con:
-#         con.row_factory = lite.Row
-#         cur = con.cursor()
-#         statement = "SELECT DISTINCT "+\
-#                     BasicHeaders.alphaTable +" FROM "+tableName
-#         print statement
-#         cur.execute(statement)
-#         parameters = cur.fetchall()
-#     return parameters
-#
-#
-# def groupExecutionStatistics (databaseName, tableName, executionParams):
-#     con = lite.connect(databaseName)
-#     with con:
-#         con.row_factory = lite.Row
-#         cur = con.cursor()
-#         statement = "SELECT "+rangeSentence+", count(*), sum("+ BasicHeaders.FCoverTable+") / count(*), "+\
-#                     "sum("+BasicHeaders.execTimeTable+") / count(*) FROM "+tableName+" WHERE "+ \
-#             BasicHeaders.occupiedRangeTable +" = ? AND "+\
-#             BasicHeaders.numObjectsTable+ " = ? AND "+ \
-#             BasicHeaders.alphaTable+ " >= ? AND "+ \
-#             BasicHeaders.alphaTable+ " <= ? "
-#
-#         cur.execute(statement, (executionParams[BasicHeaders.occupiedRangeTable],
-#                                 executionParams[BasicHeaders.numObjectsTable],
-#                                 executionParams[BasicHeaders.alphaTable]-0.01,
-#                                 executionParams[BasicHeaders.alphaTable]+0.01))
-#         executionRow = cur.fetchone()
-#         return executionRow
 
 def loadData (databaseName, tablename, block, executionData):
     con = lite.connect(databaseName)
@@ -378,28 +346,11 @@ if __name__ == "__main__":
 
     writeMatrixData(dataSheet, compResults, rowPos)
     rowPos += 5
-
     writeMatrixData(dataSheet, compResultsRatio, rowPos)
-
     rowPos += 5
-
     writeRowData(dataSheet, compResultsEvol2015, rowPos, "201510-CT")
-
     rowPos += 3
-
     writeRowData(dataSheet, compResultsEvol2016, rowPos, "201610-CT")
-
     rowPos +=5
-
     writeMatrixDataCross(dataSheet, compResultsCross, rowPos)
-
     book.save(spreadSheetFilename)
-
-
-    # dataSheet = book.add_sheet("data-FGraph-graph")
-    # writeDataGraph(dataSheet,data, BasicHeaders.FCoverTable)
-    # book.save(spreadSheetFilename)
-    #
-    # dataSheet = book.add_sheet("data-ExecTime-graph")
-    # writeDataGraph(dataSheet,data,BasicHeaders.execTimeTable)
-    # book.save(spreadSheetFilename)

@@ -9,7 +9,7 @@
 
 import sys
 
-from sid.SWKrimpSim.generateSpreadSheetBase import obtainExecutionParameters
+from sid.SWKrimpSim.generateSpreadSheetComparison20152016 import obtainExecutionParameters
 from utils.CSVHeaders import BasicHeaders as BH
 import sqlite3 as lite
 from xlwt import Workbook, easyxf

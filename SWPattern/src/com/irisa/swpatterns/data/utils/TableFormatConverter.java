@@ -2,7 +2,7 @@
 // File: TableFormatConverter.java 
 // Author: Carlos Bobed
 // Date: March 2018
-// Comments: Class to ćonvert a table in Vreeken format to a table in our format
+// Comments: Class to convert a table in Vreeken format to a table in our format
 // Modifications: 
 ///////////////////////////////////////////////////////////////////////////////
 
