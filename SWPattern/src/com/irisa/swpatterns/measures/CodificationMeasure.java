@@ -196,7 +196,48 @@ public class CodificationMeasure {
 		double teL = codificationLength();
 		return ctL + teL;
 	}
+	
+	
+	
+	public void updateSupports() {
+		
+		// we first extend the singletons with the non-seen ones to 
+		// avoid concurrent modifications
+		ArrayList<KItemset> newOnes = new ArrayList<>();
+		logger.debug("known Items: "+this._transactions.knownItems().size()); 
+		HashMap<Integer,KItemset> oneLengthCodes = this._codetable.getOneLengthCodes();
+		for (Integer codeInt: this._transactions.knownItems()) {
+		
+			if (!oneLengthCodes.containsKey(codeInt)) {
+				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1));
+			}
+		}
+		if (!newOnes.isEmpty()) {
+			this._codetable.addSingletons(newOnes);
+			logger.debug("Singletons added: "+newOnes.size());
+			logger.debug("---");	
+		}
+		long start = System.nanoTime();
+		
+		start = System.nanoTime(); 
+		this._codetable.getCodes().parallelStream().forEach(e -> e.setSupport(0));
+		logger.debug("Setting 0: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		start = System.nanoTime(); 
+		this._transactions.parallelStream().forEach(e -> this.updateUsagesTransaction(e));
+		logger.debug("UpdateTransactions: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		start = System.nanoTime(); 
+		this._codetable.recomputeUsageTotal();
+		logger.debug("RecomputingUsageTotal: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
+		
+	}
 
+	public void updateSupportsTransaction (KItemset transaction) {
+		ItemsetSet codes = this.calculateSupport(transaction);
+		for (KItemset code: codes) { 
+			code.incrementSupportAtomically(); 
+		}
+	}
+	
 	
 	/**
 	 * return a codetable with the usages initialized according to the cover
@@ -209,29 +250,17 @@ public class CodificationMeasure {
 		ArrayList<KItemset> newOnes = new ArrayList<>();
 		logger.debug("known Items: "+this._transactions.knownItems().size()); 
 		HashMap<Integer,KItemset> oneLengthCodes = this._codetable.getOneLengthCodes();
-		for (Integer codeInt: this._transactions.knownItems()) {
-			
-//			Optional<KItemset> value = this._codetable.getCodes()
-//	            .stream()
-//	            .filter(a -> a.equals(Utils.createCodeSingleton(codeInt)))
-//	            .findFirst();
-//			if (!value.isPresent()) {
-//				// we create them with support 0 on purpose to them being 
-//				// added to the end of the code table in standard cover order
-//				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1)); 
-//			}		
+		for (Integer codeInt: this._transactions.knownItems()) {	
 			
 			if (!oneLengthCodes.containsKey(codeInt)) {
 				newOnes.add(Utils.createCodeSingleton(codeInt, 0,1));
 			}
 		}
-//		newOnes.stream().forEach(e -> this._codetable.addSingleton(e));
+		
 		if (!newOnes.isEmpty()) {
 			this._codetable.addSingletons(newOnes);
 			logger.debug("Singletons added: "+newOnes.size());
 			logger.debug("---");
-//			logger.debug(this._codetable.toString());
-//			logger.debug(this._codetable.getOneLengthCodes().keySet());
 			
 		}
 		long start = System.nanoTime();
@@ -274,8 +303,7 @@ public class CodificationMeasure {
 		Iterator<KItemset> itIs = this._codetable.codeIterator();
 		KItemset auxCode = null; 
 		boolean lengthOneReached = false;
-//		int execs = 0; 
-//		long start = System.nanoTime();
+
 		while (itIs.hasNext() && (auxTrans.size() != 0) && (!lengthOneReached))  { // Searching for the cover
 			auxCode = itIs.next(); 
 			if (auxCode.size()!=1) {
@@ -307,52 +335,22 @@ public class CodificationMeasure {
 				}
 			}
 		}
+				
+		return result; 
+	}
+	
+	
+	private ItemsetSet calculateSupport(KItemset trans) {
 		
-		// adding the codes that appear in the transaction but not in the code table
-//		if(! auxTrans.isEmpty()) {
-//			for(int item : auxTrans) {
-//				
-//				
-//				
-//				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
-//				result.add(sinlgton);
-//				this._codetable.addSingleton(sinlgton);
-//			}
-//		}
-//		logger.debug("new approach: "+(((double)System.nanoTime()-start)/(double)1000000)+ " ms.");
-//		logger.debug(result);
-
-		
-		
-//		// old code
-//		
-//		KItemset auxTrans2 = new KItemset(trans);
-//		ItemsetSet result2 = new ItemsetSet(); 
-//		Iterator<KItemset> itIs2 = this._codetable.codeIterator();
-//		KItemset auxCode2 = null; 
-//		start = System.nanoTime();
-//		
-//		while (itIs2.hasNext() && (auxTrans2.size() != 0))  { // Searching for the cover
-//			auxCode2 = itIs2.next(); 
-//				// we check all the codes that are not singletons
-//			if (auxTrans2.containsAll(auxCode2)) {
-//				result2.add(auxCode2); 
-//				auxTrans2 = auxTrans2.substraction(auxCode2); 
-//			}
-//		}
-//		
-//		// adding the codes that appear in the transaction but not in the code table
-//		if(! auxTrans2.isEmpty()) {
-//			for(int item : auxTrans2) {
-//				KItemset sinlgton = Utils.createCodeSingleton(item, 0, 1);
-//				result2.add(sinlgton);
-//				this._codetable.addSingleton(sinlgton);
-//			}
-//		}
-//		logger.debug("old approach: "+(((double)System.nanoTime()-start)/(double)1000000)+ " ms.");
-//		logger.debug(result2);
-		
-		
+		Iterator<KItemset> itIs = this._codetable.codeIterator();
+		ItemsetSet result = new ItemsetSet();
+		KItemset auxCode = null; 
+		while (itIs.hasNext()) {
+			auxCode = itIs.next(); 
+			if (trans.containsAll(auxCode)) {
+				result.add(auxCode); 
+			}
+		}
 		return result; 
 	}
 	

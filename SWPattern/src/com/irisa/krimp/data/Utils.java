@@ -64,7 +64,9 @@ public class Utils {
 						continue;
 					} else {
 						try {
-							itemsetLine.add(Integer.valueOf(line.get(i)));
+							if (!"".equals(line.get(i))) {
+								itemsetLine.add(Integer.valueOf(line.get(i)));
+							}
 						} catch(NumberFormatException e) {
 							logger.fatal(filename + " " + line + " (" + i + "): " + line.get(i), e);
 						}

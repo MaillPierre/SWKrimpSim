@@ -124,6 +124,10 @@ public class KItemset extends HashSet<Integer> {
 	public synchronized void incrementUsageAtomically() {
 		this._usage++; 
 	}
+	
+	public synchronized void incrementSupportAtomically() {
+		this._support++; 
+	}
 
 	public String getLabel() {
 		return _label;
