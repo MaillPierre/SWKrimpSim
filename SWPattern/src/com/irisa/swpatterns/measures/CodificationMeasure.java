@@ -223,7 +223,7 @@ public class CodificationMeasure {
 		this._codetable.getCodes().parallelStream().forEach(e -> e.setSupport(0));
 		logger.debug("Setting 0: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
 		start = System.nanoTime(); 
-		this._transactions.parallelStream().forEach(e -> this.updateUsagesTransaction(e));
+		this._transactions.parallelStream().forEach(e -> this.updateSupportsTransaction(e));
 		logger.debug("UpdateTransactions: "+(((double)System.nanoTime()-start)/(double)1000000)+" ms.");
 		start = System.nanoTime(); 
 		this._codetable.recomputeUsageTotal();
