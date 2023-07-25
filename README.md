@@ -3,7 +3,7 @@
 
 ## Content of the repository
 
-Source code of the approach for a structural similarity of RDF graphs based on frequent patterns, and its related experiments. In this project, it is included the code for the proposal to evaluate the evolution of a dataset currently submitted to SWJ.   
+Source code of the approach for a structural similarity of RDF graphs based on frequent patterns, and its related experiments. In this project, it is included the code for the proposal to evaluate the evolution of a dataset already accepted at SWJ (see citations).   
 
 + The [SWPattern folder](https://github.com/MaillPierre/SWKrimpSim/tree/master/SWPattern) contains the source code for the conversion of RDF datasets and updates to transaction, and their comparison and evaluation using codetables. 
 
