@@ -1,0 +1,258 @@
+:root {
+  --bg: #14181c;
+  --panel: #1c2228;
+  --border: #2a323b;
+  --text: #d8dee5;
+  --text-dim: #8b96a3;
+  --tooltip-head: #F7DCF5;
+  --accent-cold: #5eead4;
+  --accent-hot: #E39236;
+  --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  overflow: hidden;
+}
+
+#topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+#topbar h1 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+#topbar h1 span {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-family: var(--mono);
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.file-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.file-btn:hover {
+  border-color: var(--accent-cold);
+}
+
+.file-btn input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#status {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+#legend {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+#legend .bar {
+  width: 120px;
+  height: 9px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--accent-cold),
+    var(--accent-hot)
+  );
+}
+
+#canvas-wrap {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+svg:active {
+  cursor: grabbing;
+}
+
+.link {
+  fill: none;
+  stroke: #3a4552;
+  stroke-width: 1.6px;
+}
+
+.cluster {
+  stroke-width: 1.8px;
+  transition: stroke-width 0.15s ease;
+}
+
+.node:hover .cluster {
+  stroke-width: 3px;
+}
+
+.node text.item-label {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--text);
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.node text.usage-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--text-dim);
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+#tooltip {
+  position: fixed;
+  min-width: 260px;
+  max-width: calc(100vw - 32px); 
+  max-height: 420px;
+  pointer-events: none;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  display: none;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+#tooltip .row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, max-content);
+  gap: 16px;
+  margin-top: 2px;
+}
+
+#tooltip .row span:first-child {
+  color: var(--text-dim);
+}
+
+#tooltip .row span:last-child {
+  text-align: left;
+  overflow-wrap: anywhere;
+  min-width: 0;
+
+}
+
+#tooltip .head {
+  color: var(--tooltip-head);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+#empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 14px;
+  text-align: center;
+}
+
+#empty-state strong {
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+}
+
+#view-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.view-mode-btn {
+  padding: 8px 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.view-mode-btn:hover {
+  border-color: var(--accent-cold);
+  color: var(--text);
+}
+
+.view-mode-btn.active {
+  background: var(--border);
+  border-color: var(--accent-cold);
+  color: var(--text);
+}
